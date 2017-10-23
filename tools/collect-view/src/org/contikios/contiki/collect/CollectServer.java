@@ -88,7 +88,16 @@ import org.contikios.contiki.collect.gui.NodeControl;
 import org.contikios.contiki.collect.gui.NodeInfoPanel;
 import org.contikios.contiki.collect.gui.SerialConsole;
 import org.contikios.contiki.collect.gui.TimeChartPanel;
-
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
 /**
  *
  */
@@ -1171,6 +1180,7 @@ public class CollectServer implements SerialConnectionListener {
   private void handleSensorData(final SensorData sensorData) {
     System.out.println("SENSOR DATA: " + sensorData);
     saveSensorData(sensorData);
+    insertDBSensorData(sensorData);
     if (sensorData.getNode().addSensorData(sensorData)) {
       updateNodeTime(sensorData);
       sensorDataList.add(sensorData);
@@ -1185,6 +1195,77 @@ public class CollectServer implements SerialConnectionListener {
         });
       }
     }
+  }
+
+  private void insertDBSensorData(SensorData sensorData)
+  {
+    Node node = sensorData.getNode();
+    String nodeid = node.getID();
+    // String nodename = node.getName();
+    // long systemtime = sensorData.getSystemTime();
+    long nodetime = sensorData.getNodeTime();
+    String parentid = sensorData.getBestNeighborID();
+    int seqno = sensorData.getSeqno();
+    boolean isDuplicate = sensorData.isDuplicate();
+    int sensorDataValueCount = sensorData.getValueCount();
+    double temperature = sensorData.getTemperature();
+    double battery = sensorData.getBatteryVoltage();
+
+
+    // System.out.println("node: " + node.toString());
+    // System.out.println("nodeID: " + nodeid);
+    // System.out.println("nodename: " + nodename);
+    // System.out.println("systemTime: " + systemtime);
+    // System.out.println("nodetime: " + nodetime);
+    // System.out.println("parentid: " + parentid);
+    // System.out.println("seqno: " + seqno);
+    // System.out.println("isDuplicate: " + isDuplicate);
+
+    String url = "jdbc:mysql://localhost:3306/ITRI_OpenWSN?useSSL=false";
+    String user = "root";
+    String password = "sakimaru";
+
+    Connection con = null;
+    Statement st = null;
+    ResultSet rs = null;
+    PreparedStatement pst1 = null;
+    PreparedStatement pst = null;
+
+    String insert = "insert into itri_moea_sensor(sn, mac_addr, int_temperature, battery_volt, datetime)" + "values( ?, ?, ?, ?, ?)";
+    String query = "insert into contiki_row(NodeID, ParentID, NodeTime, seqno, isDuplicate, Datetime)" + "values( ?, ?, ?, ?, ?, ?)";
+    try{
+      con = DriverManager.getConnection(url, user, password);
+      Calendar calendar = Calendar.getInstance();
+      String startTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS")).format(calendar.getTime()); 
+      System.out.println("startTime: " + startTime);
+
+      pst = con.prepareStatement(query);
+      pst.setString(1, nodeid);
+      pst.setString(2, parentid);
+      pst.setLong(3, nodetime);
+      pst.setInt(4, seqno);
+      pst.setBoolean(5, isDuplicate);
+      pst.setString(6, startTime);
+      pst.execute();
+
+      pst1 = con.prepareStatement(insert);
+      pst1.setInt(1, seqno);
+      pst1.setString(2, nodeid);
+      pst1.setDouble(3, temperature);
+      pst1.setDouble(4, battery);
+      pst1.setString(5, startTime);
+      pst1.execute();      
+
+      con.close();
+
+
+    }catch (SQLException ex){
+      System.out.println("fail");
+      Logger lgr = Logger.getLogger(CollectServer.class.getName());
+      lgr.log(Level.SEVERE, ex.getMessage(), ex);
+    }
+
+
   }
 
   private void handleLinks(SensorData sensorData) {
