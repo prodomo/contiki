@@ -44,11 +44,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <dev/leds.h>
+
 #define UDP_CLIENT_PORT 8775
 #define UDP_SERVER_PORT 5688
 
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
+
+#define LEDS_MY_GREEN 128
+
+#include "cc2538-temp-sensor.h"
+#include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
@@ -63,6 +70,21 @@ collect_common_set_sink(void)
   /* A udp client can never become sink */
 }
 /*---------------------------------------------------------------------------*/
+
+unsigned int
+uart1_send_bytes(const unsigned char *s, unsigned int len)
+{
+  unsigned int i = 0;
+
+  while(s && *s != 0) {
+    if(i >= len) {
+      break;
+    }
+    uart_write_byte(1, *s++);
+    i++;
+  }
+  return i;
+}
 
 void
 collect_common_net_print(void)
@@ -110,6 +132,10 @@ collect_common_send(void)
   rpl_parent_t *preferred_parent;
   linkaddr_t parent;
   rpl_dag_t *dag;
+  // static uint16_t count=0;
+  // char string[20];
+  int temp_value;
+  int ain0_value, ain1_value;
 
   if(client_conn == NULL) {
     /* Not setup yet */
@@ -156,6 +182,22 @@ collect_common_send(void)
 
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
+
+  // my test
+  //leds_arch_set(7);
+  //leds_toggle(LEDS_MY_GREEN);
+  leds_toggle(LEDS_YELLOW);
+  leds_toggle(LEDS_GREEN);
+  leds_toggle(LEDS_RED);
+  leds_toggle(LEDS_ORANGE);
+  //sprintf(string, "sending string %u.\n", ++count);
+  //uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
+  //printf("Printf, neig=%d, parentetx=%d, TEMP=%d \n", num_neighbors, parent_etx, ALS_SENSOR);
+  temp_value=cc2538_temp_sensor.value(1);
+  ain0_value=ain0_sensor.value(0);
+  ain1_value=ain0_sensor.value(1);
+
+  printf("Printf, neig=%d, parentetx=%d, LEDS_ALL=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, LEDS_ALL, ain0_value, ain1_value, temp_value);
 }
 /*---------------------------------------------------------------------------*/
 void
