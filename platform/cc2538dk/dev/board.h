@@ -82,7 +82,7 @@
 #define LEDS_GREEN              128 /**< LED3 (Green)  -> PC2 */
 // #define LEDS_YELLOW             2 /**< LED2 (Yellow) -> PC1 */
 // #define LEDS_GREEN              4 /**< LED3 (Green)  -> PC2 */
-#define LEDS_ORANGE             8 /**< LED4 (Orange) -> PC3 */
+#define LEDS_ORANGE             4 /**< LED4 (Orange) -> PC3 */
 
 #if USB_SERIAL_CONF_ENABLE
 #define LEDS_CONF_ALL           14

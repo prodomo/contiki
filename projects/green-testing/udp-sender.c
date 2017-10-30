@@ -53,6 +53,7 @@
 #include "net/ip/uip-debug.h"
 
 #define LEDS_MY_GREEN 128
+ #define BEEP_PERIOD 1
 
 #include "cc2538-temp-sensor.h"
 #include "dev/ain0-sensor.h"
@@ -186,10 +187,10 @@ collect_common_send(void)
   // my test
   //leds_arch_set(7);
   //leds_toggle(LEDS_MY_GREEN);
-  leds_toggle(LEDS_YELLOW);
+  //leds_toggle(LEDS_YELLOW);
   leds_toggle(LEDS_GREEN);
-  leds_toggle(LEDS_RED);
-  leds_toggle(LEDS_ORANGE);
+  //fade(LEDS_YELLOW);
+  //fade(LEDS_GREEN);
   //sprintf(string, "sending string %u.\n", ++count);
   //uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
   //printf("Printf, neig=%d, parentetx=%d, TEMP=%d \n", num_neighbors, parent_etx, ALS_SENSOR);
@@ -197,7 +198,7 @@ collect_common_send(void)
   ain0_value=ain0_sensor.value(0);
   ain1_value=ain0_sensor.value(1);
 
-  printf("Printf, neig=%d, parentetx=%d, LEDS=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, LEDS_GPIO_PIN_MASK, ain0_value, ain1_value, temp_value);
+  printf("Printf, neig=%d, parentetx=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, ain0_value, ain1_value, temp_value);
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -248,6 +249,8 @@ set_global_address(void)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
+  tatic struct etimer beep_timer;
+
   PROCESS_BEGIN();
 
   PROCESS_PAUSE();
@@ -267,10 +270,17 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINTF(" local/remote port %u/%u\n",
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
 
+  etimer_set(&beep_timer, CLOCK_SECOND * BEEP_PERIOD / 10 );
+  
   while(1) {
-    PROCESS_YIELD();
+        PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
+    }else if(ev == PROCESS_EVENT_TIMER){
+      if(data == &beep_timer){
+        leds_toggle(LEDS_ORANGE);
+        etimer_reset(&beep_timer);
+      }
     }
   }
 
