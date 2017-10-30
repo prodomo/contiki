@@ -45,7 +45,8 @@
 #include "dev/leds.h"
 #include "dev/gpio.h"
 
-#define LEDS_GPIO_PIN_MASK   LEDS_ALL
+// #define LEDS_GPIO_PIN_MASK   LEDS_ALL
+#define LEDS_GPIO_PIN_MASK 0xC0
 /*---------------------------------------------------------------------------*/
 void
 leds_arch_init(void)

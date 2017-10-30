@@ -197,7 +197,7 @@ collect_common_send(void)
   ain0_value=ain0_sensor.value(0);
   ain1_value=ain0_sensor.value(1);
 
-  printf("Printf, neig=%d, parentetx=%d, LEDS_ALL=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, LEDS_ALL, ain0_value, ain1_value, temp_value);
+  printf("Printf, neig=%d, parentetx=%d, LEDS=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, LEDS_GPIO_PIN_MASK, ain0_value, ain1_value, temp_value);
 }
 /*---------------------------------------------------------------------------*/
 void
