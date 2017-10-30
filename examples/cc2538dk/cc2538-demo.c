@@ -146,17 +146,21 @@ PROCESS_THREAD(cc2538_demo_process, ev, data)
                  rt_callback, NULL);
       counter++;
     } else if(ev == sensors_event) {
-      if(data == &button_select_sensor) {
-        packetbuf_copyfrom(&counter, sizeof(counter));
-        broadcast_send(&bc);
-      } else if(data == &button_left_sensor || data == &button_right_sensor) {
-        leds_toggle(LEDS_BUTTON);
-      } else if(data == &button_down_sensor) {
-        INTERRUPTS_DISABLE();
-        leds_on(LEDS_REBOOT);
-        watchdog_reboot();
-      } else if(data == &button_up_sensor) {
-        sys_ctrl_reset();
+    //      if(data == &button_select_sensor) {
+    //        packetbuf_copyfrom(&counter, sizeof(counter));
+    //        printf("get select button\n");
+    //        broadcast_send(&bc);
+    //      } else if(data == &button_left_sensor || data == &button_right_sensor) {
+          if(data == &button_left_sensor){
+            printf("get left button\n");
+            leds_toggle(LEDS_BUTTON);
+    //      } else if(data == &button_down_sensor) {
+    //        INTERRUPTS_DISABLE();
+    //        leds_on(LEDS_REBOOT);
+    //        printf("get down button\n");
+    //        watchdog_reboot();
+    //      } else if(data == &button_up_sensor) {
+    //        sys_ctrl_reset();
       }
     } else if(ev == serial_line_event_message) {
       leds_toggle(LEDS_SERIAL_IN);

@@ -104,16 +104,16 @@ btn_callback(uint8_t port, uint8_t pin)
 
   timer_set(&debouncetimer, CLOCK_SECOND / 8);
 
-  if((port == BUTTON_SELECT_PORT) && (pin == BUTTON_SELECT_PIN)) {
-    sensors_changed(&button_select_sensor);
-  } else if((port == BUTTON_LEFT_PORT) && (pin == BUTTON_LEFT_PIN)) {
+  // if((port == BUTTON_SELECT_PORT) && (pin == BUTTON_SELECT_PIN)) {
+  //   sensors_changed(&button_select_sensor);
+  if((port == BUTTON_LEFT_PORT) && (pin == BUTTON_LEFT_PIN)) {
     sensors_changed(&button_left_sensor);
-  } else if((port == BUTTON_RIGHT_PORT) && (pin == BUTTON_RIGHT_PIN)) {
-    sensors_changed(&button_right_sensor);
-  } else if((port == BUTTON_UP_PORT) && (pin == BUTTON_UP_PIN)) {
-    sensors_changed(&button_up_sensor);
-  } else if((port == BUTTON_DOWN_PORT) && (pin == BUTTON_DOWN_PIN)) {
-    sensors_changed(&button_down_sensor);
+  // } else if((port == BUTTON_RIGHT_PORT) && (pin == BUTTON_RIGHT_PIN)) {
+    // sensors_changed(&button_right_sensor);
+  // } else if((port == BUTTON_UP_PORT) && (pin == BUTTON_UP_PIN)) {
+    // sensors_changed(&button_up_sensor);
+  // } else if((port == BUTTON_DOWN_PORT) && (pin == BUTTON_DOWN_PIN)) {
+    // sensors_changed(&button_down_sensor);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -243,10 +243,10 @@ button_sensor_init()
   timer_set(&debouncetimer, 0);
 }
 /*---------------------------------------------------------------------------*/
-SENSORS_SENSOR(button_select_sensor, BUTTON_SENSOR, NULL, config_select, NULL);
+// SENSORS_SENSOR(button_select_sensor, BUTTON_SENSOR, NULL, config_select, NULL);
 SENSORS_SENSOR(button_left_sensor, BUTTON_SENSOR, NULL, config_left, NULL);
-SENSORS_SENSOR(button_right_sensor, BUTTON_SENSOR, NULL, config_right, NULL);
-SENSORS_SENSOR(button_up_sensor, BUTTON_SENSOR, NULL, config_up, NULL);
-SENSORS_SENSOR(button_down_sensor, BUTTON_SENSOR, NULL, config_down, NULL);
+// SENSORS_SENSOR(button_right_sensor, BUTTON_SENSOR, NULL, config_right, NULL);
+// SENSORS_SENSOR(button_up_sensor, BUTTON_SENSOR, NULL, config_up, NULL);
+// SENSORS_SENSOR(button_down_sensor, BUTTON_SENSOR, NULL, config_down, NULL);
 
 /** @} */
