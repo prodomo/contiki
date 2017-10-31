@@ -197,7 +197,7 @@ public class SensorData implements SensorInfo {
   }
 
   public double getTemperature() {
-    System.out.println("get Temperature" + values[TEMPERATURE]);
+    // System.out.println("get Temperature" + values[TEMPERATURE]);
     return 0.001 * values[TEMPERATURE];
 
     // return -39.6 + 0.01 * values[TEMPERATURE];

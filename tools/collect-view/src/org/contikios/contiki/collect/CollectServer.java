@@ -1203,9 +1203,9 @@ public class CollectServer implements SerialConnectionListener {
     int[] dec = new int[(temp.length)];
     for(int i=0; i<temp.length; i++)
     {
-      System.out.println("temp: "+temp[i]);
+      // System.out.println("temp: "+temp[i]);
       dec[i] = Integer.parseInt(temp[i]);
-      System.out.println("hex: "+Integer.toHexString(dec[i]));
+      // System.out.println("hex: "+Integer.toHexString(dec[i]));
       temp[i]= Integer.toHexString(dec[i]);
     }
 
@@ -1234,8 +1234,12 @@ public class CollectServer implements SerialConnectionListener {
     double parentETX = sensorData.getBestNeighborETX();
     int ain_0 = sensorData.getAIN_0();
     float ain_1 = sensorData.getAIN_1();
+    int rank = sensorData.getValue(SensorData.RTMETRIC);
+    // int neighborNum = sensorData.getValue(SensorData.NUM_NEIGHBORS);
+    int neighborNum=1;
 
     nodeid = covertMacAddr(nodeid);
+    parentid = covertMacAddr(parentid);
 
     // System.out.println("node: " + node.toString());
     // System.out.println("nodeID: " + nodeid);
@@ -1257,38 +1261,41 @@ public class CollectServer implements SerialConnectionListener {
     PreparedStatement pst = null;
 
     String insert = "insert into itri_moea_sensor(sn, mac_addr, int_temperature, battery_volt, datetime, rssi, ext_temperature, pyranometer)" + "values( ?, ?, ?, ?, ?, ?, ?, ?)";
-    String query = "insert into contiki_row(NodeID, ParentID, NodeTime, seqno, isDuplicate, Datetime)" + "values( ?, ?, ?, ?, ?, ?)";
+    String query = "insert into itri_topology_neighbors(devAddr, SN, rank, parentAddr, neighborNum, datetime, n1, rssi1)" + "values( ?, ?, ?, ?, ?, ?, ?, ?)";
     try{
       con = DriverManager.getConnection(url, user, password);
       Calendar calendar = Calendar.getInstance();
-      String startTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS")).format(calendar.getTime()); 
-      System.out.println("startTime: " + startTime);
-      System.out.println("Temperature: " + temperature);
-      System.out.println("ain_0: "+ain_0);
-      System.out.println("ain_1: "+ain_1);
-      System.out.println("etx: "+parentETX);
-
-
-      pst = con.prepareStatement(query);
-      pst.setString(1, nodeid);
-      pst.setString(2, parentid);
-      pst.setLong(3, nodetime);
-      pst.setInt(4, seqno);
-      pst.setBoolean(5, isDuplicate);
-      pst.setString(6, startTime);
-      pst.execute();
+      String dateTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(calendar.getTime()); 
+      // System.out.println("dateTime: " + dateTime);
+      // System.out.println("Temperature: " + temperature);
+      // System.out.println("ain_0: "+ain_0);
+      // System.out.println("ain_1: "+ain_1);
+      // System.out.println("rank: "+rank);
+      // System.out.println("neighborNum: "+neighborNum);
+      // System.out.println("parentETX: "+parentETX);
 
       pst1 = con.prepareStatement(insert);
       pst1.setInt(1, seqno);
       pst1.setString(2, nodeid);
       pst1.setDouble(3, temperature);
       pst1.setDouble(4, battery);
-      pst1.setString(5, startTime);
+      pst1.setString(5, dateTime);
       pst1.setDouble(6, parentETX);
       pst1.setFloat(7, ain_1);
       pst1.setInt(8, ain_0);
-      pst1.execute();      
+      pst1.execute();
 
+      pst = con.prepareStatement(query);
+      pst.setString(1, nodeid);
+      pst.setInt(2, seqno);
+      pst.setInt(3, rank);
+      pst.setString(4, parentid);
+      pst.setInt(5, neighborNum);
+      pst.setString(6, dateTime);
+      pst.setString(7, parentid);
+      pst.setDouble(8, parentETX);
+      pst.execute();
+      
       con.close();
 
 
