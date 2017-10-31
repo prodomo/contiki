@@ -72,13 +72,26 @@ public interface SensorInfo {
   public static final int RTMETRIC = 17;
   public static final int NUM_NEIGHBORS = 18;
   public static final int BEACON_INTERVAL = 19;
-  public static final int BATTERY_VOLTAGE = 20;
-  public static final int BATTERY_INDICATOR = 21;
-  public static final int LIGHT1 = 22;
-  public static final int LIGHT2 = 23;
-  public static final int TEMPERATURE = 24;
-  public static final int HUMIDITY = 25;
-  public static final int RSSI = 26;
+
+  public static final int AIN_0 = 20;
+  public static final int AIN_1 = 21;
+  public static final int TEMPERATURE = 22;
+  public static final int BATTERY_VOLTAGE = 23;
+
+  public static final int BATTERY_INDICATOR = 24;
+  public static final int LIGHT1 = 25;
+  public static final int LIGHT2 = 26;
+  public static final int HUMIDITY = 27;
+  public static final int RSSI = 28;
+
+  //default 
+  // public static final int BATTERY_VOLTAGE = 20;
+  // public static final int BATTERY_INDICATOR = 21;
+  // public static final int LIGHT1 = 22;
+  // public static final int LIGHT2 = 23;
+  // // public static final int TEMPERATURE = 24;
+  // public static final int HUMIDITY = 25;
+  // public static final int RSSI = 26;
 
   public static final int VALUES_COUNT = 30;
 

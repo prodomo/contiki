@@ -51,7 +51,7 @@ static int send_active = 1;
 
 #ifndef PERIOD
 // #define PERIOD 20
-#define PERIOD 2
+#define PERIOD 20
 #endif
 #define RANDWAIT (PERIOD)
 

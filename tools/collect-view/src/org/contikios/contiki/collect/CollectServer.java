@@ -1197,10 +1197,31 @@ public class CollectServer implements SerialConnectionListener {
     }
   }
 
+  private String covertMacAddr(String nodeid)
+  {
+    String[] temp = nodeid.split("\\.");
+    int[] dec = new int[(temp.length)];
+    for(int i=0; i<temp.length; i++)
+    {
+      System.out.println("temp: "+temp[i]);
+      dec[i] = Integer.parseInt(temp[i]);
+      System.out.println("hex: "+Integer.toHexString(dec[i]));
+      temp[i]= Integer.toHexString(dec[i]);
+    }
+
+    String result= "";
+    for(int j=temp.length-1; j>=0; j--)
+    {
+      result += temp[j];
+    }
+    return (result);
+  }
+
   private void insertDBSensorData(SensorData sensorData)
   {
     Node node = sensorData.getNode();
     String nodeid = node.getID();
+
     // String nodename = node.getName();
     // long systemtime = sensorData.getSystemTime();
     long nodetime = sensorData.getNodeTime();
@@ -1210,7 +1231,11 @@ public class CollectServer implements SerialConnectionListener {
     int sensorDataValueCount = sensorData.getValueCount();
     double temperature = sensorData.getTemperature();
     double battery = sensorData.getBatteryVoltage();
+    double parentETX = sensorData.getBestNeighborETX();
+    int ain_0 = sensorData.getAIN_0();
+    float ain_1 = sensorData.getAIN_1();
 
+    nodeid = covertMacAddr(nodeid);
 
     // System.out.println("node: " + node.toString());
     // System.out.println("nodeID: " + nodeid);
@@ -1231,13 +1256,18 @@ public class CollectServer implements SerialConnectionListener {
     PreparedStatement pst1 = null;
     PreparedStatement pst = null;
 
-    String insert = "insert into itri_moea_sensor(sn, mac_addr, int_temperature, battery_volt, datetime)" + "values( ?, ?, ?, ?, ?)";
+    String insert = "insert into itri_moea_sensor(sn, mac_addr, int_temperature, battery_volt, datetime, rssi, ext_temperature, pyranometer)" + "values( ?, ?, ?, ?, ?, ?, ?, ?)";
     String query = "insert into contiki_row(NodeID, ParentID, NodeTime, seqno, isDuplicate, Datetime)" + "values( ?, ?, ?, ?, ?, ?)";
     try{
       con = DriverManager.getConnection(url, user, password);
       Calendar calendar = Calendar.getInstance();
       String startTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS")).format(calendar.getTime()); 
       System.out.println("startTime: " + startTime);
+      System.out.println("Temperature: " + temperature);
+      System.out.println("ain_0: "+ain_0);
+      System.out.println("ain_1: "+ain_1);
+      System.out.println("etx: "+parentETX);
+
 
       pst = con.prepareStatement(query);
       pst.setString(1, nodeid);
@@ -1254,6 +1284,9 @@ public class CollectServer implements SerialConnectionListener {
       pst1.setDouble(3, temperature);
       pst1.setDouble(4, battery);
       pst1.setString(5, startTime);
+      pst1.setDouble(6, parentETX);
+      pst1.setFloat(7, ain_1);
+      pst1.setInt(8, ain_0);
       pst1.execute();      
 
       con.close();

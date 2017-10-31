@@ -197,7 +197,10 @@ public class SensorData implements SensorInfo {
   }
 
   public double getTemperature() {
-    return -39.6 + 0.01 * values[TEMPERATURE];
+    System.out.println("get Temperature" + values[TEMPERATURE]);
+    return 0.001 * values[TEMPERATURE];
+
+    // return -39.6 + 0.01 * values[TEMPERATURE];
   }
 
   public double getBatteryVoltage() {
@@ -238,6 +241,18 @@ public class SensorData implements SensorInfo {
 
   public double getBestNeighborETX() {
     return values[BEST_NEIGHBOR_ETX] / 8.0;
+  }
+
+  public int getAIN_0()
+  {
+    return values[AIN_0];
+  }
+
+  public float getAIN_1()
+  {
+    double a = 0.00703125;
+    double b = -43.903125;
+    return (float)(a*values[AIN_1]+b);
   }
 
 }

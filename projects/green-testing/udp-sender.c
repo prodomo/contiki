@@ -53,7 +53,7 @@
 #include "net/ip/uip-debug.h"
 
 #define LEDS_MY_GREEN 128
- #define BEEP_PERIOD 1
+#define BEEP_PERIOD 1
 
 #include "cc2538-temp-sensor.h"
 #include "dev/ain0-sensor.h"
@@ -176,6 +176,10 @@ collect_common_send(void)
     num_neighbors = 0;
   }
 
+  // msg.msg.sensors[0]=ain0_value; //external-temperature0
+  // msg.msg.sensors[1]=ain1_value; //external-temperature1
+  // msg.msg.sensors[2]=temp_value; //inter-temperature
+
   /* num_neighbors = collect_neighbor_list_num(&tc.neighbor_list); */
   collect_view_construct_message(&msg.msg, &parent,
                                  parent_etx, rtmetric,
@@ -194,9 +198,9 @@ collect_common_send(void)
   //sprintf(string, "sending string %u.\n", ++count);
   //uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
   //printf("Printf, neig=%d, parentetx=%d, TEMP=%d \n", num_neighbors, parent_etx, ALS_SENSOR);
-  temp_value=cc2538_temp_sensor.value(1);
-  ain0_value=ain0_sensor.value(0);
-  ain1_value=ain0_sensor.value(1);
+  ain0_value=msg.msg.sensors[0];
+  ain1_value=msg.msg.sensors[1];
+  temp_value=msg.msg.sensors[2];
 
   printf("Printf, neig=%d, parentetx=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, ain0_value, ain1_value, temp_value);
 }
@@ -249,7 +253,7 @@ set_global_address(void)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
-  tatic struct etimer beep_timer;
+  static struct etimer beep_timer;
 
   PROCESS_BEGIN();
 
@@ -271,14 +275,16 @@ PROCESS_THREAD(udp_client_process, ev, data)
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
 
   etimer_set(&beep_timer, CLOCK_SECOND * BEEP_PERIOD / 10 );
-  
+
   while(1) {
         PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
     }else if(ev == PROCESS_EVENT_TIMER){
       if(data == &beep_timer){
-        leds_toggle(LEDS_ORANGE);
+        // if(set_beep_on){
+          // leds_toggle(LEDS_ORANGE);
+        // }
         etimer_reset(&beep_timer);
       }
     }
