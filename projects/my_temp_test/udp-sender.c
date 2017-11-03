@@ -26,6 +26,7 @@
  * This file is part of the Contiki operating system.
  *
  */
+
 #include "contiki.h"
 #include "net/ip/uip.h"
 #include "net/ipv6/uip-ds6.h"
@@ -52,11 +53,18 @@
 #include "net/ip/uip-debug.h"
 
 #define LEDS_MY_GREEN 128
+#define BEEP_PERIOD 1
 
 #include "cc2538-temp-sensor.h"
+#include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
+volatile int set_beep_on = 0;
+
+static int temp_value=0;
+static int ain0_value=0, ain1_value=0;
+static uint8_t my_link_join=0;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -73,6 +81,7 @@ unsigned int
 uart1_send_bytes(const unsigned char *s, unsigned int len)
 {
   unsigned int i = 0;
+
   while(s && *s != 0) {
     if(i >= len) {
       break;
@@ -88,6 +97,7 @@ collect_common_net_print(void)
 {
   rpl_dag_t *dag;
   uip_ds6_route_t *r;
+
   /* Let's suppose we have only one instance */
   dag = rpl_get_any_dag();
   if(dag->preferred_parent != NULL) {
@@ -130,7 +140,9 @@ collect_common_send(void)
   rpl_dag_t *dag;
   //static uint16_t count=0;
   //char string[20];
-  int temp_value;
+  //int temp_value;
+  //int ain0_value, ain1_value;
+
   if(client_conn == NULL) {
     /* Not setup yet */
     return;
@@ -142,11 +154,14 @@ collect_common_send(void)
     seqno = 128;
   }
   msg.seqno = seqno;
+
   linkaddr_copy(&parent, &linkaddr_null);
   parent_etx = 0;
+
   /* Let's suppose we have only one instance */
   dag = rpl_get_any_dag();
   if(dag != NULL) {
+    my_link_join = dag->joined;
     preferred_parent = dag->preferred_parent;
     if(preferred_parent != NULL) {
       uip_ds6_nbr_t *nbr;
@@ -162,28 +177,35 @@ collect_common_send(void)
     beacon_interval = (uint16_t) ((2L << dag->instance->dio_intcurrent) / 1000);
     num_neighbors = uip_ds6_nbr_num();
   } else {
+    my_link_join = 0;
     rtmetric = 0;
     beacon_interval = 0;
     num_neighbors = 0;
   }
+
   /* num_neighbors = collect_neighbor_list_num(&tc.neighbor_list); */
   collect_view_construct_message(&msg.msg, &parent,
                                  parent_etx, rtmetric,
                                  num_neighbors, beacon_interval);
+
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
+
   // my test
   //leds_arch_set(7);
   //leds_toggle(LEDS_MY_GREEN);
-  leds_toggle(LEDS_YELLOW);
-  leds_toggle(LEDS_GREEN);
-  leds_toggle(LEDS_RED);
-  leds_toggle(LEDS_ORANGE);
+  //leds_toggle(LEDS_YELLOW);
+  //leds_on(LEDS_GREEN);
+  //fade(LEDS_YELLOW);
+  //fade(LEDS_GREEN);
   //sprintf(string, "sending string %u.\n", ++count);
   //uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
   //printf("Printf, neig=%d, parentetx=%d, TEMP=%d \n", num_neighbors, parent_etx, ALS_SENSOR);
-  temp_value=cc2538_temp_sensor.value(0);
-  printf("Printf, neig=%d, parentetx=%d, LEDS_ALL=%d, TEMP_SENSOR=%s, value=%d \n", num_neighbors, parent_etx, LEDS_ALL, TEMP_SENSOR, temp_value);
+  temp_value=cc2538_temp_sensor.value(1);
+  ain0_value=ain0_sensor.value(0);
+  ain1_value=ain0_sensor.value(1);
+
+  printf("Printf, neig=%d, parentetx=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, ain0_value, ain1_value, temp_value);
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -202,6 +224,7 @@ print_local_addresses(void)
 {
   int i;
   uint8_t state;
+
   PRINTF("Client IPv6 addresses: ");
   for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
     state = uip_ds6_if.addr_list[i].state;
@@ -221,34 +244,70 @@ static void
 set_global_address(void)
 {
   uip_ipaddr_t ipaddr;
+
   uip_ip6addr(&ipaddr, UIP_DS6_DEFAULT_PREFIX, 0, 0, 0, 0, 0, 0, 0);
   uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
   uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
+
   /* set server address */
   uip_ip6addr(&server_ipaddr, UIP_DS6_DEFAULT_PREFIX, 0, 0, 0, 0, 0, 0, 1);
+
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
+  static struct etimer beep_timer;
+
   PROCESS_BEGIN();
+
   PROCESS_PAUSE();
+
   set_global_address();
+
   PRINTF("UDP client process started\n");
+
   print_local_addresses();
   NETSTACK_MAC.on();
   /* new connection with remote host */
   client_conn = udp_new(NULL, UIP_HTONS(UDP_SERVER_PORT), NULL);
   udp_bind(client_conn, UIP_HTONS(UDP_CLIENT_PORT));
+
   PRINTF("Created a connection with the server ");
   PRINT6ADDR(&client_conn->ripaddr);
   PRINTF(" local/remote port %u/%u\n",
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
+
+  etimer_set(&beep_timer, CLOCK_SECOND * BEEP_PERIOD / 5 );
+
   while(1) {
     PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
+    }else if(ev == PROCESS_EVENT_TIMER){
+      // 13428=50c, 23428=120c
+      if((ain1_value > 13428) && (ain1_value < 23428))
+        set_beep_on = 1;
+      else{
+        set_beep_on = 0;
+        leds_off(LEDS_ORANGE);
+      }
+
+      if(data == &beep_timer){
+        // decide link LEDs
+        if(my_link_join == 1)
+          leds_toggle(LEDS_GREEN);
+        else
+	  leds_on(LEDS_GREEN);
+
+        // beep alarm
+	if(set_beep_on)
+          leds_toggle(LEDS_ORANGE);
+
+        etimer_reset(&beep_timer);
+      }
     }
   }
+
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
