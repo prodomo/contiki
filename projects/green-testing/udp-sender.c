@@ -62,6 +62,11 @@
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
+volatile int set_beep_on =0;
+
+static temp_value=0;
+static int ain0_value=0, ain1_value=0;
+static uint8_t my_link_join=0;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -138,8 +143,8 @@ collect_common_send(void)
   rpl_dag_t *dag;
   // static uint16_t count=0;
   // char string[20];
-  int temp_value;
-  int ain0_value, ain1_value;
+  // int temp_value;
+  // int ain0_value, ain1_value;
 
   if(client_conn == NULL) {
     /* Not setup yet */
@@ -159,6 +164,7 @@ collect_common_send(void)
   /* Let's suppose we have only one instance */
   dag = rpl_get_any_dag();
   if(dag != NULL) {
+    my_link_join = dag->joined;
     preferred_parent = dag->preferred_parent;
     if(preferred_parent != NULL) {
       uip_ds6_nbr_t *nbr;
@@ -177,6 +183,7 @@ collect_common_send(void)
     beacon_interval = (uint16_t) ((2L << dag->instance->dio_intcurrent) / 1000);
     num_neighbors = uip_ds6_nbr_num();
   } else {
+    my_link_join = 0;
     rtmetric = 0;
     beacon_interval = 0;
     num_neighbors = 0;
@@ -290,14 +297,32 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINTF(" local/remote port %u/%u\n",
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
 
-  etimer_set(&beep_timer, CLOCK_SECOND * BEEP_PERIOD / 10 );
+  etimer_set(&beep_timer, CLOCK_SECOND * BEEP_PERIOD / 5 );
 
   while(1) {
         PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
     }else if(ev == PROCESS_EVENT_TIMER){
+      // 13428=50c, 23428=120c
+      if((ain1_value>13428) && (ain1_value<23428))
+        set_beep_on=1;
+      else{
+        set_beep_on=0;
+        leds_off(LEDS_ORANGE);
+      }
+      
       if(data == &beep_timer){
+        //decide link LEDs
+        if(my_link_join == 1)
+          leds_toggle(LEDS_GREEN);
+        else
+          leds_on(LEDS_GREEN);
+
+        //beep alarm
+        if(set_beep_on)
+          leds_toggle(LEDS_ORANGE);
+
         etimer_reset(&beep_timer);
       }
     }
