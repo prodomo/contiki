@@ -1246,15 +1246,6 @@ public class CollectServer implements SerialConnectionListener {
     int hops = sensorData.getValue(SensorData.HOPS);
     double linkPDR = 1.0/(parentETX/ESTIMATE_UINT/hops);
 
-    // System.out.println("node: " + node.toString());
-    // System.out.println("nodeID: " + nodeid);
-    // System.out.println("nodename: " + nodename);
-    // System.out.println("systemTime: " + systemtime);
-    // System.out.println("nodetime: " + nodetime);
-    // System.out.println("parentid: " + parentid);
-    // System.out.println("seqno: " + seqno);
-    // System.out.println("isDuplicate: " + isDuplicate);
-
     String url = "jdbc:mysql://localhost:3306/ITRI_OpenWSN?useSSL=false";
     String user = "root";
     String password = "sakimaru";
@@ -1265,22 +1256,13 @@ public class CollectServer implements SerialConnectionListener {
     PreparedStatement pst1 = null;
     PreparedStatement pst = null;
 
-    String insert = "insert into itri_moea_sensor(sn, mac_addr, int_temperature, battery_volt, datetime, rssi, ext_temperature, pyranometer)" + "values( ?, ?, ?, ?, ?, ?, ?, ?)";
+    String insert = "insert into itri_MOEA_sensor(sn, mac_addr, int_temperature, battery_volt, datetime, ext_temperature, pyranometer)" + "values( ?, ?, ?, ?, ?, ?, ?)";
     String query = "insert into itri_topology_neighbors(devAddr, SN, rank, parentAddr, neighborNum, datetime, n1, rssi1, PDR)" + "values( ?, ?, ?, ?, ?, ?, ?, ?,?)";
     try{
       con = DriverManager.getConnection(url, user, password);
       Calendar calendar = Calendar.getInstance();
       String dateTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(calendar.getTime()); 
       // System.out.println("dateTime: " + dateTime);
-      // System.out.println("Temperature: " + temperature);
-      // System.out.println("ain_0: "+ain_0);
-      // System.out.println("ain_1: "+ain_1);
-      // System.out.println("rank: "+rank);
-      // System.out.println("neighborNum: "+neighborNum);
-      System.out.println("nodeid: "+nodeid);
-      System.out.println("rssi: "+rssi);
-      System.out.println("parentETX: "+parentETX);
-      System.out.println("parentPDR: "+linkPDR);
 
       pst1 = con.prepareStatement(insert);
       pst1.setInt(1, seqno);
@@ -1288,9 +1270,8 @@ public class CollectServer implements SerialConnectionListener {
       pst1.setDouble(3, temperature);
       pst1.setDouble(4, battery);
       pst1.setString(5, dateTime);
-      pst1.setDouble(6, rssi);
-      pst1.setFloat(7, ain_1);
-      pst1.setInt(8, ain_0);
+      pst1.setFloat(6, ain_1);
+      pst1.setInt(7, ain_0);
       pst1.execute();
 
       pst = con.prepareStatement(query);
