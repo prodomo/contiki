@@ -46,6 +46,8 @@
 
 #include <dev/leds.h>
 
+#include "net/link-stats.h"
+
 #define UDP_CLIENT_PORT 8775
 #define UDP_SERVER_PORT 5688
 
@@ -57,6 +59,10 @@
 
 #include "cc2538-temp-sensor.h"
 #include "dev/ain0-sensor.h"
+
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
@@ -135,6 +141,7 @@ collect_common_send(void)
   uint16_t rtmetric;
   uint16_t num_neighbors;
   uint16_t beacon_interval;
+  int16_t parent_rssi;
   rpl_parent_t *preferred_parent;
   linkaddr_t parent;
   rpl_dag_t *dag;
@@ -171,6 +178,9 @@ collect_common_send(void)
         parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
         parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
         parent_etx = rpl_get_parent_rank((uip_lladdr_t *) uip_ds6_nbr_get_ll(nbr)) / 2;
+
+        //get parent rssi
+        parent_rssi = rpl_get_parent_link_stats(preferred_parent)->rssi;
       }
     }
     rtmetric = dag->rank;
@@ -187,6 +197,8 @@ collect_common_send(void)
   collect_view_construct_message(&msg.msg, &parent,
                                  parent_etx, rtmetric,
                                  num_neighbors, beacon_interval);
+
+  msg.msg.sensors[5]=parent_rssi;
 
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
@@ -278,6 +290,10 @@ PROCESS_THREAD(udp_client_process, ev, data)
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
 
   etimer_set(&beep_timer, CLOCK_SECOND * BEEP_PERIOD / 5 );
+
+  #if WITH_ORCHESTRA
+    orchestra_init();
+  #endif
 
   while(1) {
     PROCESS_YIELD();

@@ -49,6 +49,10 @@
 #include "collect-common.h"
 #include "collect-view.h"
 
+ #if WITH_ORCHESTRA
+ #include "orchestra.h"
+ #endif
+
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
 
@@ -174,6 +178,10 @@ PROCESS_THREAD(udp_server_process, ev, data)
   PRINT6ADDR(&server_conn->ripaddr);
   PRINTF(" local/remote port %u/%u\n", UIP_HTONS(server_conn->lport),
          UIP_HTONS(server_conn->rport));
+
+  #if WITH_ORCHESTRA
+    orchestra_init();
+  #endif
 
   while(1) {
     PROCESS_YIELD();
