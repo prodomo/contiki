@@ -41,6 +41,8 @@
 #include "collect-common.h"
 #include "collect-view.h"
 
+#include "net/link-stats.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -130,6 +132,7 @@ collect_common_send(void)
   uint16_t rtmetric;
   uint16_t num_neighbors;
   uint16_t beacon_interval;
+  int16_t  parent_rssi;
   rpl_parent_t *preferred_parent;
   linkaddr_t parent;
   rpl_dag_t *dag;
@@ -165,6 +168,9 @@ collect_common_send(void)
         parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
         parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
         parent_etx = rpl_get_parent_rank((uip_lladdr_t *) uip_ds6_nbr_get_ll(nbr)) / 2;
+
+        //get parent rssi
+        parent_rssi = rpl_get_parent_link_stats(preferred_parent)->rssi;
       }
     }
     rtmetric = dag->rank;
@@ -185,6 +191,8 @@ collect_common_send(void)
                                  parent_etx, rtmetric,
                                  num_neighbors, beacon_interval);
 
+  msg.msg.sensors[5]=parent_rssi;
+
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 
@@ -203,6 +211,14 @@ collect_common_send(void)
   temp_value=msg.msg.sensors[2];
 
   printf("Printf, neig=%d, parentetx=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, ain0_value, ain1_value, temp_value);
+  if(dag != NULL)
+  {
+    printf("dag->joined: %d\n", dag->joined);
+  }
+  else
+  {
+    printf("dag is NULL\n");
+  }
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -282,9 +298,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
       tcpip_handler();
     }else if(ev == PROCESS_EVENT_TIMER){
       if(data == &beep_timer){
-        // if(set_beep_on){
-          // leds_toggle(LEDS_ORANGE);
-        // }
         etimer_reset(&beep_timer);
       }
     }

@@ -159,6 +159,8 @@ public class CollectServer implements SerialConnectionListener {
   private int defaultMaxItemCount = 250;
   private long nodeTimeDelta;
 
+  static  int ESTIMATE_UINT = 8;
+
   @SuppressWarnings("serial")
   public CollectServer() {
     loadConfig(config, CONFIG_FILE);
@@ -1214,7 +1216,7 @@ public class CollectServer implements SerialConnectionListener {
     {
       result += temp[j];
     }
-    return (result);
+    return result;
   }
 
   private void insertDBSensorData(SensorData sensorData)
@@ -1224,7 +1226,7 @@ public class CollectServer implements SerialConnectionListener {
 
     // String nodename = node.getName();
     // long systemtime = sensorData.getSystemTime();
-    long nodetime = sensorData.getNodeTime();
+    // long nodetime = sensorData.getNodeTime();
     String parentid = sensorData.getBestNeighborID();
     int seqno = sensorData.getSeqno();
     boolean isDuplicate = sensorData.isDuplicate();
@@ -1237,9 +1239,12 @@ public class CollectServer implements SerialConnectionListener {
     int rank = sensorData.getValue(SensorData.RTMETRIC);
     // int neighborNum = sensorData.getValue(SensorData.NUM_NEIGHBORS);
     int neighborNum=1;
+    int rssi = sensorData.getRadioIntensity();
 
     nodeid = covertMacAddr(nodeid);
     parentid = covertMacAddr(parentid);
+    int hops = sensorData.getValue(SensorData.HOPS);
+    double linkPDR = 1.0/(parentETX/ESTIMATE_UINT/hops);
 
     // System.out.println("node: " + node.toString());
     // System.out.println("nodeID: " + nodeid);
@@ -1261,7 +1266,7 @@ public class CollectServer implements SerialConnectionListener {
     PreparedStatement pst = null;
 
     String insert = "insert into itri_moea_sensor(sn, mac_addr, int_temperature, battery_volt, datetime, rssi, ext_temperature, pyranometer)" + "values( ?, ?, ?, ?, ?, ?, ?, ?)";
-    String query = "insert into itri_topology_neighbors(devAddr, SN, rank, parentAddr, neighborNum, datetime, n1, rssi1)" + "values( ?, ?, ?, ?, ?, ?, ?, ?)";
+    String query = "insert into itri_topology_neighbors(devAddr, SN, rank, parentAddr, neighborNum, datetime, n1, rssi1, PDR)" + "values( ?, ?, ?, ?, ?, ?, ?, ?,?)";
     try{
       con = DriverManager.getConnection(url, user, password);
       Calendar calendar = Calendar.getInstance();
@@ -1272,7 +1277,10 @@ public class CollectServer implements SerialConnectionListener {
       // System.out.println("ain_1: "+ain_1);
       // System.out.println("rank: "+rank);
       // System.out.println("neighborNum: "+neighborNum);
-      // System.out.println("parentETX: "+parentETX);
+      System.out.println("nodeid: "+nodeid);
+      System.out.println("rssi: "+rssi);
+      System.out.println("parentETX: "+parentETX);
+      System.out.println("parentPDR: "+linkPDR);
 
       pst1 = con.prepareStatement(insert);
       pst1.setInt(1, seqno);
@@ -1280,7 +1288,7 @@ public class CollectServer implements SerialConnectionListener {
       pst1.setDouble(3, temperature);
       pst1.setDouble(4, battery);
       pst1.setString(5, dateTime);
-      pst1.setDouble(6, parentETX);
+      pst1.setDouble(6, rssi);
       pst1.setFloat(7, ain_1);
       pst1.setInt(8, ain_0);
       pst1.execute();
@@ -1293,9 +1301,10 @@ public class CollectServer implements SerialConnectionListener {
       pst.setInt(5, neighborNum);
       pst.setString(6, dateTime);
       pst.setString(7, parentid);
-      pst.setDouble(8, parentETX);
+      pst.setDouble(8, rssi);
+      pst.setDouble(9, linkPDR);
       pst.execute();
-      
+
       con.close();
 
 

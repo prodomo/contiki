@@ -211,8 +211,11 @@ public class SensorData implements SensorInfo {
     return values[BATTERY_INDICATOR];
   }
 
-  public double getRadioIntensity() {
-    return values[RSSI];
+  public int getRadioIntensity() {
+    if(values[RSSI]==0)
+      return -99;
+    else
+      return values[RSSI]-65535-1;
   }
 
   public double getLatency() {

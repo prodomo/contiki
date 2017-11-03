@@ -77,12 +77,12 @@ public interface SensorInfo {
   public static final int AIN_1 = 21;
   public static final int TEMPERATURE = 22;
   public static final int BATTERY_VOLTAGE = 23;
+  public static final int RSSI = 25;
 
   public static final int BATTERY_INDICATOR = 24;
-  public static final int LIGHT1 = 25;
-  public static final int LIGHT2 = 26;
-  public static final int HUMIDITY = 27;
-  public static final int RSSI = 28;
+  public static final int LIGHT1 = 26;
+  public static final int LIGHT2 = 27;
+  public static final int HUMIDITY = 28;
 
   //default 
   // public static final int BATTERY_VOLTAGE = 20;
