@@ -33,6 +33,16 @@ def upload_to_DB(data):
       ext_value += float(data[key_map['SENSOR2']]) * 0.007 - 43.9
       int_value = 0.0
       int_value += float(data[key_map['SENSOR3']]) / 1000
+
+      #add by Nancy
+      etx = 0.0
+      etx += int(data[key_map['BEST_NEIGHBOR_ETX']])
+      print 'etx: {0}'.format(etx)
+      pdr = 0.0
+      pdr += 1.0/(etx/float(data[key_map['HOPS']])/8)
+      rssi = 0.0
+      rssi += float(data[key_map['SENSOR6']])-65535-1
+
       sql = "INSERT INTO itri_MOEA_sensor(sn, mac_addr, \
                 ext_temperature, pyranometer, datetime, int_temperature, battery_volt) \
                 VALUES ('%d', '%x', '%.2f', '%d', '%s', '%.2f', '%.2f')" %\
@@ -66,21 +76,37 @@ def upload_to_DB(data):
       
 
       ## topology part
+      # sql = "INSERT INTO itri_topology_neighbors(mode, neighborNum, devAddr,PDR,\
+      #   parentAddr, datetime, SN, rank, n1, rssi1)\
+      #   VALUES ('%s', '%d', '%x', '%.2f',\
+      #   '%04x', '%s', '%d', '%d', '%04x', '%d')"\
+      #       %( '0x11', 1, int(data[key_map['NODE_ID']]),\
+      #       int(data[key_map['BEST_NEIGHBOR_ETX']]), int(data[key_map['BEST_NEIGHBOR']]), \
+      #       datetime.now(), int(data[key_map['SEQNO']]), int(data[key_map['RTMETRIC']]), int(data[key_map['BEST_NEIGHBOR']]), -90)
+
+      # rps_sql = "REPLACE INTO itri_topology_current_neighbors(mode, neighborNum, devAddr,PDR,\
+      #   parentAddr, datetime, SN, rank, n1, rssi1)\
+      #   VALUES ('%s', '%d', '%x', '%.2f',\
+      #   '%04x', '%s', '%d', '%d', '%04x', '%d')"\
+      #       %( '0x11', 1, int(data[key_map['NODE_ID']]),\
+      #       int(data[key_map['BEST_NEIGHBOR_ETX']]), int(data[key_map['BEST_NEIGHBOR']]), \
+      #       datetime.now(), int(data[key_map['SEQNO']]), int(data[key_map['RTMETRIC']]), int(data[key_map['BEST_NEIGHBOR']]), -90)
+      ## topology part
       sql = "INSERT INTO itri_topology_neighbors(mode, neighborNum, devAddr,PDR,\
         parentAddr, datetime, SN, rank, n1, rssi1)\
         VALUES ('%s', '%d', '%x', '%.2f',\
         '%04x', '%s', '%d', '%d', '%04x', '%d')"\
             %( '0x11', 1, int(data[key_map['NODE_ID']]),\
-            int(data[key_map['BEST_NEIGHBOR_ETX']]), int(data[key_map['BEST_NEIGHBOR']]), \
-            datetime.now(), int(data[key_map['SEQNO']]), int(data[key_map['RTMETRIC']]), int(data[key_map['BEST_NEIGHBOR']]), -90)
+            float(pdr), int(data[key_map['BEST_NEIGHBOR']]), \
+            datetime.now(), int(data[key_map['SEQNO']]), int(data[key_map['RTMETRIC']]), int(data[key_map['BEST_NEIGHBOR']]), rssi)
 
       rps_sql = "REPLACE INTO itri_topology_current_neighbors(mode, neighborNum, devAddr,PDR,\
         parentAddr, datetime, SN, rank, n1, rssi1)\
         VALUES ('%s', '%d', '%x', '%.2f',\
         '%04x', '%s', '%d', '%d', '%04x', '%d')"\
             %( '0x11', 1, int(data[key_map['NODE_ID']]),\
-            int(data[key_map['BEST_NEIGHBOR_ETX']]), int(data[key_map['BEST_NEIGHBOR']]), \
-            datetime.now(), int(data[key_map['SEQNO']]), int(data[key_map['RTMETRIC']]), int(data[key_map['BEST_NEIGHBOR']]), -90)
+            float(pdr), int(data[key_map['BEST_NEIGHBOR']]), \
+            datetime.now(), int(data[key_map['SEQNO']]), int(data[key_map['RTMETRIC']]), int(data[key_map['BEST_NEIGHBOR']]), rssi)
 
       try:
           # Execute the SQL command
