@@ -82,30 +82,16 @@ collect_common_send(void)
 void collect_uart_send(void)
 {
   uip_ipaddr_copy(&server_conn->ripaddr, &UIP_IP_BUF->srcipaddr);
+
+  printf("received from: ");
+  PRINT6ADDR(&server_conn->ripaddr);
+  printf("\n send to : ");
+  server_conn->ripaddr.u8[15] = 0xB3;
+  server_conn->ripaddr.u8[14] = 0XA6;
+  PRINT6ADDR(&server_conn->ripaddr);
+  
   uip_udp_packet_send(server_conn, "Reply", sizeof("Reply"));
   uip_create_unspecified(&server_conn->ripaddr);
-  // char buf[120];
-  // printf("Server received from :");
-  // PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
-
-  // uip_ipaddr_copy(&server_conn->ripaddr, &UIP_IP_BUF->srcipaddr);
-  // // server_conn->rport = UDP_CLIENT_PORT;
-
-
-  // PRINTF("Responding with message: ");
-  // sprintf(buf, "Hello from the server!");
-  // PRINTF("%s\n", buf);
-
-  // PRINTF("Send To :");
-  // PRINT6ADDR(&server_conn->ripaddr);
-
-  // // uip_udp_packet_sendto(server_conn, buf, sizeof(buf),
-  // //                       &server_conn->ripaddr, UIP_HTONS(UDP_CLIENT_PORT));
-
-  // uip_udp_packet_send(server_conn, buf, sizeof(buf));
-  // uip_create_unspecified(&server_conn->ripaddr);
-  // memset(&server_conn->ripaddr, 0, sizeof(server_conn->ripaddr));
-  // server_conn->rport = 0;
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -137,11 +123,6 @@ tcpip_handler(void)
     hops = uip_ds6_if.cur_hop_limit - UIP_IP_BUF->ttl + 1;
     collect_common_recv(&sender, seqno, hops,
                         appdata + 2, uip_datalen() - 2);
-    collect_uart_send();
-    // uip_ipaddr_copy(&server_conn->ripaddr, &UIP_IP_BUF->srcipaddr);
-    // uip_udp_packet_send(server_conn, "Reply", sizeof("Reply"));
-    // uip_create_unspecified(&server_conn->ripaddr);
-
   }
 }
 /*---------------------------------------------------------------------------*/

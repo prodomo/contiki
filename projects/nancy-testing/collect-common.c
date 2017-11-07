@@ -149,7 +149,10 @@ PROCESS_THREAD(collect_common_process, ev, data)
       } else if(strncmp(line, "~K", 2) == 0 ||
                 strncmp(line, "killall", 7) == 0) {
         /* Ignore stop commands */
-      } else {
+      } else if(strncmp(line, "send", 4) == 0)
+      {
+          collect_uart_send();
+      }else {
         printf("unhandled command: %s\n", line);
       }
     }

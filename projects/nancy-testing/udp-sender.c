@@ -65,6 +65,11 @@ collect_common_set_sink(void)
   /* A udp client can never become sink */
 }
 /*---------------------------------------------------------------------------*/
+void collect_uart_send(void)
+{
+  /* sender do nothing */
+}
+/*---------------------------------------------------------------------------*/
 
 void
 collect_common_net_print(void)
