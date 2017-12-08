@@ -50,7 +50,7 @@ static unsigned long time_offset;
 static int send_active = 1;
 
 #ifndef PERIOD
-#define PERIOD 60
+#define PERIOD 10
 #endif
 #define RANDWAIT (PERIOD)
 
@@ -149,10 +149,7 @@ PROCESS_THREAD(collect_common_process, ev, data)
       } else if(strncmp(line, "~K", 2) == 0 ||
                 strncmp(line, "killall", 7) == 0) {
         /* Ignore stop commands */
-      } else if(strncmp(line, "send", 4) == 0)
-      {
-          collect_uart_send();
-      }else {
+      } else {
         printf("unhandled command: %s\n", line);
       }
     }

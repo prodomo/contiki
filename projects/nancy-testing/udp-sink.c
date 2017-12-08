@@ -49,6 +49,10 @@
 #include "collect-common.h"
 #include "collect-view.h"
 
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif /* WITH_ORCHESTRA */
+
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
 
@@ -56,6 +60,7 @@
 
 #define UDP_CLIENT_PORT 8775
 #define UDP_SERVER_PORT 5688
+#define LED_PERIOD 1
 
 static struct uip_udp_conn *server_conn;
 
@@ -77,21 +82,6 @@ void
 collect_common_send(void)
 {
   /* Server never sends */
-}
-/*---------------------------------------------------------------------------*/
-void collect_uart_send(void)
-{
-  uip_ipaddr_copy(&server_conn->ripaddr, &UIP_IP_BUF->srcipaddr);
-
-  printf("received from: ");
-  PRINT6ADDR(&server_conn->ripaddr);
-  printf("\n send to : ");
-  server_conn->ripaddr.u8[15] = 0xB3;
-  server_conn->ripaddr.u8[14] = 0XA6;
-  PRINT6ADDR(&server_conn->ripaddr);
-  
-  uip_udp_packet_send(server_conn, "Reply", sizeof("Reply"));
-  uip_create_unspecified(&server_conn->ripaddr);
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -150,7 +140,7 @@ PROCESS_THREAD(udp_server_process, ev, data)
 {
   uip_ipaddr_t ipaddr;
   struct uip_ds6_addr *root_if;
-
+  static struct etimer period_timer;
   PROCESS_BEGIN();
 
   PROCESS_PAUSE();
@@ -179,7 +169,8 @@ PROCESS_THREAD(udp_server_process, ev, data)
 
   /* The data sink runs with a 100% duty cycle in order to ensure high
      packet reception rates. */
-  NETSTACK_RDC.off(1);
+  NETSTACK_MAC.on();
+  // NETSTACK_RDC.off(1);
 
   server_conn = udp_new(NULL, UIP_HTONS(UDP_CLIENT_PORT), NULL);
   udp_bind(server_conn, UIP_HTONS(UDP_SERVER_PORT));
@@ -189,6 +180,11 @@ PROCESS_THREAD(udp_server_process, ev, data)
   PRINTF(" local/remote port %u/%u\n", UIP_HTONS(server_conn->lport),
          UIP_HTONS(server_conn->rport));
 
+  #if WITH_ORCHESTRA
+    orchestra_init();
+  #endif /*WITH_ORCHESTRA*/
+
+  etimer_set(&period_timer, CLOCK_SECOND * LED_PERIOD);
   while(1) {
     PROCESS_YIELD();
     if(ev == tcpip_event) {
@@ -196,6 +192,12 @@ PROCESS_THREAD(udp_server_process, ev, data)
     } else if (ev == sensors_event && data == &button_sensor) {
       PRINTF("Initiating global repair\n");
       rpl_repair_root(RPL_DEFAULT_INSTANCE);
+    }else if(ev == PROCESS_EVENT_TIMER) {
+      if(data == &period_timer) {
+        PRINTF("timer\n");
+        leds_toggle(LEDS_ORANGE);
+        etimer_reset(&period_timer);
+      }
     }
   }
 

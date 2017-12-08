@@ -41,10 +41,12 @@
 #include "collect-common.h"
 #include "collect-view.h"
 
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif /* WITH_ORCHESTRA */
+
 #include <stdio.h>
 #include <string.h>
-
-#include <dev/leds.h>
 
 #define UDP_CLIENT_PORT 8775
 #define UDP_SERVER_PORT 5688
@@ -63,11 +65,6 @@ void
 collect_common_set_sink(void)
 {
   /* A udp client can never become sink */
-}
-/*---------------------------------------------------------------------------*/
-void collect_uart_send(void)
-{
-  /* sender do nothing */
 }
 /*---------------------------------------------------------------------------*/
 
@@ -97,7 +94,6 @@ tcpip_handler(void)
 {
   if(uip_newdata()) {
     /* Ignore incoming data */
-    printf("got packet!!");
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -164,7 +160,8 @@ collect_common_send(void)
 
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
-  printf("period send packt");
+
+  printf("send pkt\n");
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -224,7 +221,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINTF("UDP client process started\n");
 
   print_local_addresses();
-
+  NETSTACK_MAC.on();
   /* new connection with remote host */
   client_conn = udp_new(NULL, UIP_HTONS(UDP_SERVER_PORT), NULL);
   udp_bind(client_conn, UIP_HTONS(UDP_CLIENT_PORT));
@@ -233,11 +230,14 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINT6ADDR(&client_conn->ripaddr);
   PRINTF(" local/remote port %u/%u\n",
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
+  
+  #if WITH_ORCHESTRA
+    orchestra_init();
+  #endif /*WITH_ORCHESTRA*/
 
   while(1) {
     PROCESS_YIELD();
     if(ev == tcpip_event) {
-      leds_toggle(LEDS_RED);
       tcpip_handler();
     }
   }

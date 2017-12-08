@@ -50,7 +50,7 @@ void collect_common_recv(const linkaddr_t *originator, uint8_t seqno,
                          uint8_t *payload,
                          uint16_t payload_len);
 void collect_common_set_send_active(int active);
-void collect_uart_send(void);
+
 PROCESS_NAME(collect_common_process);
 
 #endif /* COLLECT_COMMON_H_ */
