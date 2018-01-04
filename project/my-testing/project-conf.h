@@ -47,7 +47,10 @@
 /* If undefined, the demo will attempt to connect to IBM's quickstart */
 #define MQTT_DEMO_BROKER_IP_ADDR "fd00::1"
 /*---------------------------------------------------------------------------*/
-
+/* Set to run orchestra */
+#ifndef WITH_ORCHESTRA
+#define WITH_ORCHESTRA 1
+#endif /* WITH_ORCHESTRA */
 /*******************************************************/
 /********************* Enable TSCH *********************/
 /*******************************************************/
@@ -138,11 +141,6 @@
 /*******************************************************/
 /*************** Enable Orchestra **********************/
 /*******************************************************/
-/* Set to run orchestra */
-#ifndef WITH_ORCHESTRA
-#define WITH_ORCHESTRA 0
-#endif /* WITH_ORCHESTRA */
-
 
 #if WITH_ORCHESTRA
 

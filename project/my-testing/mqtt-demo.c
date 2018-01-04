@@ -56,6 +56,10 @@
 #include "dev/cc2538-sensors.h"
 
 #include <string.h>
+
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif
 /*---------------------------------------------------------------------------*/
 /*
  * IBM server: messaging.quickstart.internetofthings.ibmcloud.com
@@ -202,6 +206,7 @@ static int def_rt_rssi = 0;
 /*---------------------------------------------------------------------------*/
 static mqtt_client_config_t conf;
 static char IP_ADDR[8];
+#define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 /*---------------------------------------------------------------------------*/
 PROCESS(mqtt_demo_process, "MQTT Demo");
 /*---------------------------------------------------------------------------*/
@@ -444,11 +449,50 @@ subscribe(void)
   /* Publish MQTT topic in IBM quickstart format */
   mqtt_status_t status;
 
-  status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_0);
+  status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_1);
 
   DBG("APP - Subscribing!\n");
   if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
     DBG("APP - Tried to subscribe but command queue was full!\n");
+  }
+}
+/*---------------------------------------------------------------------------*/
+void
+get_parent_rank(uint16_t* rtmetric, uint16_t* parent_etx)
+{
+  uint16_t num_neighbors;
+  uint16_t beacon_interval;
+  int16_t  parent_rssi;
+  rpl_parent_t *preferred_parent;
+  linkaddr_t parent;
+  rpl_dag_t *dag;
+
+  parent_etx = 0;
+
+  /* Let's suppose we have only one instance */
+  dag = rpl_get_any_dag();
+  if(dag != NULL) {
+    preferred_parent = dag->preferred_parent;
+    if(preferred_parent != NULL) {
+      uip_ds6_nbr_t *nbr;
+      nbr = uip_ds6_nbr_lookup(rpl_get_parent_ipaddr(preferred_parent));
+      if(nbr != NULL) {
+        /* Use parts of the IPv6 address as the parent address, in reversed byte order. */
+        parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
+        parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
+        parent_etx = rpl_get_parent_rank((uip_lladdr_t *) uip_ds6_nbr_get_ll(nbr)) / 2;
+
+        //get parent rssi
+        // parent_rssi = rpl_get_parent_link_stats(preferred_parent)->rssi;
+      }
+    }
+    rtmetric = dag->rank;
+    beacon_interval = (uint16_t) ((2L << dag->instance->dio_intcurrent) / 1000);
+    num_neighbors = uip_ds6_nbr_num();
+  } else {
+    rtmetric = 0;
+    beacon_interval = 0;
+    num_neighbors = 0;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -458,77 +502,74 @@ publish(void)
   /* Publish MQTT topic in IBM quickstart format */
   int len;
   int remaining = APP_BUFFER_SIZE;
+  uint16_t parent_rank, parent_etx;
+  uint8_t hops, PDR;
+  rpl_parent_t *preferred_parent;
+  linkaddr_t parent;
+  rpl_dag_t *dag;
 
   seq_nr_value++;
 
   buf_ptr = app_buffer;
-
-  len = snprintf(buf_ptr, remaining,
-                 "{"
-                 "\"d\":{"
-                 "\"myName\":\"%s\","
-                 "\"Seq #\":%d,"
-                 "\"Uptime (sec)\":%lu",
-                 IP_ADDR, seq_nr_value, clock_seconds());
-
-
-  if(len < 0 || len >= remaining) {
-    printf("Buffer too short. Have %d, need %d + \\0\n", remaining, len);
-    return;
-  }
-
-  remaining -= len;
-  buf_ptr += len;
+  parent_etx=0;
 
   /* Put our Default route's string representation in a buffer */
   char def_rt_str[64];
   memset(def_rt_str, 0, sizeof(def_rt_str));
   ipaddr_sprintf(def_rt_str, sizeof(def_rt_str), uip_ds6_defrt_choose());
 
-  len = snprintf(buf_ptr, remaining, ",\"Def Route\":\"%s\",\"RSSI (dBm)\":%d",
-                 def_rt_str, def_rt_rssi);
+  /* Let's suppose we have only one instance */
+  dag = rpl_get_any_dag();
+  if(dag != NULL) {
+    preferred_parent = dag->preferred_parent;
+    if(preferred_parent != NULL) {
+      uip_ds6_nbr_t *nbr;
+      nbr = uip_ds6_nbr_lookup(rpl_get_parent_ipaddr(preferred_parent));
+      if(nbr != NULL) {
+        /* Use parts of the IPv6 address as the parent address, in reversed byte order. */
+        parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
+        parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
+        parent_etx = rpl_get_parent_rank((uip_lladdr_t *) uip_ds6_nbr_get_ll(nbr)) / 2;
+      }
+    }
+    parent_rank = dag->rank;
+  } else {
+    parent_rank = 0;
+  }
+
+  hops=uip_ds6_if.cur_hop_limit - UIP_IP_BUF->ttl + 1;
+  PDR = 1/((parent_etx/64)/hops);
+
+  len = snprintf(buf_ptr, remaining,
+                 "{MAC:%s, "
+                 "Seq: %d, "
+                 "parent: %s, "
+                 "RSSI: %d, "
+                 "rank: %d, "
+                 "etx: %d, "
+                 "hops: %d, "
+                 "Temp: %d, "
+                 "VDD: %d}",
+                 IP_ADDR, seq_nr_value, def_rt_str, def_rt_rssi, parent_rank, parent_etx, hops,
+                 cc2538_temp_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED),
+                 vdd3_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED));
+                 // IP_ADDR, seq_nr_value, clock_seconds());
+
 
   if(len < 0 || len >= remaining) {
     printf("Buffer too short. Have %d, need %d + \\0\n", remaining, len);
     return;
   }
+
   remaining -= len;
   buf_ptr += len;
-
-  // len = snprintf(buf_ptr, remaining, ",\"On-Chip Temp (mC)\":%d",
-                 // cc2538_temp_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED));
-  len = snprintf(buf_ptr, remaining, ",\"On-Chip Temp (mC)\":%d",0);
-
-  if(len < 0 || len >= remaining) {
-    printf("Buffer too short. Have %d, need %d + \\0\n", remaining, len);
-    return;
-  }
-  remaining -= len;
-  buf_ptr += len;
-
-  // len = snprintf(buf_ptr, remaining, ",\"VDD3 (mV)\":%d",
-  //                vdd3_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED));
-  len = snprintf(buf_ptr, remaining, ",\"VDD3 (mV)\":%d",3);
-
-  if(len < 0 || len >= remaining) {
-    printf("Buffer too short. Have %d, need %d + \\0\n", remaining, len);
-    return;
-  }
-  remaining -= len;
-  buf_ptr += len;
-
-  len = snprintf(buf_ptr, remaining, "}}");
-
-  if(len < 0 || len >= remaining) {
-    printf("Buffer too short. Have %d, need %d + \\0\n", remaining, len);
-    return;
-  }
 
   mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
-               strlen(app_buffer), MQTT_QOS_LEVEL_1, MQTT_RETAIN_OFF);
+               strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
 
   DBG("APP - Publish!\n");
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 connect_to_broker(void)
@@ -725,6 +766,11 @@ PROCESS_THREAD(mqtt_demo_process, ev, data)
     PROCESS_EXIT();
   }
   NETSTACK_MAC.on();
+
+  #if WITH_ORCHESTRA
+  orchestra_init();
+  #endif
+
   update_config();
 
   def_rt_rssi = 0x8000000;

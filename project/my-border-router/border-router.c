@@ -54,6 +54,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif
+
 #define DEBUG DEBUG_NONE
 #include "net/ip/uip-debug.h"
 
@@ -436,6 +440,10 @@ PROCESS_THREAD(border_router_process, ev, data)
    */
   // NETSTACK_MAC.off(1);
    NETSTACK_MAC.on();
+
+  #if WITH_ORCHESTRA
+  orchestra_init();
+  #endif
 
 #if DEBUG || 1
   print_local_addresses();

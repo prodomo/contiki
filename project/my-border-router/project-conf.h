@@ -35,6 +35,11 @@
 #define WITH_NON_STORING 1 /* Set this to run with non-storing mode */
 #endif /* WITH_NON_STORING */
 
+/* Set to run orchestra */
+#ifndef WITH_ORCHESTRA
+#define WITH_ORCHESTRA 1
+#endif /* WITH_ORCHESTRA */
+
 #if WITH_NON_STORING
 #undef RPL_NS_CONF_LINK_NUM
 #define RPL_NS_CONF_LINK_NUM 40 /* Number of links maintained at the root */
@@ -161,11 +166,6 @@
 /*******************************************************/
 /*************** Enable Orchestra **********************/
 /*******************************************************/
-/* Set to run orchestra */
-#ifndef WITH_ORCHESTRA
-#define WITH_ORCHESTRA 0
-#endif /* WITH_ORCHESTRA */
-
 
 #if WITH_ORCHESTRA
 
