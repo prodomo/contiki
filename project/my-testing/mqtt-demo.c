@@ -541,15 +541,16 @@ publish(void)
   PDR = 1/((parent_etx/64)/hops);
 
   len = snprintf(buf_ptr, remaining,
-                 "{MAC:%s, "
-                 "Seq: %d, "
-                 "parent: %s, "
-                 "RSSI: %d, "
-                 "rank: %d, "
-                 "etx: %d, "
-                 "hops: %d, "
-                 "Temp: %d, "
-                 "VDD: %d}",
+                  "%s %d %s %d %d %d %d %d %d",
+                 // "{MAC:%s, "
+                 // "Seq: %d, "
+                 // "parent: %s, "
+                 // "RSSI: %d, "
+                 // "rank: %d, "
+                 // "etx: %d, "
+                 // "hops: %d, "
+                 // "Temp: %d, "
+                 // "VDD: %d}",
                  IP_ADDR, seq_nr_value, def_rt_str, def_rt_rssi, parent_rank, parent_etx, hops,
                  cc2538_temp_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED),
                  vdd3_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED));
