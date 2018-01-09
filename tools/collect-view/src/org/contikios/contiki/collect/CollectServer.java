@@ -1210,6 +1210,8 @@ public class CollectServer implements SerialConnectionListener {
     int sensorDataValueCount = sensorData.getValueCount();
     double temperature = sensorData.getTemperature();
     double battery = sensorData.getBatteryVoltage();
+    long lantency =sensorData.getLatency();
+    System.out.println("asn: "+lantency);
 
 
     // System.out.println("node: " + node.toString());

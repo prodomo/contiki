@@ -40,6 +40,14 @@
 #include "net/netstack.h"
 #include "dev/serial-line.h"
 #include "dev/leds.h"
+// #include "net/rime/timesynch.h"
+#include "net/mac/tsch/tsch.h"
+#include "net/mac/tsch/tsch-queue.h"
+#include "net/mac/tsch/tsch-private.h"
+#include "net/mac/tsch/tsch-log.h"
+#include "net/mac/tsch/tsch-packet.h"
+#include "net/mac/tsch/tsch-schedule.h"
+#include "net/mac/tsch/tsch-slot-operation.h"
 #include "collect-common.h"
 
 #include <stdio.h>
@@ -59,10 +67,23 @@ static int send_active = 1;
 PROCESS(collect_common_process, "collect common process");
 AUTOSTART_PROCESSES(&collect_common_process);
 /*---------------------------------------------------------------------------*/
+struct tsch_asn_t
+get_timesynch_time(void)
+{
+  /*---------tsch_asn_t------------------------
+    uint32_t ls4b; //least significant 4 bytes
+    uint8_t  ms1b; // most significant 1 byte
+  ----------------------------------------- */
+  // struct tsch_asn_t asn = tsch_current_asn;
+  // printf("TSCH: {asn-%x.%lx link-NULL} ", tsch_current_asn.ms1b, tsch_current_asn.ls4b);
+  return tsch_current_asn;
+}
+
 static unsigned long
 get_time(void)
 {
-  return clock_seconds() + time_offset;
+  // return clock_seconds() + time_offset;
+  return clock_seconds();
 }
 /*---------------------------------------------------------------------------*/
 static unsigned long
@@ -86,16 +107,18 @@ collect_common_recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops,
                     uint8_t *payload, uint16_t payload_len)
 {
   unsigned long time;
+  struct tsch_asn_t asn;
   uint16_t data;
   int i;
 
   printf("%u", 8 + payload_len / 2);
   /* Timestamp. Ignore time synch for now. */
-  time = get_time();
+  time=get_time();
   printf(" %lu %lu 0", ((time >> 16) & 0xffff), time & 0xffff);
   /* Ignore latency for now */
+  asn = get_timesynch_time();
   printf(" %u %u %u %u",
-         originator->u8[0] + (originator->u8[1] << 8), seqno, hops, 0);
+         originator->u8[0] + (originator->u8[1] << 8), seqno, hops, asn.ls4b);
   for(i = 0; i < payload_len / 2; i++) {
     memcpy(&data, payload, sizeof(data));
     payload += sizeof(data);

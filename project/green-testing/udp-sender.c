@@ -58,7 +58,7 @@
 #define BEEP_PERIOD 1
 
 #include "cc2538-temp-sensor.h"
-#include "dev/ain0-sensor.h"
+// #include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
@@ -200,6 +200,15 @@ collect_common_send(void)
 
   msg.msg.sensors[5]=parent_rssi;
 
+  struct tsch_asn_t time;
+  time = get_timesynch_time();
+  msg.msg.sensors[7]=(time.ls4b>>16);
+  msg.msg.sensors[8]=(uint16_t)time.ls4b;
+  printf("asn-%lx",time.ls4b);
+  printf("msg[7 %lx .8 %lx]\n", (time.ls4b>>16), (uint16_t)time.ls4b);
+
+
+
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 
@@ -213,11 +222,11 @@ collect_common_send(void)
   //sprintf(string, "sending string %u.\n", ++count);
   //uart1_send_bytes((uint8_t *)string, sizeof(string) - 1);
   //printf("Printf, neig=%d, parentetx=%d, TEMP=%d \n", num_neighbors, parent_etx, ALS_SENSOR);
-  ain0_value=msg.msg.sensors[0];
-  ain1_value=msg.msg.sensors[1];
-  temp_value=msg.msg.sensors[2];
+  // ain0_value=msg.msg.sensors[0];
+  // ain1_value=msg.msg.sensors[1];
+  // temp_value=msg.msg.sensors[2];
 
-  printf("Printf, neig=%d, parentetx=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, ain0_value, ain1_value, temp_value);
+  // printf("Printf, neig=%d, parentetx=%d, ain0=%d,ain1=%d value=%d \n", num_neighbors, parent_etx, ain0_value, ain1_value, temp_value);
   if(dag != NULL)
   {
     printf("dag->joined: %d\n", dag->joined);

@@ -57,6 +57,7 @@ public class SensorDataAggregator implements SensorInfo {
   private int lastNextHop = -1;
   private long shortestPeriod = Long.MAX_VALUE;
   private long longestPeriod = 0;
+  private int latency=0;
 
   public SensorDataAggregator(Node node) {
     this.node = node;
@@ -140,6 +141,8 @@ public class SensorDataAggregator implements SensorInfo {
       for (int i = 0, n = Math.min(VALUES_COUNT, data.getValueCount()); i < n; i++) {
         values[i] += data.getValue(i);
       }
+
+      latency+=data.getValue(LATENCY)-((data.getValue(ASN1)<<16)|data.getValue(ASN2));
 
       if (node.getSensorDataCount() > 1) {
         long timeDiff = data.getNodeTime() - node.getSensorData(node.getSensorDataCount() - 2).getNodeTime();
@@ -249,8 +252,17 @@ public class SensorDataAggregator implements SensorInfo {
   }
 
   public double getAverageLatency() {
-    return getAverageValue(LATENCY) / 4096.0;
+    if(latency==0)
+      return 0;
+    else
+      return latency/dataCount;
   }
+
+  // void setlatency()
+  // {
+  //   // latency+=data.getValue[LATENCY]-((data.getValue[ASN1]<<16)|data.getValue[ASN2]);
+  //   latency+=(data.getValue(ASN1)<<16);
+  // }
 
   public double getAverageHumidity() {
     double v = 0.0;

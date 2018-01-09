@@ -80,6 +80,9 @@ public interface SensorInfo {
   public static final int HUMIDITY = 25;
   public static final int RSSI = 26;
 
+  public static final int ASN1 = 27;
+  public static final int ASN2 = 28;
+
   public static final int VALUES_COUNT = 30;
 
 }

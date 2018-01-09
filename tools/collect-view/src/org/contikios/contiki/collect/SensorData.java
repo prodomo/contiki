@@ -212,8 +212,20 @@ public class SensorData implements SensorInfo {
     return values[RSSI];
   }
 
-  public double getLatency() {
-    return values[LATENCY] / 32678.0;
+  public long getLatency() {
+    int asn1;
+    int asn2;
+    // asn = ((values[ASN1]<<16)| (values[ASN2]));
+    asn1 = values[ASN1];
+    asn2 = values[ASN2];
+    long pkt_asn = ((asn1<<16)|asn2);
+    long rec_asn = values[LATENCY];
+    long latency = rec_asn-pkt_asn;
+    System.out.println("pkt_asn: "+pkt_asn);
+    System.out.println("rec asn "+ values[LATENCY]);
+    // asn=values[LATENCY];
+    // return values[LATENCY] / 32678.0;
+    return latency;
   }
 
   public double getHumidity() {

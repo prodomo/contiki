@@ -129,19 +129,26 @@ public class NodeInfoPanel extends JPanel implements Visualizer, Configurable {
             return node.getSensorDataAggregator().getAverageRtmetric();
           }
         },
-        new TableData("ETX", "Average ETX to Next Hop", Double.class) {
+         new TableData("PDR", "Average pdr of link", Double.class) {
           public Object getValue(Node node) {
-            return node.getSensorDataAggregator().getAverageBestNeighborETX();
+            return 1/(node.getSensorDataAggregator().getAverageBestNeighborETX()/(8*node.getSensorDataAggregator().getAverageValue(SensorData.HOPS)));
           }
         },
-        new TableData("Churn", "Next Hop Change Count", Number.class) {
+        new TableData("Reliability", "Reliability of Node", Double.class) {
           public Object getValue(Node node) {
-            return node.getSensorDataAggregator().getNextHopChangeCount();
+            int pkt_count = node.getSensorDataAggregator().getPacketCount();
+            int loss_count = node.getSensorDataAggregator().getEstimatedLostCount();
+            // return node.getSensorDataAggregator().getPacketCount()/(node.getSensorDataAggregator().getPacketCount()+node.getSensorDataAggregator().getEstimatedLostCount());
+            // return node.getSensorDataAggregator().getPacketCount();
+            if(pkt_count==0)
+              return 0;
+            else
+              return (double)(pkt_count)/(pkt_count+loss_count);
           }
         },
-        new TableData("Beacon Interval", "Average Beacon Interval", Long.class) {
+        new TableData("Latency(ms)", "e2e delay", Double.class) {
           public Object getValue(Node node) {
-            return (long)(node.getSensorDataAggregator().getAverageValue(SensorData.BEACON_INTERVAL) * 1000);
+            return node.getSensorDataAggregator().getAverageLatency()*10;
           }
         },
 
