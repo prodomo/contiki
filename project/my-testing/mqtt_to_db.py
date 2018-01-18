@@ -4,10 +4,12 @@ from datetime import datetime, timedelta
 from collections import OrderedDict
 
 # MQTT Settings 
-MQTT_Broker = "fd00::1"
+# MQTT_Broker = "fd00::1"
+MQTT_Broker = ""
 MQTT_Port = 1883
 Keep_Alive_Interval = 60
-MQTT_Topic = "iot-2/evt/status/fmt/json"
+MQTT_Topic = "#"
+# MQTT_Topic = "iot-2/evt/status/fmt/json"
 
 key_map = OrderedDict({'MAC':0, 'SEQ':1, 'PARENT':2, 'RSSI':3, 'RANK':4, 
            'ETX':5, 'HOPS':6, 'TEMP':7})
@@ -19,9 +21,15 @@ def upload_to_DB(data):
 	cursor = db.cursor()
 	sql= "CREATE TABLE IF NOT EXISTS itri_MOEA_current_sensor ( `sn` INT(11), `position` VARCHAR(80), `mac_addr` VARCHAR(45), `led_status` VARCHAR(45), `pyranometer` INT(11), `int_temperature` FLOAT, `ext_temperature` FLOAT, `battery_volt` FLOAT, datetime DATETIME, `ID` INT(11), PRIMARY KEY(`mac_addr`))"
 	
-	etx = int(data[key_map['ETX']])
-	hops = int(data[key_map['HOPS']])
-	pdr = 1/(etx/(64*hops))
+	etx = 0.0
+	etx += int(data[key_map['ETX']])
+	hops=0.0
+	hops += int(data[key_map['HOPS']])
+	if(etx !=0 and hops !=0):
+		pdr = 0.0
+		pdr += 1.0/(etx/(64*hops))
+	else:
+		pdr=0.0
 	parent = data[key_map['PARENT']].split(':', 6)
 	try:
 		cursor.execute(sql)
@@ -73,8 +81,8 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
 	print "Data: " + msg.payload
-	split_data = msg.payload.split(' ',8)
-	upload_to_DB(split_data)
+	# split_data = msg.payload.split(' ',8)
+	# upload_to_DB(split_data)
 
 
 client = mqtt.Client()

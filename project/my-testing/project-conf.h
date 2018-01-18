@@ -105,8 +105,8 @@
 #undef TSCH_LOG_CONF_LEVEL
 #define TSCH_LOG_CONF_LEVEL 0
 
-// #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14, 18, 22, 26 }
-#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14 }
+#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14, 18, 22, 26 }
+// #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14 }
 
 /* 6TiSCH minimal schedule length.
  * Larger values result in less frequent active slots: reduces capacity and saves energy. */

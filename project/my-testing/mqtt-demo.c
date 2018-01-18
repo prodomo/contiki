@@ -56,6 +56,7 @@
 #include "dev/cc2538-sensors.h"
 
 #include <string.h>
+// #include <math.h>
 
 #if WITH_ORCHESTRA
 #include "orchestra.h"
@@ -137,9 +138,10 @@ static uint8_t state;
 #define DEFAULT_EVENT_TYPE_ID       "status"
 #define DEFAULT_SUBSCRIBE_CMD_TYPE  "+"
 #define DEFAULT_BROKER_PORT         1883
-#define DEFAULT_PUBLISH_INTERVAL    (30 * CLOCK_SECOND)
+#define DEFAULT_PUBLISH_INTERVAL    (PERIOD * CLOCK_SECOND)
 #define DEFAULT_KEEP_ALIVE_TIMER    60
 #define DEFAULT_RSSI_MEAS_INTERVAL  (CLOCK_SECOND * 30)
+static int PERIOD= 30;
 /*---------------------------------------------------------------------------*/
 /* Take a sensor reading on button press */
 #define PUBLISH_TRIGGER &button_sensor
@@ -250,6 +252,27 @@ publish_led_off(void *d)
   leds_off(STATUS_LED);
 }
 /*---------------------------------------------------------------------------*/
+static int
+pow(int num, int ex)
+{
+  int result=1;
+  if(ex > 1)
+  {
+    for(int i=0; i<ex; i++)
+    {
+      result=result*num;
+    }
+  }
+  else if(ex ==1)
+  {
+    result = num;
+  }
+  else
+    result = 1;
+
+  return result;
+}
+/*---------------------------------------------------------------------------*/
 static void
 pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
             uint16_t chunk_len)
@@ -259,25 +282,55 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
   printf("Pub Handler: topic='%s' (len=%u), chunk_len=%u\n", topic, topic_len,
       chunk_len);
   /* If we don't like the length, ignore */
-  if(topic_len != 23 || chunk_len != 1) {
+  //iot-2/cmd/FFFF/fmt/leds or iot-2/cmd/FFFF/fmt/rate
+  if(topic_len < 23 || chunk_len < 1) {
     printf("Incorrect topic or chunk len. Ignored\n");
     return;
   }
 
-  /* If the format != json, ignore */
-  if(strncmp(&topic[topic_len - 4], "json", 4) != 0) {
-    printf("Incorrect format\n");
-  }
-
-  if(strncmp(&topic[10], IP_ADDR, 4) == 0) {
-    if(chunk[0] == '1') {
-      leds_on(LEDS_RED);
-    } else if(chunk[0] == '0') {
-      leds_off(LEDS_RED);
-    }else if(chunk[0]== '2')
+  // /* If the format != json, ignore */
+  // if(strncmp(&topic[topic_len - 4], "json", 4) != 0) {
+  //   printf("Incorrect format\n");
+  // }
+  if(strncmp(&topic[10], IP_ADDR, 4) == 0 || strncmp(&topic[10], "mote", 4) == 0)
+  {
+    printf("is_IP_ADDR or mote\n");
+    //iot-2/cmd/IP_ADDR/fmt/rate
+    if(strncmp(&topic[topic_len - 4], "rate", 4) == 0)
     {
-      leds_toggle(LEDS_RED);
+      int rate =0;
+      int value=0;
+      for(int i=0; i<chunk_len; i++)
+      {
+        value = chunk[chunk_len-i-1]-'0';
+        value = value*pow(10, i);
+        rate += value;
+        // printf("change rate ascii: %d\n", chunk[i]);
+      }
+      // printf("DEFAULT_PUBLISH_INTERVAL %d\n", DEFAULT_PUBLISH_INTERVAL);
+      printf("change rate int %d\n", rate);
+      PERIOD = rate;
+      conf.pub_interval = DEFAULT_PUBLISH_INTERVAL;
+      printf("change period int %d\n", PERIOD);
+      // printf("DEFAULT_PUBLISH_INTERVAL %d\n", DEFAULT_PUBLISH_INTERVAL);
     }
+    //iot-2/cmd/IP_ADDR/fmt/leds
+    else if(strncmp(&topic[topic_len - 4], "leds", 4) == 0)
+    {
+      printf("change leds\n");
+      if(chunk[0] == '1'){
+        leds_on(LEDS_RED);
+      }else if(chunk[0] == '0'){
+        leds_off(LEDS_RED);
+      }else if(chunk[0]== '2'){
+        leds_toggle(LEDS_RED);
+      }
+    }
+    return;
+  }
+  else
+  {
+    printf("not IP_ADDR or mote\n");
     return;
   }
 }
@@ -350,11 +403,11 @@ construct_pub_topic(void)
 static int
 construct_sub_topic(void)
 {
-  int len = snprintf(sub_topic, BUFFER_SIZE, "iot-2/cmd/%s/fmt/json",
-                     IP_ADDR);
-  printf("ip_addr %s\n", IP_ADDR);
-  printf("sub_topic %s\n", sub_topic);
-  printf("len %d\n",len);
+  int len = snprintf(sub_topic, BUFFER_SIZE, "iot-2/cmd/+/fmt/+");
+  // int len = snprintf(sub_topic, BUFFER_SIZE, "iot-2/cmd/%s/fmt/#", IP_ADDR);
+
+  // printf("ip_addr %s\n", IP_ADDR);
+  printf("sub_topic %s \n", sub_topic);
   // linkaddr_node_addr.u8[6], linkaddr_node_addr.u8[7]
   /* len < 0: Error. Len >= BUFFER_SIZE: Buffer too small */
   if(len < 0 || len >= BUFFER_SIZE) {
@@ -450,6 +503,7 @@ subscribe(void)
   mqtt_status_t status;
 
   status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_1);
+  // status1 = mqtt_subscribe(&conn, NULL, sub_topic1, MQTT_QOS_LEVEL_1);
 
   DBG("APP - Subscribing!\n");
   if(status == MQTT_STATUS_OUT_QUEUE_FULL) {

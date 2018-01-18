@@ -35,10 +35,10 @@
 #define WITH_NON_STORING 1 /* Set this to run with non-storing mode */
 #endif /* WITH_NON_STORING */
 
-/* Set to run orchestra */
-#ifndef WITH_ORCHESTRA
-#define WITH_ORCHESTRA 1
-#endif /* WITH_ORCHESTRA */
+// /* Set to run orchestra */
+// #ifndef WITH_ORCHESTRA
+// #define WITH_ORCHESTRA 1
+// #endif /* WITH_ORCHESTRA */
 
 #if WITH_NON_STORING
 #undef RPL_NS_CONF_LINK_NUM
@@ -130,8 +130,8 @@
 #undef TSCH_LOG_CONF_LEVEL
 #define TSCH_LOG_CONF_LEVEL 0
 
-// #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14, 18, 22, 26 }
-#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14 }
+#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14, 18, 22, 26 }
+// #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14 }
 
 /* 6TiSCH minimal schedule length.
  * Larger values result in less frequent active slots: reduces capacity and saves energy. */
@@ -145,7 +145,7 @@
 #undef TSCH_CONF_JOIN_MY_PANID_ONLY
 #define TSCH_CONF_JOIN_MY_PANID_ONLY 1
 
-/* Adaptive timesync */
+ Adaptive timesync 
 #undef TSCH_CONF_ADAPTIVE_TIMESYNC
 #define TSCH_CONF_ADAPTIVE_TIMESYNC 1
 

@@ -5,7 +5,7 @@ all: mqtt-demo
 CONTIKI_WITH_IPV6 = 1
 
 APPS += mqtt
-# APPS += collect-view
+APPS += collect-view
 APPS += orchestra
 MODULES += core/net/mac/tsch
 

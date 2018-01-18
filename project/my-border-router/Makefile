@@ -9,12 +9,12 @@ SMALL=1
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 PROJECT_SOURCEFILES += slip-bridge.c
 
-MODULES += core/net/mac/tsch
-APPS += orchestra
+# MODULES += core/net/mac/tsch
+# APPS += orchestra
 
-ifeq ($(MAKE_WITH_ORCHESTRA),1)
-CFLAGS += -DWITH_ORCHESTRA=1
-endif
+# ifeq ($(MAKE_WITH_ORCHESTRA),1)
+# CFLAGS += -DWITH_ORCHESTRA=1
+# endif
 
 #Simple built-in webserver is the default.
 #Override with make WITH_WEBSERVER=0 for no webserver.
@@ -32,7 +32,7 @@ ifeq ($(MAKE_WITH_NON_STORING),1)
 CFLAGS += -DWITH_NON_STORING=1
 endif
 
-WITH_WEBSERVER=1
+WITH_WEBSERVER=0
 ifeq ($(WITH_WEBSERVER),1)
 CFLAGS += -DUIP_CONF_TCP=1
 CFLAGS += -DWEBSERVER=1
