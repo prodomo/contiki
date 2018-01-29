@@ -54,6 +54,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif
+
 #define DEBUG DEBUG_NONE
 #include "net/ip/uip-debug.h"
 
@@ -61,14 +65,15 @@ static uip_ipaddr_t prefix;
 static uint8_t prefix_set;
 
 PROCESS(border_router_process, "Border router process");
+PROCESS(node_process, "RPL node");
 
 #if WEBSERVER==0
 /* No webserver */
-AUTOSTART_PROCESSES(&border_router_process);
+AUTOSTART_PROCESSES(&border_router_process, &node_process);
 #elif WEBSERVER>1
 /* Use an external webserver application */
 #include "webserver-nogui.h"
-AUTOSTART_PROCESSES(&border_router_process,&webserver_nogui_process);
+AUTOSTART_PROCESSES(&border_router_process,&webserver_nogui_process, &node_process);
 #else
 /* Use simple webserver with only one page for minimum footprint.
  * Multiple connections can result in interleaved tcp segments since
