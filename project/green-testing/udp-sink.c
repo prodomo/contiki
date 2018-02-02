@@ -58,6 +58,7 @@
 #define UDP_SERVER_PORT 5688
 
 static struct uip_udp_conn *server_conn;
+static uip_ipaddr_t client_ipaddr;
 
 PROCESS(udp_server_process, "UDP server process");
 AUTOSTART_PROCESSES(&udp_server_process,&collect_common_process);
@@ -77,6 +78,55 @@ void
 collect_common_send(void)
 {
   /* Server never sends */
+}
+void
+collect_special_send(void)
+{
+  /* Server never sends */
+  static uint8_t seqno;
+  if(server_conn == NULL) {
+    /* Not setup yet */
+    return;
+  }
+  rpl_dag_t *dag;
+  dag = rpl_get_any_dag();
+  if(dag != NULL)
+  {
+    printf("dag->joined: %d\n", dag->joined);
+  }
+  else
+  {
+    printf("dag is NULL\n");
+  }
+
+  PRINTF("DATA common send\n");
+  PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
+  printf("\n-----------------------\n");
+  printf("send pkt to:");
+  PRINT6ADDR(&server_conn->ripaddr);
+  printf("\n-----------------------\n");
+  uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
+  
+  printf("client_ipaddr1:");
+  PRINT6ADDR(&client_ipaddr);
+  client_ipaddr.u8[0]=0xfe;
+  client_ipaddr.u8[1]=0x80;
+  client_ipaddr.u8[8]=0x02;
+  client_ipaddr.u8[9]=0x12;
+  client_ipaddr.u8[10]=0x4b;
+  client_ipaddr.u8[11]=0x00;
+  client_ipaddr.u8[12]=0x06;
+  client_ipaddr.u8[13]=0x15;
+  client_ipaddr.u8[14]=0xa6;
+  client_ipaddr.u8[15]=0x42;
+  printf("\n-----------------------\n");
+  printf("client_ipaddr2:");
+  PRINT6ADDR(&client_ipaddr);
+  printf("\n-----------------------\n");
+  uip_udp_packet_sendto(server_conn, "Reply", sizeof("Reply"),
+                      &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
+  leds_toggle(LEDS_RED);
+
 }
 /*---------------------------------------------------------------------------*/
 void

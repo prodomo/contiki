@@ -119,8 +119,17 @@ static void
 tcpip_handler(void)
 {
   if(uip_newdata()) {
+    uint8_t *appdata;
+    appdata = (uint8_t *)uip_appdata;
+    printf("%u\n", appdata);
+    leds_toggle(LEDS_RED);
     /* Ignore incoming data */
   }
+}
+void
+collect_special_send(void)
+{
+  /* Server never sends */
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -208,7 +217,7 @@ collect_common_send(void)
   printf("msg[7 %lx .8 %lx]\n", (time.ls4b>>16), (uint16_t)time.ls4b);
 
 
-
+  printf("send packet\n");
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 
@@ -216,7 +225,7 @@ collect_common_send(void)
   //leds_arch_set(7);
   //leds_toggle(LEDS_MY_GREEN);
   //leds_toggle(LEDS_YELLOW);
-  leds_toggle(LEDS_GREEN);
+  // leds_toggle(LEDS_GREEN);
   //fade(LEDS_YELLOW);
   //fade(LEDS_GREEN);
   //sprintf(string, "sending string %u.\n", ++count);

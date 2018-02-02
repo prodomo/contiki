@@ -56,10 +56,13 @@
 
 static unsigned long time_offset;
 static int send_active = 1;
+static int send_command = 1;
+
+#define COMMAND_PERIOD 10
 
 #ifndef PERIOD
 // #define PERIOD 20
-#define PERIOD 20
+#define PERIOD 6
 #endif
 #define RANDWAIT (PERIOD)
 
@@ -130,49 +133,56 @@ collect_common_recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops,
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(collect_common_process, ev, data)
 {
-  static struct etimer period_timer, wait_timer;
+  static struct etimer period_timer, wait_timer, command_timer;
   PROCESS_BEGIN();
 
   collect_common_net_init();
 
   /* Send a packet every 60-62 seconds. */
   etimer_set(&period_timer, CLOCK_SECOND * PERIOD);
+  etimer_set(&command_timer, CLOCK_SECOND * COMMAND_PERIOD);
   while(1) {
     PROCESS_WAIT_EVENT();
     if(ev == serial_line_event_message) {
       char *line;
       line = (char *)data;
-      if(strncmp(line, "collect", 7) == 0 ||
-         strncmp(line, "gw", 2) == 0) {
-        collect_common_set_sink();
-      } else if(strncmp(line, "net", 3) == 0) {
-        collect_common_net_print();
-      } else if(strncmp(line, "time ", 5) == 0) {
-        unsigned long tmp;
-        line += 6;
-        while(*line == ' ') {
-          line++;
-        }
-        tmp = strtolong(line);
-        time_offset = clock_seconds() - tmp;
-        printf("Time offset set to %lu\n", time_offset);
-      } else if(strncmp(line, "mac ", 4) == 0) {
-        line +=4;
-        while(*line == ' ') {
-          line++;
-        }
-        if(*line == '0') {
-          NETSTACK_RDC.off(1);
-          printf("mac: turned MAC off (keeping radio on): %s\n",
-                 NETSTACK_RDC.name);
-        } else {
-          NETSTACK_RDC.on();
-          printf("mac: turned MAC on: %s\n", NETSTACK_RDC.name);
-        }
+      printf("rev command:%s\n", line);
+      if(strncmp(line, "send", 4)==0)
+      {
+        // send_command=1;
+        printf("recv send command\n");
 
-      } else if(strncmp(line, "~K", 2) == 0 ||
-                strncmp(line, "killall", 7) == 0) {
-        /* Ignore stop commands */
+      // if(strncmp(line, "collect", 7) == 0 ||
+      //    strncmp(line, "gw", 2) == 0) {
+      //   collect_common_set_sink();
+      // } else if(strncmp(line, "net", 3) == 0) {
+      //   collect_common_net_print();
+      // } else if(strncmp(line, "time ", 5) == 0) {
+      //   unsigned long tmp;
+      //   line += 6;
+      //   while(*line == ' ') {
+      //     line++;
+      //   }
+      //   tmp = strtolong(line);
+      //   time_offset = clock_seconds() - tmp;
+      //   printf("Time offset set to %lu\n", time_offset);
+      // } else if(strncmp(line, "mac ", 4) == 0) {
+      //   line +=4;
+      //   while(*line == ' ') {
+      //     line++;
+      //   }
+      //   if(*line == '0') {
+      //     NETSTACK_RDC.off(1);
+      //     printf("mac: turned MAC off (keeping radio on): %s\n",
+      //            NETSTACK_RDC.name);
+      //   } else {
+      //     NETSTACK_RDC.on();
+      //     printf("mac: turned MAC on: %s\n", NETSTACK_RDC.name);
+      //   }
+
+      // } else if(strncmp(line, "~K", 2) == 0 ||
+      //           strncmp(line, "killall", 7) == 0) {
+      //   /* Ignore stop commands */
       } else {
         printf("unhandled command: %s\n", line);
       }
@@ -186,7 +196,15 @@ PROCESS_THREAD(collect_common_process, ev, data)
           /* Time to send the data */
           collect_common_send();
         }
-      }
+      }else if(data == &command_timer){
+        printf("command_timer timeup");
+        etimer_reset(&command_timer);
+        if(send_command){
+            printf("send_command = 1 \n");
+            collect_special_send();
+            // send_command = 0;
+          }
+        }
     }
   }
 
