@@ -35,6 +35,24 @@
 #ifndef __PROJECT_CONF_H__
 #define __PROJECT_CONF_H__
 
+
+/*******************************************************/
+/********* White Testing *****************/
+/*******************************************************/
+#define RPL_WITH_NON_STORING 1
+#define WITH_NON_STORING 1
+
+/* Turn of DAO ACK to make code smaller */
+#undef RPL_CONF_WITH_DAO_ACK
+#define RPL_CONF_WITH_DAO_ACK          0
+
+#undef RPL_CONF_OF
+#define RPL_CONF_OF                    rpl_of0
+
+/*******************************************************/
+/*********************    End      *********************/
+/*******************************************************/
+
 /* Set to run orchestra */
 #ifndef WITH_ORCHESTRA
 #define WITH_ORCHESTRA 0
@@ -44,6 +62,17 @@
 #ifndef WITH_SECURITY
 #define WITH_SECURITY 0
 #endif /* WITH_SECURITY */
+
+/* IP buffer size must match all other hops, in particular the border router. */
+#undef UIP_CONF_BUFFER_SIZE
+#define UIP_CONF_BUFFER_SIZE           1280
+
+#undef NETSTACK_CONF_RDC
+#define NETSTACK_CONF_RDC              nullrdc_driver
+
+#undef RPL_CONF_MAX_DAG_PER_INSTANCE
+#define RPL_CONF_MAX_DAG_PER_INSTANCE     1
+
 
 /*******************************************************/
 /********* Enable RPL non-storing mode *****************/
@@ -184,5 +213,7 @@
 #if CONTIKI_TARGET_COOJA
 #define COOJA_CONF_SIMULATE_TURNAROUND 0
 #endif /* CONTIKI_TARGET_COOJA */
+
+#include "../00-common/tsch-project-conf.h"
 
 #endif /* __PROJECT_CONF_H__ */

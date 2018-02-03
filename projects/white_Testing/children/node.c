@@ -46,6 +46,8 @@
 #include "orchestra.h"
 #endif /* WITH_ORCHESTRA */
 
+#define WHITE_DEBUG 1
+
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
 
@@ -53,6 +55,8 @@
 #if CONFIG_VIA_BUTTON
 #include "button-sensor.h"
 #endif /* CONFIG_VIA_BUTTON */
+
+
 
 /*---------------------------------------------------------------------------*/
 PROCESS(node_process, "RPL Node");
@@ -159,6 +163,8 @@ net_init(uip_ipaddr_t *br_prefix)
   NETSTACK_MAC.on();
 }
 /*---------------------------------------------------------------------------*/
+
+#if WHITE_DEBUG
 PROCESS_THREAD(node_process, ev, data)
 {
   static struct etimer et;
@@ -251,4 +257,22 @@ PROCESS_THREAD(node_process, ev, data)
 
   PROCESS_END();
 }
+#endif
+
+#if !WHITE_DEBUG
+PROCESS_THREAD(node_process, ev, data)
+{
+  static struct etimer etaa;
+  PROCESS_BEGIN();
+
+  etimer_set(&etaa, CLOCK_SECOND * 60);
+  while(1) {
+    PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
+    etimer_reset(&etaa);
+    print_network_status();
+  }
+
+  PROCESS_END();
+}
+#endif
 /*---------------------------------------------------------------------------*/

@@ -49,6 +49,8 @@
 #include "dev/button-sensor.h"
 #include "dev/slip.h"
 
+#include "dev/leds.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -427,7 +429,7 @@ PROCESS_THREAD(border_router_process, ev, data)
      cpu will interfere with establishing the SLIP connection */
   NETSTACK_MAC.off(1);
 #endif
-
+  leds_toggle(LEDS_GREEN);
   /* Request prefix until it has been received */
   while(!prefix_set) {
     etimer_set(&et, CLOCK_SECOND);
@@ -459,3 +461,18 @@ PROCESS_THREAD(border_router_process, ev, data)
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+
+PROCESS_THREAD(node_process, ev, data)
+{
+  static struct etimer etaa;
+  PROCESS_BEGIN();
+
+  etimer_set(&etaa, CLOCK_SECOND * 60);
+  while(1) {
+    PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
+    etimer_reset(&etaa);
+    /* print_network_status();  */
+  }
+
+  PROCESS_END();
+}

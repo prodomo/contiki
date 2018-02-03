@@ -49,6 +49,8 @@
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
 
+#define WHITE_DEBUG 0
+
 #define CONFIG_VIA_BUTTON PLATFORM_HAS_BUTTON
 #if CONFIG_VIA_BUTTON
 #include "button-sensor.h"
@@ -159,6 +161,24 @@ net_init(uip_ipaddr_t *br_prefix)
   NETSTACK_MAC.on();
 }
 /*---------------------------------------------------------------------------*/
+
+PROCESS_THREAD(node_process, ev, data)
+{
+  static struct etimer etaa;
+  PROCESS_BEGIN();
+
+  etimer_set(&etaa, CLOCK_SECOND * 60);
+  while(1) {
+    PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
+    etimer_reset(&etaa);
+    print_network_status();
+  }
+
+  PROCESS_END();
+}
+
+
+#if WHITE_DEBUG
 PROCESS_THREAD(node_process, ev, data)
 {
   static struct etimer et;
@@ -251,4 +271,22 @@ PROCESS_THREAD(node_process, ev, data)
 
   PROCESS_END();
 }
+#endif
+
+
+PROCESS_THREAD(node_process, ev, data)
+{
+  static struct etimer etaa;
+  PROCESS_BEGIN();
+
+  etimer_set(&etaa, CLOCK_SECOND * 60);
+  while(1) {
+    PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
+    etimer_reset(&etaa);
+    print_network_status();
+  }
+
+  PROCESS_END();
+}
+
 /*---------------------------------------------------------------------------*/
