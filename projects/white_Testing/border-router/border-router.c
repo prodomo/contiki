@@ -49,6 +49,7 @@
 #include "dev/button-sensor.h"
 #include "dev/slip.h"
 
+
 #include "dev/leds.h"
 
 #include <stdio.h>
@@ -67,7 +68,7 @@ static uip_ipaddr_t prefix;
 static uint8_t prefix_set;
 
 PROCESS(border_router_process, "Border router process");
-PROCESS(node_process, "RPL node");
+PROCESS(node_process, "RPL Node");
 
 #if WEBSERVER==0
 /* No webserver */
@@ -112,7 +113,7 @@ PROCESS_THREAD(webserver_nogui_process, ev, data)
 
   PROCESS_END();
 }
-AUTOSTART_PROCESSES(&border_router_process,&webserver_nogui_process);
+AUTOSTART_PROCESSES(&border_router_process,&webserver_nogui_process, &node_process);
 
 static const char *TOP = "<html><head><title>ContikiRPL</title></head><body>\n";
 static const char *BOTTOM = "</body></html>\n";
