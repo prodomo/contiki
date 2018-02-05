@@ -49,8 +49,6 @@
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
 
-#define WHITE_DEBUG 0
-
 #define CONFIG_VIA_BUTTON PLATFORM_HAS_BUTTON
 #if CONFIG_VIA_BUTTON
 #include "button-sensor.h"
