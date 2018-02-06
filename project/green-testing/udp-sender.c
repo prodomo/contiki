@@ -121,13 +121,14 @@ tcpip_handler(void)
   if(uip_newdata()) {
     uint8_t *appdata;
     appdata = (uint8_t *)uip_appdata;
-    printf("%u\n", appdata);
+    printf("--------------------recv data-----------------\n");
+    printf("%s\n", appdata);
     leds_toggle(LEDS_RED);
     /* Ignore incoming data */
   }
 }
 void
-collect_special_send(void)
+collect_special_send(char* data)
 {
   /* Server never sends */
 }

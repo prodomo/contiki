@@ -46,7 +46,7 @@ void collect_common_net_init(void);
 void collect_common_net_print(void);
 void collect_common_set_sink(void);
 void collect_common_send(void);
-void collect_special_send(void);
+void collect_special_send(char* data);
 void collect_common_recv(const linkaddr_t *originator, uint8_t seqno,
                          uint8_t hops,
                          uint8_t *payload,

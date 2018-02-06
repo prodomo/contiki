@@ -56,13 +56,15 @@
 
 static unsigned long time_offset;
 static int send_active = 1;
-static int send_command = 1;
+static int send_command = 0;
+static int recv_counter =0;
+static char* command_data;
 
 #define COMMAND_PERIOD 10
 
 #ifndef PERIOD
 // #define PERIOD 20
-#define PERIOD 6
+#define PERIOD 1
 #endif
 #define RANDWAIT (PERIOD)
 
@@ -146,11 +148,16 @@ PROCESS_THREAD(collect_common_process, ev, data)
     if(ev == serial_line_event_message) {
       char *line;
       line = (char *)data;
-      printf("rev command:%s\n", line);
+      printf("--------------rev command------------:%s\n", line);
       if(strncmp(line, "send", 4)==0)
       {
-        // send_command=1;
-        printf("recv send command\n");
+        send_command=1;
+        recv_counter++;
+        command_data = malloc(strlen(line) + 1);
+        strcpy(command_data, line);
+        printf("recv_counter: %d\n", recv_counter);
+        printf("command_data: %s\n", command_data);
+        printf("-----------recv send command-----------\n");
 
       // if(strncmp(line, "collect", 7) == 0 ||
       //    strncmp(line, "gw", 2) == 0) {
@@ -199,10 +206,11 @@ PROCESS_THREAD(collect_common_process, ev, data)
       }else if(data == &command_timer){
         printf("command_timer timeup");
         etimer_reset(&command_timer);
-        if(send_command){
+        if(send_command==1){
             printf("send_command = 1 \n");
-            collect_special_send();
-            // send_command = 0;
+            collect_special_send(command_data);
+            free(command_data);
+            send_command = 0;
           }
         }
     }

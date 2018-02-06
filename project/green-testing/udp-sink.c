@@ -46,6 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <string.h>
 #include "collect-common.h"
 #include "collect-view.h"
 
@@ -79,16 +80,42 @@ collect_common_send(void)
 {
   /* Server never sends */
 }
+/*---------------------------------------------------------------------------*/
+uint8_t
+ascii_to_uint(char c)
+{
+  uint8_t result;
+  uint8_t temp;
+  temp = (uint8_t)c;
+  if(temp<58)
+    result = temp-'0';
+  else if(temp<71 && temp>64)
+    result = temp-'7';
+  else if(temp<103  && temp>96)
+    result = temp-'W';
+  else
+    result=temp;
+
+  return result;
+}
+/*---------------------------------------------------------------------------*/
 void
-collect_special_send(void)
+collect_special_send(char* data)
 {
   /* Server never sends */
   static uint8_t seqno;
+  rpl_dag_t *dag;
+  char* split;
+  char temp[20][20];
+  int count=0;
+  uint8_t  dst_u8[2];
+
+  PRINTF("%s\n", data);
   if(server_conn == NULL) {
     /* Not setup yet */
     return;
   }
-  rpl_dag_t *dag;
+
   dag = rpl_get_any_dag();
   if(dag != NULL)
   {
@@ -107,8 +134,31 @@ collect_special_send(void)
   printf("\n-----------------------\n");
   uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
   
-  printf("client_ipaddr1:");
-  PRINT6ADDR(&client_ipaddr);
+  /* assume command="send macaddr msg" */
+  split = strtok (data," ,.-");
+  while (split != NULL)
+  {
+    printf ("%s %d\n",split, strlen(split));
+    strcpy(temp[count], split);
+    count++;
+    split = strtok (NULL, " ,.-");
+  }
+  for(int i=0; i<count; i++)
+    printf("temp %d %s %d\n",i , temp[i], strlen(temp[i]));
+
+  
+  /* assume temp[1] is mac addr */
+  /* ascii -> uint8 */
+  dst_u8[0] =ascii_to_uint(temp[1][0])<<4;
+  dst_u8[0] += ascii_to_uint(temp[1][1]);
+
+  dst_u8[1] = ascii_to_uint(temp[1][2])<<4;
+  dst_u8[1] += ascii_to_uint(temp[1][3]);
+  
+  printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
+
+ 
+  /* destnation ipv6 address */
   client_ipaddr.u8[0]=0xfe;
   client_ipaddr.u8[1]=0x80;
   client_ipaddr.u8[8]=0x02;
@@ -116,16 +166,17 @@ collect_special_send(void)
   client_ipaddr.u8[10]=0x4b;
   client_ipaddr.u8[11]=0x00;
   client_ipaddr.u8[12]=0x06;
-  client_ipaddr.u8[13]=0x15;
-  client_ipaddr.u8[14]=0xa6;
-  client_ipaddr.u8[15]=0x42;
+  client_ipaddr.u8[13]=0x0d; //openMote
+  // client_ipaddr.u8[13]=0x15; //ITRI_Mote
+  client_ipaddr.u8[14]=dst_u8[0];
+  client_ipaddr.u8[15]=dst_u8[1];
   printf("\n-----------------------\n");
   printf("client_ipaddr2:");
   PRINT6ADDR(&client_ipaddr);
-  printf("\n-----------------------\n");
-  uip_udp_packet_sendto(server_conn, "Reply", sizeof("Reply"),
-                      &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
-  leds_toggle(LEDS_RED);
+  // printf("\n-----------------------\n");
+  // uip_udp_packet_sendto(server_conn, "Reply", sizeof("Reply"),
+  //                     &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
+  // leds_toggle(LEDS_RED);
 
 }
 /*---------------------------------------------------------------------------*/
