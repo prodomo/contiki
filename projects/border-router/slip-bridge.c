@@ -45,8 +45,9 @@
 #include <string.h>
 
 #define UIP_IP_BUF        ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
+#define UIP_UDP_BUF       ((struct uip_udp_hdr *)&uip_buf[UIP_LLIPH_LEN])
 
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_FULL
 #include "net/ip/uip-debug.h"
 
 void set_prefix_64(uip_ipaddr_t *);
@@ -100,6 +101,10 @@ init(void)
   slip_set_input_callback(slip_input_callback);
 }
 /*---------------------------------------------------------------------------*/
+
+#include "core/net/mac/tsch/tsch-private.h"
+extern struct tsch_asn_t tsch_current_asn;
+
 static int
 output(void)
 {
@@ -112,6 +117,48 @@ output(void)
     PRINT6ADDR(&UIP_IP_BUF->destipaddr);
     PRINTF("\n");
   } else {
+    PRINTF("Got things to send to PC\n");
+    PRINTF(" dst=");
+    PRINT6ADDR(&UIP_IP_BUF->destipaddr);
+    PRINTF("\n");
+    PRINTF("packet length: %d \n", UIP_IP_BUF->len[1]);
+
+    uint8_t ndx;
+    
+
+    uint8_t ip_payload_length = UIP_IP_BUF->len[1];
+    uint8_t coap_packet_start_location = UIP_IPH_LEN + ip_payload_length - 40;  //42 is coap payload length
+
+    for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
+        uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
+        PRINTF("%02x", data);
+      }
+      PRINTF("\n");
+
+    uint8_t flag1 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location];
+    uint8_t flag2 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 1];
+    
+    if(flag1 == 0x54 && flag2 == 0x66){
+      PRINTF("Found flag: %02x %02x\n", flag1, flag2);  
+      // tsch_current_asn.ls4b
+
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8] = tsch_current_asn.ls4b & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9] = (tsch_current_asn.ls4b >> 8) & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10] = (tsch_current_asn.ls4b >> 16) & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11] = (tsch_current_asn.ls4b >> 24) & 0xff;
+
+      // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
+
+
+      UIP_UDP_BUF->udpchksum = 0;
+      uint16_t new_udp_checksum = ~(uip_udpchksum());
+      UIP_UDP_BUF->udpchksum = new_udp_checksum;
+
+      PRINTF("new checksum: %04x\n", new_udp_checksum);
+    }
+    
+
+
  //   PRINTF("SUT: %u\n", uip_len);
     slip_send();
   }
@@ -129,7 +176,7 @@ putchar(int c)
 
   if(!debug_frame) {            /* Start of debug output */
     slip_arch_writeb(SLIP_END);
-    slip_arch_writeb('\r');     /* Type debug line == '\r' */
+    slip_arch_writeb('\t');     /* Type debug line == '\r' */
     debug_frame = 1;
   }
 

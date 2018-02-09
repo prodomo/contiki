@@ -36,24 +36,26 @@
  * \author Simon Duquennoy <simonduq@sics.se>
  */
 
-#include "contiki.h"
-#include "node-id.h"
-#include "net/rpl/rpl.h"
-#include "net/ipv6/uip-ds6-route.h"
-#include "net/mac/tsch/tsch.h"
-#include "net/rpl/rpl-private.h"
-
-
-/* add header file by defore. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "contiki.h"
 #include "contiki-net.h"
-#include "net/rpl/rpl.h"
+#include "rest-engine.h"
 
+#include "net/rpl/rpl.h"
+#include "net/rpl/rpl-private.h"
 #if RPL_WITH_NON_STORING
 #include "net/rpl/rpl-ns.h"
 #endif /* RPL_WITH_NON_STORING */
+
+#if PLATFORM_HAS_BUTTON
+#include "dev/button-sensor.h"
+#endif
+
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif
 
 #define DEBUG 1
 #if DEBUG
@@ -69,37 +71,73 @@
 
 #include "dev/leds.h"
 
-/* end */
-
-
-#if WITH_ORCHESTRA
-#include "orchestra.h"
-#endif /* WITH_ORCHESTRA */
-
-#define WHITE_DEBUG 1
-
-#define DEBUG DEBUG_PRINT
-#include "net/ip/uip-debug.h"
-
-#define CONFIG_VIA_BUTTON PLATFORM_HAS_BUTTON
-#if CONFIG_VIA_BUTTON
-#include "button-sensor.h"
-#endif /* CONFIG_VIA_BUTTON */
-
-
+extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect;
+// extern resource_t res_push;
+// extern resource_t res_toggle;
+// extern resource_t res_collect;
+// extern resource_t res_bcollect;
 
 /*---------------------------------------------------------------------------*/
 //PROCESS(nodeRPL_process, "Node RPL Service");
 
-
+PROCESS(er_example_server, "Erbium Example Server");
 PROCESS(node_process, "RPL Node");
-#if CONFIG_VIA_BUTTON
-AUTOSTART_PROCESSES(&node_process, &sensors_process);
-#else /* CONFIG_VIA_BUTTON */
-AUTOSTART_PROCESSES(&node_process);
-#endif /* CONFIG_VIA_BUTTON */
+AUTOSTART_PROCESSES(&er_example_server, &node_process);
+
+PROCESS_THREAD(er_example_server, ev, data)
+{
+  PROCESS_BEGIN();
+
+  PROCESS_PAUSE();
+
+  PRINTF("Starting Erbium Example Server\n");
+  leds_toggle(LEDS_GREEN);
+#ifdef RF_CHANNEL
+  PRINTF("RF channel: %u\n", RF_CHANNEL);
+#endif
+#ifdef IEEE802154_PANID
+  PRINTF("PAN ID: 0x%04X\n", IEEE802154_PANID);
+#endif
+
+  PRINTF("uIP buffer: %u\n", UIP_BUFSIZE);
+  PRINTF("LL header: %u\n", UIP_LLH_LEN);
+  PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
+  PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
+
+  /* Initialize the REST engine. */
+  rest_init_engine();
+
+  /*
+   * Bind the resources to their Uri-Path.
+   * WARNING: Activating twice only means alternate path, not two instances!
+   * All static variables are the same for each URI path.
+   */
+  rest_activate_resource(&res_hello, "test/hello");
+  rest_activate_resource(&res_push, "test/push");
+  rest_activate_resource(&res_toggle, "actuators/toggle");
+  rest_activate_resource(&res_collect, "g/collect");
+  rest_activate_resource(&res_bcollect, "g/bcollect");
+
+#if PLATFORM_HAS_LEDS
+ 
+#endif
+
+#if WITH_ORCHESTRA
+  orchestra_init();
+#endif
+  /* Define application-specific events here. */
+  while(1) {
+    PROCESS_WAIT_EVENT();
+  } 
+
+  PROCESS_END();
+}
 
 /*---------------------------------------------------------------------------*/
+
+#include "core/net/mac/tsch/tsch-private.h"
+extern struct tsch_asn_t tsch_current_asn;
+
 static void
 print_network_status(void)
 {
@@ -177,153 +215,9 @@ print_network_status(void)
 
   PRINTF("----------------------\n");
 }
-/*---------------------------------------------------------------------------*/
-static void
-net_init(uip_ipaddr_t *br_prefix)
-{
-  uip_ipaddr_t global_ipaddr;
 
-  if(br_prefix) { /* We are RPL root. Will be set automatically
-                     as TSCH pan coordinator via the tsch-rpl module */
-    memcpy(&global_ipaddr, br_prefix, 16);
-    uip_ds6_set_addr_iid(&global_ipaddr, &uip_lladdr);
-    uip_ds6_addr_add(&global_ipaddr, 0, ADDR_AUTOCONF);
-    rpl_set_root(RPL_DEFAULT_INSTANCE, &global_ipaddr);
-    rpl_set_prefix(rpl_get_any_dag(), br_prefix, 64);
-    rpl_repair_root(RPL_DEFAULT_INSTANCE);
-  }
-
-  NETSTACK_MAC.on();
-}
 /*---------------------------------------------------------------------------*/
 
-#if WHITE_DEBUG
-PROCESS_THREAD(node_process, ev, data)
-{
-  static struct etimer et;
-  PROCESS_BEGIN();
-
-  /* 3 possible roles:
-   * - role_6ln: simple node, will join any network, secured or not
-   * - role_6dr: DAG root, will advertise (unsecured) beacons
-   * - role_6dr_sec: DAG root, will advertise secured beacons
-   * */
-  static int is_coordinator = 0;
-  static enum { role_6ln, role_6dr, role_6dr_sec } node_role;
-  node_role = role_6ln;
-
-  int coordinator_candidate = 0;
-
-#ifdef CONTIKI_TARGET_Z1
-  /* Set node with MAC address c1:0c:00:00:00:00:01 as coordinator,
-   * convenient in cooja for regression tests using z1 nodes
-   * */
-  extern unsigned char node_mac[8];
-  unsigned char coordinator_mac[8] = { 0xc1, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
-
-  coordinator_candidate = (memcmp(node_mac, coordinator_mac, 8) == 0);
-#elif CONTIKI_TARGET_COOJA
-  coordinator_candidate = (node_id == 1);
-#endif
-
-  if(coordinator_candidate) {
-    if(LLSEC802154_ENABLED) {
-      node_role = role_6dr_sec;
-    } else {
-      node_role = role_6dr;
-    }
-  } else {
-    node_role = role_6ln;
-  }
-
-#if CONFIG_VIA_BUTTON
-  {
-#define CONFIG_WAIT_TIME 5
-
-    SENSORS_ACTIVATE(button_sensor);
-    etimer_set(&et, CLOCK_SECOND * CONFIG_WAIT_TIME);
-
-    while(!etimer_expired(&et)) {
-      printf("Init: current role: %s. Will start in %u seconds. Press user button to toggle mode.\n",
-             node_role == role_6ln ? "6ln" : (node_role == role_6dr) ? "6dr" : "6dr-sec",
-             CONFIG_WAIT_TIME);
-      PROCESS_WAIT_EVENT_UNTIL(((ev == sensors_event) &&
-                                (data == &button_sensor) && button_sensor.value(0) > 0)
-                               || etimer_expired(&et));
-      if(ev == sensors_event && data == &button_sensor && button_sensor.value(0) > 0) {
-        node_role = (node_role + 1) % 3;
-        if(LLSEC802154_ENABLED == 0 && node_role == role_6dr_sec) {
-          node_role = (node_role + 1) % 3;
-        }
-        etimer_restart(&et);
-      }
-    }
-  }
-
-#endif /* CONFIG_VIA_BUTTON */
-
-  printf("Init: node starting with role %s\n",
-         node_role == role_6ln ? "6ln" : (node_role == role_6dr) ? "6dr" : "6dr-sec");
-
-  tsch_set_pan_secured(LLSEC802154_ENABLED && (node_role == role_6dr_sec));
-  is_coordinator = node_role > role_6ln;
-
-  if(is_coordinator) {
-    uip_ipaddr_t prefix;
-    uip_ip6addr(&prefix, UIP_DS6_DEFAULT_PREFIX, 0, 0, 0, 0, 0, 0, 0);
-    net_init(&prefix);
-  } else {
-    net_init(NULL);
-  }
-
-#if WITH_ORCHESTRA
-  orchestra_init();
-#endif /* WITH_ORCHESTRA */
-
-  /* Print out routing tables every minute */
-  etimer_set(&et, CLOCK_SECOND * 60);
-  while(1) {
-    print_network_status();
-    PROCESS_YIELD_UNTIL(etimer_expired(&et));
-    etimer_reset(&et);
-  }
-
-  PROCESS_END();
-}
-#endif
-
-#if !WHITE_DEBUG
-PROCESS_THREAD(node_process, ev, data)
-{
-  PROCESS_BEGIN();
-  PROCESS_PAUSE();
-
-  PRINTF("Starting Erbium Example Server\n");
-  leds_toggle(LEDS_GREEN);
-
-  #if WITH_ORCHESTRA
-    orchestra_init();
-  #endif
-
-  while(1) {
-    PROCESS_WAIT_EVENT();
-  }
-
-  /* Print out routing tables every minute */
-  etimer_set(&et, CLOCK_SECOND * 60);
-  while(1) {
-    print_network_status();
-    PROCESS_YIELD_UNTIL(etimer_expired(&et));
-    etimer_reset(&et);
-  }
-
-  PROCESS_END();
-}
-
-
-
-
-#if WHITE_DEBUG
 PROCESS_THREAD(node_process, ev, data)
 {
   static struct etimer etaa;
@@ -338,7 +232,5 @@ PROCESS_THREAD(node_process, ev, data)
 
   PROCESS_END();
 }
-#endif //nodeprocess_1
 
-#endif
 /*---------------------------------------------------------------------------*/

@@ -36,32 +36,17 @@
 #define __PROJECT_CONF_H__
 
 
-/*******************************************************/
-/********* White Testing *****************/
-/*******************************************************/
+/* Custom channel and PAN ID configuration for your project. */
+/*
+   #undef RF_CHANNEL
+   #define RF_CHANNEL                     26
+
+   #undef IEEE802154_CONF_PANID
+   #define IEEE802154_CONF_PANID          0xABCD
+ */
+
 #define RPL_WITH_NON_STORING 1
 #define WITH_NON_STORING 1
-
-/* Turn of DAO ACK to make code smaller */
-#undef RPL_CONF_WITH_DAO_ACK
-#define RPL_CONF_WITH_DAO_ACK          0
-
-#undef RPL_CONF_OF
-#define RPL_CONF_OF                    rpl_of0
-
-/*******************************************************/
-/*********************    End      *********************/
-/*******************************************************/
-
-/* Set to run orchestra */
-#ifndef WITH_ORCHESTRA
-#define WITH_ORCHESTRA 0
-#endif /* WITH_ORCHESTRA */
-
-/* Set to enable TSCH security */
-#ifndef WITH_SECURITY
-#define WITH_SECURITY 0
-#endif /* WITH_SECURITY */
 
 /* IP buffer size must match all other hops, in particular the border router. */
 #undef UIP_CONF_BUFFER_SIZE
@@ -73,146 +58,48 @@
 #undef RPL_CONF_MAX_DAG_PER_INSTANCE
 #define RPL_CONF_MAX_DAG_PER_INSTANCE     1
 
+/* Disabling TCP on CoAP nodes. */
+#undef UIP_CONF_TCP
+#define UIP_CONF_TCP                   0
 
-/*******************************************************/
-/********* Enable RPL non-storing mode *****************/
-/*******************************************************/
-
-#undef UIP_CONF_MAX_ROUTES
-#define UIP_CONF_MAX_ROUTES 0 /* No need for routes */
-#undef RPL_CONF_MOP
-#define RPL_CONF_MOP RPL_MOP_NON_STORING /* Mode of operation*/
-#undef ORCHESTRA_CONF_RULES
-#define ORCHESTRA_CONF_RULES { &eb_per_time_source, &unicast_per_neighbor_rpl_ns, &default_common } /* Orchestra in non-storing */
-
-/*******************************************************/
-/********************* Enable TSCH *********************/
-/*******************************************************/
-
-/* Netstack layers */
 #undef NETSTACK_CONF_MAC
 #define NETSTACK_CONF_MAC     tschmac_driver
-#undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC     nordc_driver
-#undef NETSTACK_CONF_FRAMER
-#define NETSTACK_CONF_FRAMER  framer_802154
 
-/* IEEE802.15.4 frame version */
-#undef FRAME802154_CONF_VERSION
-#define FRAME802154_CONF_VERSION FRAME802154_IEEE802154E_2012
+/* Increase rpl-border-router IP-buffer when using more than 64. */
+#undef REST_MAX_CHUNK_SIZE
+#define REST_MAX_CHUNK_SIZE            256
 
-/* TSCH and RPL callbacks */
-#define RPL_CALLBACK_PARENT_SWITCH tsch_rpl_callback_parent_switch
-#define RPL_CALLBACK_NEW_DIO_INTERVAL tsch_rpl_callback_new_dio_interval
-#define TSCH_CALLBACK_JOINING_NETWORK tsch_rpl_callback_joining_network
-#define TSCH_CALLBACK_LEAVING_NETWORK tsch_rpl_callback_leaving_network
+/* Estimate your header size, especially when using Proxy-Uri. */
+/*
+   #undef COAP_MAX_HEADER_SIZE
+   #define COAP_MAX_HEADER_SIZE           70
+ */
 
-/* Needed for CC2538 platforms only */
-/* For TSCH we have to use the more accurate crystal oscillator
- * by default the RC oscillator is activated */
-#undef SYS_CTRL_CONF_OSC32K_USE_XTAL
-#define SYS_CTRL_CONF_OSC32K_USE_XTAL 1
+/* Multiplies with chunk size, be aware of memory constraints. */
+#undef COAP_MAX_OPEN_TRANSACTIONS
+#define COAP_MAX_OPEN_TRANSACTIONS     4
 
-/* Needed for cc2420 platforms only */
-/* Disable DCO calibration (uses timerB) */
-#undef DCOSYNCH_CONF_ENABLED
-#define DCOSYNCH_CONF_ENABLED 0
-/* Enable SFD timestamps (uses timerB) */
-#undef CC2420_CONF_SFD_TIMESTAMPS
-#define CC2420_CONF_SFD_TIMESTAMPS 1
+/* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
 
-/*******************************************************/
-/******************* Configure TSCH ********************/
-/*******************************************************/
+   #undef COAP_MAX_OBSERVERS
+   #define COAP_MAX_OBSERVERS             2
+ 
 
-/* TSCH logging. 0: disabled. 1: basic log. 2: with delayed
- * log messages from interrupt */
-#undef TSCH_LOG_CONF_LEVEL
-#define TSCH_LOG_CONF_LEVEL 2
+/* Filtering .well-known/core per query can be disabled to save space. */
+#undef COAP_LINK_FORMAT_FILTERING
+#define COAP_LINK_FORMAT_FILTERING     0
+#undef COAP_PROXY_OPTION_PROCESSING
+#define COAP_PROXY_OPTION_PROCESSING   0
 
-/* IEEE802.15.4 PANID */
-#undef IEEE802154_CONF_PANID
-#define IEEE802154_CONF_PANID 0xabcd
+/* Turn of DAO ACK to make code smaller */
+#undef RPL_CONF_WITH_DAO_ACK
+#define RPL_CONF_WITH_DAO_ACK          0
 
-/* Do not start TSCH at init, wait for NETSTACK_MAC.on() */
-#undef TSCH_CONF_AUTOSTART
-#define TSCH_CONF_AUTOSTART 0
+#undef RPL_CONF_OF
+#define RPL_CONF_OF                    rpl_of0
 
-/* 6TiSCH minimal schedule length.
- * Larger values result in less frequent active slots: reduces capacity and saves energy. */
-#undef TSCH_SCHEDULE_CONF_DEFAULT_LENGTH
-#define TSCH_SCHEDULE_CONF_DEFAULT_LENGTH 3
-
-#if WITH_SECURITY
-
-/* Enable security */
-#undef LLSEC802154_CONF_ENABLED
-#define LLSEC802154_CONF_ENABLED 1
-/* TSCH uses explicit keys to identify k1 and k2 */
-#undef LLSEC802154_CONF_USES_EXPLICIT_KEYS
-#define LLSEC802154_CONF_USES_EXPLICIT_KEYS 1
-/* TSCH uses the ASN rather than frame counter to construct the Nonce */
-#undef LLSEC802154_CONF_USES_FRAME_COUNTER
-#define LLSEC802154_CONF_USES_FRAME_COUNTER 0
-
-#endif /* WITH_SECURITY */
-
-#if WITH_ORCHESTRA
-
-/* See apps/orchestra/README.md for more Orchestra configuration options */
-#define TSCH_SCHEDULE_CONF_WITH_6TISCH_MINIMAL 0 /* No 6TiSCH minimal schedule */
-#define TSCH_CONF_WITH_LINK_SELECTOR 1 /* Orchestra requires per-packet link selection */
-/* Orchestra callbacks */
-#define TSCH_CALLBACK_NEW_TIME_SOURCE orchestra_callback_new_time_source
-#define TSCH_CALLBACK_PACKET_READY orchestra_callback_packet_ready
-#define NETSTACK_CONF_ROUTING_NEIGHBOR_ADDED_CALLBACK orchestra_callback_child_added
-#define NETSTACK_CONF_ROUTING_NEIGHBOR_REMOVED_CALLBACK orchestra_callback_child_removed
-
-#endif /* WITH_ORCHESTRA */
-
-/*******************************************************/
-/************* Other system configuration **************/
-/*******************************************************/
-
-#if CONTIKI_TARGET_Z1
-/* Save some space to fit the limited RAM of the z1 */
-#undef UIP_CONF_TCP
-#define UIP_CONF_TCP 0
-#undef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM 3
-#undef RPL_NS_CONF_LINK_NUM
-#define RPL_NS_CONF_LINK_NUM  8
-#undef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS 8
-#undef UIP_CONF_ND6_SEND_NS
-#define UIP_CONF_ND6_SEND_NS 0
-#undef SICSLOWPAN_CONF_FRAG
-#define SICSLOWPAN_CONF_FRAG 0
-
-#if WITH_SECURITY
-/* Note: on sky or z1 in cooja, crypto operations are done in S/W and
- * cannot be accommodated in normal slots. Use 65ms slots instead, and
- * a very short 6TiSCH minimal schedule length */
-#undef TSCH_CONF_DEFAULT_TIMESLOT_LENGTH
-#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH 65000
-#undef TSCH_SCHEDULE_CONF_DEFAULT_LENGTH
-#define TSCH_SCHEDULE_CONF_DEFAULT_LENGTH 2
-/* Reduce log level to make space for security on z1 */
-#undef TSCH_LOG_CONF_LEVEL
-#define TSCH_LOG_CONF_LEVEL 0
-#endif /* WITH_SECURITY */
-
-#endif /* CONTIKI_TARGET_Z1 */
-
-#if CONTIKI_TARGET_CC2538DK || CONTIKI_TARGET_ZOUL || \
-  CONTIKI_TARGET_OPENMOTE_CC2538
-#define TSCH_CONF_HW_FRAME_FILTERING    0
-#endif /* CONTIKI_TARGET_CC2538DK || CONTIKI_TARGET_ZOUL \
-       || CONTIKI_TARGET_OPENMOTE_CC2538 */
-
-#if CONTIKI_TARGET_COOJA
-#define COOJA_CONF_SIMULATE_TURNAROUND 0
-#endif /* CONTIKI_TARGET_COOJA */
+/* Enable client-side support for COAP observe */
+#define COAP_OBSERVE_CLIENT 1
 
 #include "../00-common/tsch-project-conf.h"
 

@@ -2,21 +2,25 @@ CONTIKI_PROJECT = node
 all: $(CONTIKI_PROJECT)
 
 CONTIKI=../../..
+
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
-
-CONTIKI_WITH_IPV6 = 1
-MAKE_WITH_ORCHESTRA ?= 0 # force Orchestra from command line
-MAKE_WITH_SECURITY ?= 0 # force Security from command line
-
-APPS += orchestra
 MODULES += core/net/mac/tsch
 
-ifeq ($(MAKE_WITH_ORCHESTRA),1)
-CFLAGS += -DWITH_ORCHESTRA=1
-endif
+CONTIKI_WITH_IPV6 = 1
 
-ifeq ($(MAKE_WITH_SECURITY),1)
-CFLAGS += -DWITH_SECURITY=1
-endif
+APPS += er-coap
+APPS += rest-engine
+APPS += orchestra
+
+# define rest resource file
+REST_RESOURCES_DIR = ./resources
+REST_RESOURCES_FILES = $(notdir $(shell find $(REST_RESOURCES_DIR) -name '*.c'))
+
+# add to project
+PROJECTDIRS += $(REST_RESOURCES_DIR)
+PROJECT_SOURCEFILES += $(REST_RESOURCES_FILES)
+
+# add observe
+# PROJECT_SOURCEFILES += er-observe-client.c
 
 include $(CONTIKI)/Makefile.include
