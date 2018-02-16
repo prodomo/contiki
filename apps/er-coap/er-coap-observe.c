@@ -205,7 +205,7 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
   /* url now contains the notify URL that needs to match the observer */
   PRINTF("Observe: Notification from %s\n", url);
 
-  coap_init_message(notification, COAP_TYPE_NON, CONTENT_2_05, 0);
+  coap_init_message(notification, COAP_TYPE_CON, CONTENT_2_05, 0);
   /* create a "fake" request for the URI */
   coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
   coap_set_header_uri_path(request, url);
