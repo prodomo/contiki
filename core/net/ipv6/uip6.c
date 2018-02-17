@@ -2303,9 +2303,16 @@ uip_process(uint8_t flag)
 #if UIP_UDP
   ip_send_nolen:
 #endif
+
+#if !UIP_UDP
+  UIP_IP_BUF->vtc = 0x60;
+  UIP_IP_BUF->tcflow = 0x00;
+  UIP_IP_BUF->flow = 0x00;
+#else
   UIP_IP_BUF->vtc = 0x60;
   UIP_IP_BUF->tcflow = 0x01;
-  UIP_IP_BUF->flow = 0x11;
+  UIP_IP_BUF->flow = 0x01;
+#endif
   send:
   PRINTF("Sending packet with length %d (%d)\n", uip_len,
       (UIP_IP_BUF->len[0] << 8) | UIP_IP_BUF->len[1]);

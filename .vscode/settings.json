@@ -16,6 +16,7 @@
     "string_view": "c",
     "vector": "c",
     "uip.h": "c",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "uipopt.h": "c"
   }
 }

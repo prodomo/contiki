@@ -128,11 +128,12 @@ output(void)
     uint8_t ip_payload_length = UIP_IP_BUF->len[1];
     uint8_t coap_packet_start_location = UIP_IPH_LEN + ip_payload_length - 40;  //42 is coap payload length
 
-    for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
-        uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
-        PRINTF("%02x", data);
-      }
-      PRINTF("\n");
+
+    // for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
+    //     uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
+    //     PRINTF("%02x", data);
+    //   }
+    //   PRINTF("\n");
 
     uint8_t flag1 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location];
     uint8_t flag2 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 1];
@@ -146,17 +147,21 @@ output(void)
       ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9] = (tsch_current_asn.ls4b >> 16) & 0xff;
       ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8] = (tsch_current_asn.ls4b >> 24) & 0xff;
 
+      // uint32_t startASN.
+      uint32_t startASN = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 7] << 24 | 
+                          ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 6] << 16 |
+                          ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5] << 8 |
+                          ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4];
+
       // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
-      PRINTF("Start ASN Numbers : %02x%02x%02x%02x. \n", ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 7],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 6],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4]);
-      PRINTF("End ASN Numbers : %02x%02x%02x%02x. \n",((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11]);                                          
+      PRINTF("Start ASN Numbers : %08x.\n",startASN);
+      PRINTF("End ASN Numbers : %08x. \n",tsch_current_asn.ls4b);
+
+      PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
       PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
       PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
+
+      // rebuilding UDP checksum.
       UIP_UDP_BUF->udpchksum = 0;
       uint16_t new_udp_checksum = ~(uip_udpchksum());
       UIP_UDP_BUF->udpchksum = new_udp_checksum;
