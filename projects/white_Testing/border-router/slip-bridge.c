@@ -147,8 +147,16 @@ output(void)
       ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11] = (tsch_current_asn.ls4b >> 24) & 0xff;
 
       // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
-
-
+      PRINTF("Start ASN Numbers : %02x%02x%02x%02x. \n", ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4],
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5],
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 6],
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 7]);
+      PRINTF("End ASN Numbers : %02x%02x%02x%02x. \n",((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8],
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9],
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10],
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11]);                                          
+      PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
+      PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
       UIP_UDP_BUF->udpchksum = 0;
       uint16_t new_udp_checksum = ~(uip_udpchksum());
       UIP_UDP_BUF->udpchksum = new_udp_checksum;

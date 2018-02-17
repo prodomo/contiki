@@ -72,13 +72,8 @@
 #include "dev/leds.h"
 
 extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect;
-// extern resource_t res_push;
-// extern resource_t res_toggle;
-// extern resource_t res_collect;
-// extern resource_t res_bcollect;
 
 /*---------------------------------------------------------------------------*/
-//PROCESS(nodeRPL_process, "Node RPL Service");
 
 PROCESS(er_example_server, "Erbium Example Server");
 PROCESS(node_process, "RPL Node");
