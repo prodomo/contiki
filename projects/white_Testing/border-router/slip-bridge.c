@@ -141,16 +141,16 @@ output(void)
       PRINTF("Found flag: %02x %02x\n", flag1, flag2);  
       // tsch_current_asn.ls4b
 
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8] = tsch_current_asn.ls4b & 0xff;
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9] = (tsch_current_asn.ls4b >> 8) & 0xff;
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10] = (tsch_current_asn.ls4b >> 16) & 0xff;
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11] = (tsch_current_asn.ls4b >> 24) & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11] = tsch_current_asn.ls4b & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10] = (tsch_current_asn.ls4b >> 8) & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9] = (tsch_current_asn.ls4b >> 16) & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8] = (tsch_current_asn.ls4b >> 24) & 0xff;
 
       // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
-      PRINTF("Start ASN Numbers : %02x%02x%02x%02x. \n", ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5],
+      PRINTF("Start ASN Numbers : %02x%02x%02x%02x. \n", ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 7],
                                                      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 6],
-                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 7]);
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5],
+                                                     ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4]);
       PRINTF("End ASN Numbers : %02x%02x%02x%02x. \n",((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8],
                                                      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9],
                                                      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10],

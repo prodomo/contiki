@@ -107,7 +107,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   struct link_stats *parent_link_stats;
 
 
-  PRINTF("I am collect res_get hanlder!\n");
+  PRINTF("I am B_collect res_get hanlder!\n");
   REST.set_header_content_type(response, REST.type.APPLICATION_OCTET_STREAM);
   REST.set_header_max_age(response, res_bcollect.periodic->period / CLOCK_SECOND);
 
@@ -194,7 +194,7 @@ res_periodic_handler()
   /* Will notify subscribers when inter-packet time is match */
   if(event_counter % event_threshold == 0) {
     ++packet_counter;
-    PRINTF("Generate a new packet!\n");
+    PRINTF("Generate a new packet! , %08x. \n",tsch_current_asn.ls4b);
         
     /* Notify the registered observers which will trigger the res_get_handler to create the response. */
     REST.notify_subscribers(&res_bcollect);
