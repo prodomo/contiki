@@ -17,6 +17,8 @@
     "vector": "c",
     "uip.h": "c",
     "stdlib.h": "c",
-    "uipopt.h": "c"
+    "uipopt.h": "c",
+    "er-coap.h": "c",
+    "rest-engine.h": "c"
   }
 }

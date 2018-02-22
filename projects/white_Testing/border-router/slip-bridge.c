@@ -122,18 +122,10 @@ output(void)
     PRINTF("\n");
     PRINTF("packet length: %d \n", UIP_IP_BUF->len[1]);
 
-    uint8_t ndx;
-    
-
     uint8_t ip_payload_length = UIP_IP_BUF->len[1];
     uint8_t coap_packet_start_location = UIP_IPH_LEN + ip_payload_length - 40;  //42 is coap payload length
 
-
-    // for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
-    //     uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
-    //     PRINTF("%02x", data);
-    //   }
-    //   PRINTF("\n");
+ 
 
     uint8_t flag1 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location];
     uint8_t flag2 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 1];
@@ -166,7 +158,14 @@ output(void)
       uint16_t new_udp_checksum = ~(uip_udpchksum());
       UIP_UDP_BUF->udpchksum = new_udp_checksum;
 
-      PRINTF("new checksum: %04x\n", new_udp_checksum);
+      PRINTF("new checksum: %04x\n\n", new_udp_checksum);
+
+      // uint8_t ndx;
+      // for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
+      //   uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
+      //   PRINTF("%02x", data);
+      // }
+      // PRINTF("\n"); 
     }
     
 

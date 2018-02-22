@@ -68,8 +68,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   struct 
   {
     uint8_t flag[2];
-    // padding 2
     uint32_t start_asn;
+    // padding 2 uint16_t
     uint32_t end_asn;
     uint32_t event_counter;
     uint8_t event_threshold;
@@ -96,8 +96,6 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   message.packet_counter = packet_counter;
 
   message.start_asn = tsch_current_asn.ls4b;
-
-
 
   uint8_t packet_length = 0;
   rpl_dag_t *dag;
