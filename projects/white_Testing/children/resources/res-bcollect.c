@@ -12,7 +12,7 @@
 #include "core/net/rpl/rpl.h"
 #include "core/net/link-stats.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -54,6 +54,8 @@ static uint32_t packet_counter = 0;
 
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
+
+
 
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
@@ -170,7 +172,7 @@ res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t prefer
   }
 
   if(threshold < 1) {
-    /* Threashold is too smaill ignore it! */
+    /* Threashold is too small ignore it! */
     REST.set_response_status(response, REST.status.BAD_REQUEST);
   } else {
     /* Update to new threshold */

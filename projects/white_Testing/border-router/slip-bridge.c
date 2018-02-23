@@ -44,6 +44,8 @@
 #include "dev/uart1.h"
 #include <string.h>
 
+
+
 #define UIP_IP_BUF        ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 #define UIP_UDP_BUF       ((struct uip_udp_hdr *)&uip_buf[UIP_LLIPH_LEN])
 
@@ -104,6 +106,9 @@ init(void)
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
 
+// #include "apps/er-coap/er-coap.h"
+// coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
+
 static int
 output(void)
 {
@@ -124,8 +129,6 @@ output(void)
 
     uint8_t ip_payload_length = UIP_IP_BUF->len[1];
     uint8_t coap_packet_start_location = UIP_IPH_LEN + ip_payload_length - 40;  //42 is coap payload length
-
- 
 
     uint8_t flag1 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location];
     uint8_t flag2 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 1];
@@ -151,7 +154,7 @@ output(void)
 
       PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
       PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
-      PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
+      //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 
       // rebuilding UDP checksum.
       UIP_UDP_BUF->udpchksum = 0;
@@ -166,6 +169,13 @@ output(void)
       //   PRINTF("%02x", data);
       // }
       // PRINTF("\n"); 
+    } else {
+      uint8_t ndx;
+      for (ndx = 0; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
+        uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
+        PRINTF("%02x", data);
+      }
+      PRINTF("\n"); 
     }
     
 

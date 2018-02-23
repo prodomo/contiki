@@ -2305,9 +2305,9 @@ uip_process(uint8_t flag)
   ip_send_nolen:
 #endif
 
-#if !UIP_UDP
+#if UIP_UDP
   UIP_IP_BUF->vtc = 0x60;
-  UIP_IP_BUF->tcflow = 0x00;
+  //UIP_IP_BUF->tcflow = 0x00;
   UIP_IP_BUF->flow = 0x00;
 #else
   UIP_IP_BUF->vtc = 0x60;

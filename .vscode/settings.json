@@ -19,6 +19,23 @@
     "stdlib.h": "c",
     "uipopt.h": "c",
     "er-coap.h": "c",
-    "rest-engine.h": "c"
+    "rest-engine.h": "c",
+    "__functional_base": "c",
+    "__functional_base_03": "c",
+    "__tuple": "c",
+    "functional": "c",
+    "limits": "c",
+    "memory": "c",
+    "ratio": "c",
+    "tuple": "c",
+    "type_traits": "c",
+    "utility": "c",
+    "uip_arch.h": "c",
+    "uip-ds6.h": "c",
+    "algorithm": "c",
+    "atomic": "c",
+    "bitset": "c",
+    "locale": "c",
+    "system_error": "c"
   }
 }

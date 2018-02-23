@@ -45,7 +45,7 @@
 #include "er-coap.h"
 #include "er-coap-transactions.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -305,6 +305,10 @@ coap_init_message(void *packet, coap_message_type_t type, uint8_t code,
   coap_pkt->type = type;
   coap_pkt->code = code;
   coap_pkt->mid = mid;
+
+  UIP_IP_BUF->tcflow = 0x01;
+  PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
+  //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 }
 /*---------------------------------------------------------------------------*/
 size_t
