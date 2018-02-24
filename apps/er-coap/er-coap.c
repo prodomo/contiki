@@ -62,7 +62,7 @@
 /*---------------------------------------------------------------------------*/
 static struct uip_udp_conn *udp_conn = NULL;
 static uint16_t current_mid = 0;
-uint8_t tcFlow_QoS=0,flag=0;
+uint8_t flag=0;
 
 coap_status_t erbium_status_code = NO_ERROR;
 char *coap_error_message = "";
@@ -298,18 +298,7 @@ coap_get_mid()
 void
 packetPriority()
 {
-  switch(flag)
-  {
-    case 0:
-      flag++;
-      break;
-    case 1:
-      flag++;
-      break;
-    case 2:
-      flag=0;
-      break;
-  }
+  flag=(flag++)%3;
 }
 
 /*---------------------------------------------------------------------------*/
