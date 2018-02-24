@@ -45,7 +45,7 @@
 #include "er-coap.h"
 #include "er-coap-transactions.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -301,15 +301,12 @@ packetPriority()
   switch(flag)
   {
     case 0:
-      //UIP_IP_BUF->tcflow = flag;
       flag++;
       break;
     case 1:
-      //UIP_IP_BUF->tcflow = flag;
       flag++;
       break;
     case 2:
-      //UIP_IP_BUF->tcflow = flag;
       flag=0;
       break;
   }
@@ -329,7 +326,8 @@ coap_init_message(void *packet, coap_message_type_t type, uint8_t code,
   coap_pkt->code = code;
   coap_pkt->mid = mid;
 
-  UIP_IP_BUF->tcflow = flag;
+  UIP_IP_BUF->tcflow = flag; //control traffic class value.
+
   //PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
   //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 }
