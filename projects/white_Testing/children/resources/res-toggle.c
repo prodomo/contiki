@@ -44,6 +44,7 @@
 #include "contiki.h"
 #include "rest-engine.h"
 #include "dev/leds.h"
+#include "er-coap.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -57,69 +58,21 @@
 #define PRINTLLADDR(addr)
 #endif
 
-//static void res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+static void res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 /* A simple actuator example. Toggles the red led */
-// RESOURCE(res_toggle,
-//          "title=\"Yellow LED\";rt=\"Control\"",
-//          NULL,
-//          res_post_handler,
-//          NULL,
-//          NULL);
-
-// static void
-// res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
-// {
-//   leds_toggle(LEDS_YELLOW);
-// }
-
-static void res_post_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
-
-/*A simple actuator example, depending on the color query parameter and post variable mode, corresponding led is activated or deactivated*/
 RESOURCE(res_toggle,
-         "title=\"LEDs: ?color=r|g|b, POST/PUT mode=on|off\";rt=\"Control\"",
+         "title=\"Packet Priority _ QoS\";rt=\"Control\"",
          NULL,
-         res_post_put_handler,
-         res_post_put_handler,
+         res_post_handler,
+         NULL,
          NULL);
 
 static void
-res_post_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  size_t len = 0;
-  const char *color = NULL;
-  const char *mode = NULL;
-  uint8_t led = 0;
-  int success = 1;
-
-  if((len = REST.get_query_variable(request, "color", &color))) {
-    PRINTF("color %.*s\n", len, color);
-
-    if(strncmp(color, "r", len) == 0) {
-      led = LEDS_RED;
-    } else if(strncmp(color, "g", len) == 0) {
-      led = LEDS_GREEN;
-    } else if(strncmp(color, "b", len) == 0) {
-      led = LEDS_BLUE;
-    } else {
-      success = 0;
-    }
-  } else {
-    success = 0;
-  } if(success && (len = REST.get_post_variable(request, "mode", &mode))) {
-    PRINTF("mode %s\n", mode);
-
-    if(strncmp(mode, "on", len) == 0) {
-      leds_on(led);
-    } else if(strncmp(mode, "off", len) == 0) {
-      leds_off(led);
-    } else {
-      success = 0;
-    }
-  } else {
-    success = 0;
-  } if(!success) {
-    REST.set_response_status(response, REST.status.BAD_REQUEST);
-  }
+  packetPriority();
+  //leds_toggle(LEDS_YELLOW);
 }
+
 //#endif /* PLATFORM_HAS_LEDS */

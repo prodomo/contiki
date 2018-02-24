@@ -37,5 +37,6 @@
     "bitset": "c",
     "locale": "c",
     "system_error": "c"
-  }
+  },
+  "C_Cpp.errorSquiggles": "Disabled"
 }

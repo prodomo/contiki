@@ -176,6 +176,9 @@ typedef struct {
 extern coap_status_t erbium_status_code;
 extern char *coap_error_message;
 
+//Packet Traffic class function _ testing.
+void packetPriority(void);
+
 void coap_init_connection(uint16_t port);
 uint16_t coap_get_mid(void);
 
