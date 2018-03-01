@@ -64,7 +64,7 @@
 #if TSCH_LOG_LEVEL >= 1
 #define DEBUG DEBUG_PRINT
 #else /* TSCH_LOG_LEVEL */
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_FULL
 #endif /* TSCH_LOG_LEVEL */
 #include "net/net-debug.h"
 
@@ -940,6 +940,23 @@ send_packet(mac_callback_t sent, void *ptr)
              tsch_queue_packet_count(addr),
              p->header_len,
              queuebuf_datalen(p->qb));
+
+              /**debug test**/     
+        int i;
+        int dataLen=queuebuf_datalen(p->qb);
+        int headLen=p->header_len;
+        for(i=0;i<dataLen;i++){
+          uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[i];
+          PRINTF("%02x ",data);
+        }
+        uint8_t data_start=((uint8_t *)queuebuf_dataptr(p->qb))[23];
+
+        if(data_start == 0x00 && ((uint8_t *)queuebuf_dataptr(p->qb))[25] == 0x00 ) { //check coap have created packet, if will, print it.
+          uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
+          PRINTF("\nTrafic classes In TSCH queue : %02x", data);
+        }
+        PRINTF("\n");
+        
       (void)packet_count_before; /* Discard "variable set but unused" warning in case of TSCH_LOG_LEVEL of 0 */
     }
   }

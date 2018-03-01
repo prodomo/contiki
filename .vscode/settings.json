@@ -36,7 +36,9 @@
     "atomic": "c",
     "bitset": "c",
     "locale": "c",
-    "system_error": "c"
+    "system_error": "c",
+    "__locale": "c"
   },
-  "C_Cpp.errorSquiggles": "Disabled"
+  "C_Cpp.errorSquiggles": "Disabled",
+  "C_Cpp.intelliSenseEngineFallback": "Disabled"
 }

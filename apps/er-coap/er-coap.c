@@ -62,7 +62,7 @@
 /*---------------------------------------------------------------------------*/
 static struct uip_udp_conn *udp_conn = NULL;
 static uint16_t current_mid = 0;
-uint8_t flag=0;
+uint8_t packet_priority = 0;
 
 coap_status_t erbium_status_code = NO_ERROR;
 char *coap_error_message = "";
@@ -294,12 +294,6 @@ coap_get_mid()
   return ++current_mid;
 }
 /*---------------------------------------------------------------------------*/
-//White: packet traffic class.
-void
-packetPriority()
-{
-  flag=(flag++)%3;
-}
 
 /*---------------------------------------------------------------------------*/
 void
@@ -315,7 +309,8 @@ coap_init_message(void *packet, coap_message_type_t type, uint8_t code,
   coap_pkt->code = code;
   coap_pkt->mid = mid;
 
-  UIP_IP_BUF->tcflow = flag; //control traffic class value.
+  //UIP_IP_BUF->tcflow = flag; //control traffic class value.
+  UIP_IP_BUF->tcflow = packet_priority;
 
   //PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
   //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
@@ -1235,3 +1230,8 @@ coap_set_payload(void *packet, const void *payload, size_t length)
   return coap_pkt->payload_len;
 }
 /*---------------------------------------------------------------------------*/
+void
+coap_set_uip_traffic_class(uint8_t priority)
+{
+  packet_priority = priority;
+}

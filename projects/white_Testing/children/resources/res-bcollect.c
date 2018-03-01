@@ -12,7 +12,7 @@
 #include "core/net/rpl/rpl.h"
 #include "core/net/link-stats.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -51,6 +51,8 @@ static uint32_t event_threshold_last_change = 0;
 
 /* Record the packet have been generated. (Server perspective) */
 static uint32_t packet_counter = 0;
+
+static uint8_t packet_priority = 0;
 
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
@@ -152,7 +154,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 
 
   
-
+  coap_set_uip_traffic_class(packet_priority);
   REST.set_response_payload(response, buffer, sizeof(message));
 
   // REST.set_response_payload(response, buffer, snprintf((char *)buffer, preferred_size, "[Collect] ec: %lu, et: %lu, lc, %lu, pc: %lu", event_counter, event_threshold, event_threshold_last_change,packet_counter));
@@ -166,18 +168,31 @@ static void
 res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   const char *threshold_c = NULL;
+  const char *priority_c = NULL;
   int threshold = -1;
+  int priority = -1;
+
   if(REST.get_query_variable(request, "threshold", &threshold_c)) {
     threshold = (uint8_t)atoi(threshold_c);
   }
 
-  if(threshold < 1) {
-    /* Threashold is too small ignore it! */
+  if(REST.get_query_variable(request, "packet_priority", &priority_c)) {
+    priority = (uint8_t)atoi(priority_c);
+  }
+
+  if(threshold < 1 && (priority<0||priority>2)) {
+    /* Threashold is too smaill ignore it! */
     REST.set_response_status(response, REST.status.BAD_REQUEST);
   } else {
-    /* Update to new threshold */
-    event_threshold = threshold;
-    event_threshold_last_change = event_counter;
+    if(threshold>=1){
+      /* Update to new threshold */
+      event_threshold = threshold;
+      event_threshold_last_change = event_counter;
+    }
+    if(priority>=0 && priority<= 2)
+    {
+      packet_priority = priority;
+    }
   }
 }
 
