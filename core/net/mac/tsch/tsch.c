@@ -949,9 +949,9 @@ send_packet(mac_callback_t sent, void *ptr)
           uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[i];
           PRINTF("%02x ",data);
         }
-        uint8_t data_start=((uint8_t *)queuebuf_dataptr(p->qb))[23];
 
-        if(data_start == 0x00 && ((uint8_t *)queuebuf_dataptr(p->qb))[25] == 0x00 ) { //check coap have created packet, if will, print it.
+        if(((uint8_t *)queuebuf_dataptr(p->qb))[25] == 0x00 && ((uint8_t *)queuebuf_dataptr(p->qb))[26] == 0x00 && dataLen >= 102) { //check coap have created packet, if will, print it.
+          //PRINTF("\nFound the Flag %02x , %02x",((uint8_t *)queuebuf_dataptr(p->qb))[65],((uint8_t *)queuebuf_dataptr(p->qb))[66]);
           uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
           PRINTF("\nTrafic classes In TSCH queue : %02x", data);
         }
