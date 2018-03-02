@@ -258,14 +258,14 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             /* show queuebuf information. */
             int i;
             int dataLen=queuebuf_datalen(p->qb);
-            int headLen=p->header_len;
             for(i=0;i<dataLen;i++){
               uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[i];
               PRINTF("%02x ",data);
             }
             PRINTF("\n");
-            if( ((uint8_t *)queuebuf_dataptr(p->qb))[65] == 0x54 && 
-                ((uint8_t *)queuebuf_dataptr(p->qb))[66] == 0x66) { //check coap have created packet, if will, print it.
+            if( ((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
+                ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
+                ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff) { //check coap have created packet, if will, print it.
 
               uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
               PRINTF("Traffic classes In TSCH queue : %02x\n", data);
@@ -295,10 +295,11 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 void
 tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p)
 {
+  uint8_t ringbufindex_ELE = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
   PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n",
           put_index, p);
-
+  PRINTF("\nShow RINGBUF Elements: %02x !!!\n", ringbufindex_ELE);
 }
 
 

@@ -944,14 +944,14 @@ send_packet(mac_callback_t sent, void *ptr)
               /**debug test**/     
         int i;
         int dataLen=queuebuf_datalen(p->qb);
-        int headLen=p->header_len;
+        //int headLen=p->header_len;
         for(i=0;i<dataLen;i++){
           uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[i];
           PRINTF("%02x ",data);
         }
 
         if( ((uint8_t *)queuebuf_dataptr(p->qb))[65] == 0x54 &&  //find the flags.
-            ((uint8_t *)queuebuf_dataptr(p->qb))[66] == 0x66 &&) { //check coap have created packet, if will, print it.
+            ((uint8_t *)queuebuf_dataptr(p->qb))[66] == 0x66) { //check coap have created packet, if will, print it.
 
           uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
           PRINTF("\nTraffic classes In TSCH queue : %02x\n", data);
