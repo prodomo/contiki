@@ -52,6 +52,10 @@
 #define QUEUEBUF_CONF_NUM          4
 #endif
 
+#ifndef ENABLE_QOS_WHITE
+#define ENABLE_QOS_WHITE           1
+#endif
+
 #ifndef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE    1280
 #endif

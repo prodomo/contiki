@@ -64,7 +64,7 @@
 #if TSCH_LOG_LEVEL >= 1
 #define DEBUG DEBUG_PRINT
 #else /* TSCH_LOG_LEVEL */
-#define DEBUG DEBUG_FULL
+#define DEBUG DEBUG_NONE
 #endif /* TSCH_LOG_LEVEL */
 #include "net/net-debug.h"
 
@@ -950,10 +950,11 @@ send_packet(mac_callback_t sent, void *ptr)
           PRINTF("%02x ",data);
         }
 
-        if(((uint8_t *)queuebuf_dataptr(p->qb))[25] == 0x00 && ((uint8_t *)queuebuf_dataptr(p->qb))[26] == 0x00 && dataLen >= 102) { //check coap have created packet, if will, print it.
-          //PRINTF("\nFound the Flag %02x , %02x",((uint8_t *)queuebuf_dataptr(p->qb))[65],((uint8_t *)queuebuf_dataptr(p->qb))[66]);
+        if( ((uint8_t *)queuebuf_dataptr(p->qb))[65] == 0x54 &&  //find the flags.
+            ((uint8_t *)queuebuf_dataptr(p->qb))[66] == 0x66 &&) { //check coap have created packet, if will, print it.
+
           uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
-          PRINTF("\nTrafic classes In TSCH queue : %02x", data);
+          PRINTF("\nTraffic classes In TSCH queue : %02x\n", data);
         }
         PRINTF("\n");
         

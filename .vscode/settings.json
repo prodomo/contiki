@@ -37,8 +37,9 @@
     "bitset": "c",
     "locale": "c",
     "system_error": "c",
-    "__locale": "c"
+    "__locale": "c",
+    "queue": "cpp"
   },
   "C_Cpp.errorSquiggles": "Disabled",
-  "C_Cpp.intelliSenseEngineFallback": "Disabled"
+  "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

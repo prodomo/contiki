@@ -59,7 +59,7 @@
 #if TSCH_LOG_LEVEL >= 1
 #define DEBUG DEBUG_PRINT
 #else /* TSCH_LOG_LEVEL */
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_FULL
 #endif /* TSCH_LOG_LEVEL */
 #include "net/net-debug.h"
 
@@ -232,6 +232,7 @@ struct tsch_packet *
 tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 {
   struct tsch_neighbor *n = NULL;
+  //struct tsch_neighbor *newn = n;
   int16_t put_index = -1;
   struct tsch_packet *p = NULL;
   if(!tsch_is_locked()) {
@@ -245,17 +246,39 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 #ifdef TSCH_CALLBACK_PACKET_READY
           TSCH_CALLBACK_PACKET_READY();
 #endif
+
+          
           p->qb = queuebuf_new_from_packetbuf();
           if(p->qb != NULL) {
             p->sent = sent;
             p->ptr = ptr;
             p->ret = MAC_TX_DEFERRED;
             p->transmissions = 0;
+
+            /* show queuebuf information. */
+            int i;
+            int dataLen=queuebuf_datalen(p->qb);
+            int headLen=p->header_len;
+            for(i=0;i<dataLen;i++){
+              uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[i];
+              PRINTF("%02x ",data);
+            }
+            PRINTF("\n");
+            if( ((uint8_t *)queuebuf_dataptr(p->qb))[65] == 0x54 && 
+                ((uint8_t *)queuebuf_dataptr(p->qb))[66] == 0x66) { //check coap have created packet, if will, print it.
+
+              uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
+              PRINTF("Traffic classes In TSCH queue : %02x\n", data);
+            }
+
+#if   ENABLE_QOS_WHITE
+            tsch_queue_resorting_ringbuf_priority(n, p);
+#endif
             /* Add to ringbuf (actual add committed through atomic operation) */
-            n->tx_array[put_index] = p;
-            ringbufindex_put(&n->tx_ringbuf);
-            PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n",
-                   put_index, p);
+            n->tx_array[put_index] = p; //放入put_ptr,
+            ringbufindex_put(&n->tx_ringbuf); //塞入ringbuf裡.
+            //PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
+
             return p;
           } else {
             memb_free(&packet_memb, p);
@@ -267,6 +290,19 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
   PRINTF("TSCH-queue:! add packet failed: %u %p %d %p %p\n", tsch_is_locked(), n, put_index, p, p ? p->qb : NULL);
   return 0;
 }
+/*---------------------------------------------------------------------------*/
+/* Resorting ringbuf packet by priority */
+void
+tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p)
+{
+  int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
+  PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n",
+          put_index, p);
+
+}
+
+
+
 /*---------------------------------------------------------------------------*/
 /* Returns the number of packets currently in the queue */
 int

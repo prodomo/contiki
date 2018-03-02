@@ -48,6 +48,10 @@
 #define RPL_WITH_NON_STORING 1
 #define WITH_NON_STORING 1
 
+#ifndef ENABLE_QOS_WHITE
+#define ENABLE_QOS_WHITE           1
+#endif
+
 /* IP buffer size must match all other hops, in particular the border router. */
 #undef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE           1280
