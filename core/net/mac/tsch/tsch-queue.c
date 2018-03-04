@@ -265,7 +265,8 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             PRINTF("\n");
             if( ((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
-                ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff) { //check coap have created packet, if will, print it.
+                ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
+                dataLen >= 100) { //check coap have created packet, if will, print it.
 
               uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
               PRINTF("Traffic classes In TSCH queue : %02x\n", data);
@@ -275,7 +276,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             tsch_queue_resorting_ringbuf_priority(n, p);
 #endif
             /* Add to ringbuf (actual add committed through atomic operation) */
-            n->tx_array[put_index] = p; //放入put_ptr,
+            n->tx_array[put_index] = p;
             ringbufindex_put(&n->tx_ringbuf); //塞入ringbuf裡.
             //PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
 
@@ -299,7 +300,7 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
   PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n",
           put_index, p);
-  PRINTF("\nShow RINGBUF Elements: %02x !!!\n", ringbufindex_ELE);
+  PRINTF("\nShow RINGBUFFER_Elements: %02x !!!\n", ringbufindex_ELE);
 }
 
 
