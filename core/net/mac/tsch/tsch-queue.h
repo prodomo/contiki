@@ -71,6 +71,9 @@
 
 #if ENABLE_QOS_WHITE
 #define TSCH_ENABLE_QOS 1
+int16_t *zero_index, *one_index, *two_index; //define the packet start index.
+int16_t ringbufindex_ELM;
+int8_t data_tcflow;
 #else
 #define TSCH_ENABLE_QOS 0
 #endif
@@ -201,5 +204,7 @@ void tsch_queue_init(void);
 // White resorting ringbuf by priority.
 
 void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p);
+void pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp);
+void pkt_priority_same(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp);
 
 #endif /* __TSCH_QUEUE_H__ */
