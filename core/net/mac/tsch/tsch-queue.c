@@ -232,9 +232,9 @@ struct tsch_packet *
 tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 {
   struct tsch_neighbor *n = NULL;
-  //struct tsch_neighbor *newn = n;
   int16_t put_index = -1;
   struct tsch_packet *p = NULL;
+
   if(!tsch_is_locked()) {
     n = tsch_queue_add_nbr(addr);
     if(n != NULL) {
@@ -263,10 +263,12 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
               PRINTF("%02x ",data);
             }
             PRINTF("\n");
+
+            //check coap have created packet, if will, print it.
             if( ((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
-                dataLen >= 100) { //check coap have created packet, if will, print it.
+                dataLen >= 100) {
 
               uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
               PRINTF("Traffic classes In TSCH queue : %02x\n", data);
@@ -274,11 +276,14 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 
 #if   ENABLE_QOS_WHITE
             tsch_queue_resorting_ringbuf_priority(n, p);
-#endif
+            
+#else
             /* Add to ringbuf (actual add committed through atomic operation) */
-            n->tx_array[put_index] = p;
-            ringbufindex_put(&n->tx_ringbuf); //塞入ringbuf裡.
+            n->tx_array[put_index] = p; //
+            ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
             //PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
+
+#endif /* ENABLE_QOS_WHITE */
 
             return p;
           } else {
@@ -296,11 +301,57 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 void
 tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p)
 {
-  uint8_t ringbufindex_ELE = ringbufindex_elements(&n->tx_ringbuf);
+  int16_t ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
   PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n",
           put_index, p);
-  PRINTF("\nShow RINGBUFFER_Elements: %02x !!!\n", ringbufindex_ELE);
+  PRINTF("\nShow RINGBUFFER_Elements: %u and First queue Packets : %u !!!\n", ringbufindex_ELM, (put_index-ringbufindex_ELM));
+
+
+  /* Filter the packets from here. 
+   * If first header is 0x21, be sure from coap.
+   */
+  if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 && 
+      ringbufindex_ELM > 0) {
+    int16_t first;
+    for (first = 0; first <= ringbufindex_ELM ; first++) {
+      PRINTF("The RINGBUFFER packet sort : %u , %u\n",put_index-ringbufindex_ELM+first, first);
+    }
+
+    n->tx_array[(put_index)] = p; // end packet.
+    ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
+  }else {
+    n->tx_array[(put_index)] = p; // end packet.
+    ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
+  }
+  
+
+  // /* larg */
+  // if (ringbufindex_ELM > 0) {
+  //   int first,end;
+  //   //struct tsch_neighbor *newN = NULL;
+  //   struct tsch_packet *firstP = NULL, *endP = NULL, *temp = NULL;
+
+  //   for (first = 0; first < ringbufindex_ELM ; first++) {
+  //     for (end = first; end < ringbufindex_ELM; end++){
+  //       firstP = n->tx_array[put_index-ringbufindex_ELM+first];
+  //       endP = n->tx_array[put_index-ringbufindex_ELM+end];
+
+  //       /* verse dataLen, normal packet dataLen is 102 */
+  //       if(queuebuf_datalen(endP->qb) > queuebuf_datalen(firstP->qb)){
+  //         temp = endP;
+  //         endP = firstP;
+  //         firstP = temp;
+
+  //         n->tx_array[put_index-ringbufindex_ELM+first] = firstP;
+  //         n->tx_array[put_index-ringbufindex_ELM+end] = endP;
+  //         ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
+  //       }
+  //     }
+  //   }
+  // }else {
+    
+  // }
 }
 
 

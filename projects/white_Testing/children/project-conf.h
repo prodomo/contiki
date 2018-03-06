@@ -52,6 +52,8 @@
 #define ENABLE_QOS_WHITE           1
 #endif
 
+#define MAX_LOG_LENGTH 2048 // Log Length
+
 /* IP buffer size must match all other hops, in particular the border router. */
 #undef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE           1280

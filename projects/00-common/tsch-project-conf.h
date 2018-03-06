@@ -166,7 +166,7 @@
 #define COOJA_CONF_SIMULATE_TURNAROUND 0
 #endif /* CONTIKI_TARGET_COOJA */
 
-/* Magic clock issie */
+/* Magic clock issue */
 #define LPM_CONF_ENABLE 0
 
 /* Maybe clock drift issue? */
@@ -186,5 +186,6 @@
 #undef SYS_CTRL_CONF_OSC32K_USE_XTAL
 #define SYS_CTRL_CONF_OSC32K_USE_XTAL 1
 
+#define MAX_LOG_LENGTH 2048  //Log Length
 
 #endif /* __TSCH_PROJECT_CONF_H__ */
