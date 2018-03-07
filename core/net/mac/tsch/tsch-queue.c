@@ -307,6 +307,7 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
 {
   ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
+  int dataLen=queuebuf_datalen(p->qb);
   PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n",
           put_index, p);
   PRINTF("\nShow RINGBUFFER_Elements: %u and First queue Packets : %u !!!\n", ringbufindex_ELM, (put_index-ringbufindex_ELM));
@@ -315,48 +316,50 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
   /* Filter the packets from here. 
    * If first header is 0x21, be sure from coap.
    */
-  // if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 && 
-  //     ringbufindex_ELM > 0) {
+  if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 && 
+      ringbufindex_ELM > 0 &&
+      dataLen > 100) 
+    {
 
-  //   /* check tcflow the value */
-  //   switch((int)data_tcflow){
-  //     case 0:
-  //       if(zero_index) pkt_priority_same(n,p,zero_index);
-  //       else {
-  //         *zero_index = put_index;
-  //         n->tx_array[put_index] = p;
-  //       }
-  //     case 1:
-  //       if      (zero_index)  pkt_priority_largerthan(n,p,zero_index);
-  //       else if (one_index)   pkt_priority_same(n,p,one_index);
-  //       else {
-  //         *one_index = put_index;
-  //         n->tx_array[put_index] = p;
-  //       }
-  //     case 2:
-  //       if      (zero_index)  pkt_priority_largerthan(n,p,zero_index);
-  //       else if (one_index)   pkt_priority_largerthan(n,p,one_index);
-  //       else if (two_index)   pkt_priority_same(n,p,two_index);
-  //       else {
-  //         *two_index = put_index;
-  //         n->tx_array[put_index] = p;
-  //       }
-  //   }
+    /* check tcflow the value */
+    switch((int)data_tcflow){
+      case 0:
+        if(zero_index) pkt_priority_same(n,p,&zero_index);
+        else {
+          zero_index = put_index;
+          n->tx_array[put_index] = p;
+        }
+      case 1:
+        if      (zero_index)  pkt_priority_largerthan(n,p,&zero_index);
+        else if (one_index)   pkt_priority_same(n,p,&one_index);
+        else {
+          one_index = put_index;
+          n->tx_array[put_index] = p;
+        }
+      case 2:
+        if      (zero_index)  pkt_priority_largerthan(n,p,&zero_index);
+        else if (one_index)   pkt_priority_largerthan(n,p,&one_index);
+        else if (two_index)   pkt_priority_same(n,p,&two_index);
+        else {
+          two_index = put_index;
+          n->tx_array[put_index] = p;
+        }
+    } 
 
-  //   int16_t first;
-  //   for (first = 0; first <= ringbufindex_ELM ; first++) {
-  //     PRINTF("The RINGBUFFER packet sort : %u , %u\n",put_index-ringbufindex_ELM+first, first);
-  //   }
+    int16_t first;
+    for (first = 0; first <= ringbufindex_ELM ; first++) {
+      PRINTF("The RINGBUFFER packet sort : %u , %u\n",put_index-ringbufindex_ELM+first, first);
+    }
 
-  //   //n->tx_array[(put_index)] = p; // end packet.
-  //   ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
-  // }else {
-  //   n->tx_array[(put_index)] = p; // end packet.
-  //   ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
-  // }
-
+    //n->tx_array[(put_index)] = p; // end packet.
+    ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
+  }else {
     n->tx_array[(put_index)] = p; // end packet.
     ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
+  }
+
+    // n->tx_array[(put_index)] = p; // end packet.
+    // ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
 }
 /*---------------------------------------------------------------------------*/
 /* Large than it*/
@@ -366,18 +369,19 @@ pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *
 
   struct tsch_packet *temp1 = NULL;
   struct tsch_packet *temp2 = NULL;
+
   int16_t i, j=1;
   temp1 = n->tx_array[*index_temp];
   n->tx_array[*index_temp] = p;
 
   for(i = 0; i <= ringbufindex_ELM; i++){
-    temp2 = n->tx_array[*index_temp+i+j]; // j=1.
+    temp2 = n->tx_array[*index_temp+i+j]; // j=1. 會溢位
     n->tx_array[*index_temp+i+j] = temp1;
   }
-  if(data_tcflow == 0x02) two_index = index_temp;
-  else if(data_tcflow == 0x01) one_index = index_temp;
+  if((int)data_tcflow == 2) two_index = *index_temp;
+  else if((int)data_tcflow == 1) one_index = *index_temp;
   
-  index_temp++;
+  *index_temp++;
 }
 /*---------------------------------------------------------------------------*/
 /* same */

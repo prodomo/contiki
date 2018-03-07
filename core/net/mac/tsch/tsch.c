@@ -941,7 +941,8 @@ send_packet(mac_callback_t sent, void *ptr)
              p->header_len,
              queuebuf_datalen(p->qb));
 
-              /**debug test**/     
+        /**debug test**/
+#if 0
         int i;
         int dataLen=queuebuf_datalen(p->qb);
         //int headLen=p->header_len;
@@ -957,6 +958,7 @@ send_packet(mac_callback_t sent, void *ptr)
           PRINTF("\nTraffic classes In TSCH queue : %02x\n", data);
         }
         PRINTF("\n");
+#endif
         
       (void)packet_count_before; /* Discard "variable set but unused" warning in case of TSCH_LOG_LEVEL of 0 */
     }
