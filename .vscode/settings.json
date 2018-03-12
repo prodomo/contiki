@@ -38,7 +38,8 @@
     "locale": "c",
     "system_error": "c",
     "__locale": "c",
-    "queue": "cpp"
+    "queue": "cpp",
+    "istream": "c"
   },
   "C_Cpp.errorSquiggles": "Disabled",
   "C_Cpp.intelliSenseEngineFallback": "Enabled"

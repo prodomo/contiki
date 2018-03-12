@@ -136,6 +136,8 @@ output(void)
     if(flag1 == 0x54 && flag2 == 0x66){
       PRINTF("Found flag: %02x %02x\n", flag1, flag2);  
       // tsch_current_asn.ls4b
+      PRINTF("Source IP Address = ");
+      PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
 
       ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11] = tsch_current_asn.ls4b & 0xff;
       ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10] = (tsch_current_asn.ls4b >> 8) & 0xff;
@@ -149,7 +151,7 @@ output(void)
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4];
 
       // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
-      PRINTF("Start ASN Numbers : %08x.\n",startASN);
+      PRINTF("\nStart ASN Numbers : %08x.\n",startASN);
       PRINTF("End ASN Numbers : %08x. \n",tsch_current_asn.ls4b);
 
       PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       

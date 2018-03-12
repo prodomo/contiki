@@ -279,14 +279,12 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             
 
 #if   ENABLE_QOS_WHITE
-            tsch_queue_resorting_ringbuf_priority(n, p);
-            
+            tsch_queue_resorting_ringbuf_priority(n, p);       
 #else
             /* Add to ringbuf (actual add committed through atomic operation) */
             n->tx_array[put_index] = p; //
             ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
-            //PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
-
+            PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
 #endif /* ENABLE_QOS_WHITE */
 
             return p;
@@ -310,14 +308,12 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
 
   int16_t current_index = put_index-ringbufindex_ELM;
     /* fix overflow issue. */
-  if((current_index) > 16) current_index = 15 - put_index;
+  if((current_index) < 0) current_index = 15 - put_index;
 
   int dataLen=queuebuf_datalen(p->qb);
-  PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n",
-          put_index, p);
+  //PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
   PRINTF("\nShow RINGBUFFER_Elements: %u and First queue Packets : %u !!!\n", ringbufindex_ELM, current_index);
   PRINTF("TESTING data_tcflow : %u\n", data_tcflow);
-  //PRINTF("zero : %u ,   one : %u ,    two : %u",zero_index,one_index,two_index);
 
   /* Filter the packets from here. 
    * If first header is 0x21, be sure from coap.
@@ -326,26 +322,33 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
       ringbufindex_ELM >= 0 &&
       dataLen > 100) 
     {
-
     /* check tcflow the value */
     switch((int)data_tcflow){
       case 0:
-                              pkt_priority_same(n,p,&zero_index);
+                                            zero_flag = 0x01;
+                                            pkt_priority_same(n,p,&zero_index);           
         break;
       case 1:
-        if      (zero_index)  pkt_priority_largerthan(n,p,&zero_index);
-        else                  pkt_priority_same(n,p,&one_index);
+        if      (zero_index && zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
+        else                  
+        {
+                                            one_flag = 0x01;
+                                            pkt_priority_same(n,p,&one_index);
+        }
         break;
       case 2:
-        if      (zero_index)   pkt_priority_largerthan(n,p,&zero_index);
-        else if (one_index)  pkt_priority_largerthan(n,p,&one_index);
-        else                  pkt_priority_same(n,p,&two_index);
+        if      (one_index && one_flag)     pkt_priority_largerthan(n,p,&one_index);
+        else if (zero_index && zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
+        else                                pkt_priority_same(n,p,&two_index);
         break;
     } 
     int16_t first;
     for (first = 0; first <= ringbufindex_ELM ; first++) {
       PRINTF("The RINGBUFFER packet sort : %u , %u\n",(current_index+first)%16, first);
     }
+
+    //PRINTF("MAIN zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
+
     ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
   }else {
     n->tx_array[(put_index)] = p; // end packet.
@@ -357,11 +360,23 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
 void 
 pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp)
 {
-
+  int16_t i=0 , j=1;
+  int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf);
+  i=put_index;
+  while(1)
+  {
+    if(i<0)i=15;
+    n->tx_array[(i+1)%16] = n->tx_array[i%16];
+    if(i == *index_temp)break;
+    i--;
+  }
+  n->tx_array[*index_temp] = p;
+  
+  /*
   struct tsch_packet *temp1 = NULL;
   struct tsch_packet *temp2 = NULL;
 
-  int16_t i=0 , j=1;
+  
   temp1 = n->tx_array[*index_temp];
   n->tx_array[*index_temp] = p;
 
@@ -371,12 +386,22 @@ pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *
     n->tx_array[(*index_temp+i+j) %16] = temp1;
     //PRINTF("HERE SHOWING index_temp +i +j = %u  \n", *index_temp+i+j);
   }
-  if((int)data_tcflow == 2) two_index = *index_temp;
-  else if((int)data_tcflow == 1) one_index = *index_temp;
+  */
+  if((int)data_tcflow == 2) {
+    two_index = *index_temp;
+    if(one_index && one_flag)one_index = put_index;
+    else zero_index = put_index;
+  }
+  else if((int)data_tcflow == 1) {
+    one_index = *index_temp;
+    zero_index = put_index;
+  }
   
   *index_temp = (*index_temp++)%16; // prevent overflow. 
+#if WHITE_DEBUG
   PRINTF("zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
   PRINTF("LARGE __ index_temp : %u  \n\n", *index_temp);
+#endif /* WHITE_DEBUG */
 }
 /*---------------------------------------------------------------------------*/
 /* same */
@@ -390,8 +415,10 @@ pkt_priority_same(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_
     *index_temp = put_index;
     n->tx_array[put_index] = p;
   }
+#if WHITE_DEBUG
   PRINTF("zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
   PRINTF("SAME __ index_temp : %u  \n\n", *index_temp);  
+#endif /* WHITE_DEBUG */
 }
 /*---------------------------------------------------------------------------*/
 /* Returns the number of packets currently in the queue */
@@ -420,10 +447,15 @@ tsch_queue_remove_packet_from_queue(struct tsch_neighbor *n)
         PRINTF("TSCH-queue: packet is removed, get_index=%u\n", get_index);
 
         /* go to default */
-        if(ringbufindex_ELM == 0) {
-          zero_index = 0x0000;
-          one_index = 0x0000;
-          two_index = 0x0000;
+        if(ringbufindex_ELM < 1) {
+          /* get_index to index temp. */
+          zero_index = 0x00;
+          one_index = 0x00;
+          two_index = 0x00;
+          /* strong the index = 0 issue. */
+          zero_flag = 0x00;
+          one_flag = 0x00;
+          PRINTF("\nringbufindex : %u , get_index : %u , Go to Default.\n\n",ringbufindex_ELM,get_index);
         }
         return n->tx_array[get_index];
       } else {

@@ -59,7 +59,7 @@
 #include "sys/cooja_mt.h"
 #endif /* CONTIKI_TARGET_COOJA || CONTIKI_TARGET_COOJA_IP64 */
 
-#if TSCH_LOG_LEVEL >= 1
+#if TSCH_LOG_LEVEL >= 2
 #define DEBUG DEBUG_PRINT
 #else /* TSCH_LOG_LEVEL */
 #define DEBUG DEBUG_NONE
@@ -326,16 +326,26 @@ get_packet_and_neighbor_for_link(struct tsch_link *link, struct tsch_neighbor **
   struct tsch_packet *p = NULL;
   struct tsch_neighbor *n = NULL;
 
+  
   /* Is this a Tx link? */
-  if(link->link_options & LINK_OPTION_TX) {
-    /* is it for advertisement of EB? */
-    if(link->link_type == LINK_TYPE_ADVERTISING || link->link_type == LINK_TYPE_ADVERTISING_ONLY) {
+  //printf("tsch-slot-operation link_option 0 (%d): %02x which TX is %d RX is %d,SHARED is %d.\n",(link->link_options & LINK_OPTION_TX),(uint8_t)link->link_options,LINK_OPTION_TX,LINK_OPTION_RX,LINK_OPTION_SHARED);
+    if(link->link_options & LINK_OPTION_TX) {
+      /* is it for advertisement of EB? */
+     
+    if(((link->link_options & LINK_OPTION_SHARED) && (link->link_type == LINK_TYPE_ADVERTISING)) || link->link_type == LINK_TYPE_ADVERTISING_ONLY) {
+      /*send EB only in shard slot*/
       /* fetch EB packets */
+      //printf("tsch-slot-operation link_option 1 (%d): %02x which TX is %d RX is %d,SHARED is %d.\n",(link->link_options & LINK_OPTION_SHARED),(uint8_t)link->link_options,LINK_OPTION_TX,LINK_OPTION_RX,LINK_OPTION_SHARED);
       n = n_eb;
       p = tsch_queue_get_packet_for_nbr(n, link);
+     /* if(p!=NULL)
+      {
+        printf("fetch EB packets\n");
+      }*/
     }
     if(link->link_type != LINK_TYPE_ADVERTISING_ONLY) {
       /* NORMAL link or no EB to send, pick a data packet */
+     // printf("tsch-slot-operation NORMAL link\n");
       if(p == NULL) {
         /* Get neighbor queue associated to the link and get packet from it */
         n = tsch_queue_get_nbr(&link->addr);
@@ -347,6 +357,18 @@ get_packet_and_neighbor_for_link(struct tsch_link *link, struct tsch_neighbor **
       }
     }
   }
+  else if((link->link_options & LINK_OPTION_SHARED) && ((link->link_type == LINK_TYPE_ADVERTISING) || (link->link_type == LINK_TYPE_ADVERTISING_ONLY)))
+  {
+      /*send EB only in shard slot*/
+      /* fetch EB packets */
+      //printf("tsch-slot-operation link_option 1 (%d): %02x which TX is %d RX is %d,SHARED is %d.\n",(link->link_options & LINK_OPTION_SHARED),(uint8_t)link->link_options,LINK_OPTION_TX,LINK_OPTION_RX,LINK_OPTION_SHARED);
+      n = n_eb;
+      p = tsch_queue_get_packet_for_nbr(n, link);
+     /* if(p!=NULL)
+      {
+        printf("fetch EB packets\n");
+      }*/
+    }
   /* return nbr (by reference) */
   if(target_neighbor != NULL) {
     *target_neighbor = n;
@@ -1000,7 +1022,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
     }
 
     /* End of slot operation, schedule next slot or resynchronize */
-
+    
     /* Do we need to resynchronize? i.e., wait for EB again */
     if(!tsch_is_coordinator && (TSCH_ASN_DIFF(tsch_current_asn, last_sync_asn) >
         (100 * TSCH_CLOCK_TO_SLOTS(TSCH_DESYNC_THRESHOLD / 100, tsch_timing[tsch_ts_timeslot_length])))) {
@@ -1018,6 +1040,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
       rtimer_clock_t prev_slot_start;
       /* Time to next wake up */
       rtimer_clock_t time_to_next_active_slot;
+      //tsch_schedule_print();
       /* Schedule next wakeup skipping slots if missed deadline */
       do {
         if(current_link != NULL

@@ -73,10 +73,12 @@
 #define TSCH_ENABLE_QOS 1
 int16_t zero_index, one_index, two_index; //define the packet start index.
 int16_t ringbufindex_ELM;
-int8_t data_tcflow;
+int8_t data_tcflow, zero_flag, one_flag;
 #else
 #define TSCH_ENABLE_QOS 0
 #endif
+
+#define WHITE_DEBUG 1
 
 /* The number of neighbor queues. There are two queues allocated at all times:
  * one for EBs, one for broadcasts. Other queues are for unicast to neighbors */
