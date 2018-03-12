@@ -45,8 +45,8 @@
 #error Change SERIAL_LINE_CONF_BUFSIZE in contiki-conf.h.
 #endif
 
-#define IGNORE_CHAR(c) (c == 0x0d)
-#define END 0x0a
+#define IGNORE_CHAR(c) (c == 0x0d) // \r
+#define END 0x0a // \n
 
 static struct ringbuf rxbuf;
 static uint8_t rxbuf_data[BUFSIZE];
@@ -69,6 +69,7 @@ serial_line_input_byte(unsigned char c)
     /* Add character */
     if(ringbuf_put(&rxbuf, c) == 0) {
       /* Buffer overflow: ignore the rest of the line */
+      printf("overflow=1\n");
       overflow = 1;
     }
   } else {
@@ -78,7 +79,6 @@ serial_line_input_byte(unsigned char c)
       overflow = 0;
     }
   }
-
   /* Wake up consumer process */
   process_poll(&serial_line_process);
   return 1;
@@ -95,23 +95,28 @@ PROCESS_THREAD(serial_line_process, ev, data)
   ptr = 0;
 
   while(1) {
+    
     /* Fill application buffer until newline or empty */
     int c = ringbuf_get(&rxbuf);
     
     if(c == -1) {
       /* Buffer empty, wait for poll */
       PROCESS_YIELD();
+      printf("process_yield\n");
     } else {
       if(c != END) {
         if(ptr < BUFSIZE-1) {
           buf[ptr++] = (uint8_t)c;
+          printf("if buf c\n");
         } else {
+          printf("ignore\n");
           /* Ignore character (wait for EOL) */
         }
       } else {
+        printf("|-|-|-serial_line_process-|-|-|-|\n");
         /* Terminate */
-        buf[ptr++] = (uint8_t)'\0';
-
+        // buf[ptr++] = (uint8_t)'\0';
+        buf[ptr++] = (uint8_t)'\n';
         /* Broadcast event */
         process_post(PROCESS_BROADCAST, serial_line_event_message, buf);
 

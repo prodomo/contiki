@@ -78,6 +78,14 @@
 #undef LEDS_RED
 #undef LEDS_CONF_ALL
 
+// /*carbooky*/
+// #define LEDS_YELLOW             64 /**< LED2 (Yellow) -> PC6 */
+// #define LEDS_GREEN              128 /**< LED3 (Green)  -> PC7 */
+// //#define LEDS_YELLOW             2 /**< LED2 (Yellow) -> PC1 */
+// //#define LEDS_GREEN              4 /**< LED3 (Green)  -> PC2 */
+// #define LEDS_ORANGE             4 /**< LED4 (Orange) -> PC3 */
+
+
 #define LEDS_YELLOW             2 /**< LED2 (Yellow) -> PC1 */
 #define LEDS_GREEN              4 /**< LED3 (Green)  -> PC2 */
 #define LEDS_ORANGE             8 /**< LED4 (Orange) -> PC3 */
@@ -115,6 +123,20 @@
  * UART1_* below.
  * @{
  */
+// /*carbooky*/
+// #define UART0_RX_PORT           GPIO_B_NUM
+// #define UART0_RX_PIN            2
+
+// #define UART0_TX_PORT           GPIO_B_NUM
+// #define UART0_TX_PIN            3
+
+// #define UART1_CTS_PORT          GPIO_B_NUM
+// #define UART1_CTS_PIN           0
+
+// #define UART1_RTS_PORT          GPIO_D_NUM
+// #define UART1_RTS_PIN           3
+
+/*default*/
 #define UART0_RX_PORT           GPIO_A_NUM
 #define UART0_RX_PIN            0
 

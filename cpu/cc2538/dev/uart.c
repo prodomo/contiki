@@ -334,6 +334,7 @@ uart_init(uint8_t uart)
 void
 uart_set_input(uint8_t uart, int (* input)(unsigned char c))
 {
+  printf("||||||uart_set_input||||||\n");
   if(uart >= UART_INSTANCE_COUNT) {
     return;
   }
