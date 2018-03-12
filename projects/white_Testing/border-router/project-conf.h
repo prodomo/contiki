@@ -60,10 +60,6 @@
 #define MAX_LOG_LENGTH 2048  //Log Length
 #endif
 
-#ifndef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM 16
-#endif
-
 #ifndef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE    1280
 #endif

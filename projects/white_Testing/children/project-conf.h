@@ -52,9 +52,9 @@
 #define ENABLE_QOS_WHITE           1
 #endif
 
-#ifndef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM   16
-#endif
+// #ifndef QUEUEBUF_CONF_NUM
+// #define QUEUEBUF_CONF_NUM   16
+// #endif
 
 #ifndef MAX_LOG_LENGTH
 #define MAX_LOG_LENGTH 2048  //Log Length
