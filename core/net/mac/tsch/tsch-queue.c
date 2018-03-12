@@ -309,6 +309,18 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
   int16_t current_index = put_index-ringbufindex_ELM;
     /* fix overflow issue. */
   if((current_index) < 0) current_index = 15 - put_index;
+  
+  /* initialize value */
+  if(ringbufindex_ELM == 0) {
+          /* get_index to index temp. */
+          zero_index = 0x00;
+          one_index = 0x00;
+          two_index = 0x00;
+          /* strong the index = 0 issue. */
+          zero_flag = 0x00;
+          one_flag = 0x00;
+          //PRINTF("\nringbufindex : %u , get_index : %u , Go to Default.\n\n",ringbufindex_ELM,get_index);
+  }
 
   int dataLen=queuebuf_datalen(p->qb);
   //PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
@@ -446,17 +458,19 @@ tsch_queue_remove_packet_from_queue(struct tsch_neighbor *n)
       if(get_index != -1) {
         PRINTF("TSCH-queue: packet is removed, get_index=%u\n", get_index);
 
-        /* go to default */
-        if(ringbufindex_ELM < 1) {
-          /* get_index to index temp. */
-          zero_index = 0x00;
-          one_index = 0x00;
-          two_index = 0x00;
-          /* strong the index = 0 issue. */
-          zero_flag = 0x00;
-          one_flag = 0x00;
-          PRINTF("\nringbufindex : %u , get_index : %u , Go to Default.\n\n",ringbufindex_ELM,get_index);
-        }
+
+        // /* go to default */
+        // if(ringbufindex_ELM < 1) {
+        //   /* get_index to index temp. */
+        //   zero_index = 0x00;
+        //   one_index = 0x00;
+        //   two_index = 0x00;
+        //   /* strong the index = 0 issue. */
+        //   zero_flag = 0x00;
+        //   one_flag = 0x00;
+        //   PRINTF("\nringbufindex : %u , get_index : %u , Go to Default.\n\n",ringbufindex_ELM,get_index);
+        // }
+
         return n->tx_array[get_index];
       } else {
         return NULL;
