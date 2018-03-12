@@ -53,7 +53,7 @@
 #endif
 
 #ifndef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM 10
+#define QUEUEBUF_CONF_NUM   16
 #endif
 
 #ifndef MAX_LOG_LENGTH

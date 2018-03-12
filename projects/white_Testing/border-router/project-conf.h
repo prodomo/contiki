@@ -61,7 +61,7 @@
 #endif
 
 #ifndef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM 10
+#define QUEUEBUF_CONF_NUM 16
 #endif
 
 #ifndef UIP_CONF_BUFFER_SIZE
