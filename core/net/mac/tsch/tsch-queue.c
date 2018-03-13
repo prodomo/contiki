@@ -286,7 +286,6 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
             PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
 #endif /* ENABLE_QOS_WHITE */
-
             return p;
           } else {
             memb_free(&packet_memb, p);
@@ -303,15 +302,18 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 void
 tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p)
 {
+  int dataLen=queuebuf_datalen(p->qb);
   ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
-
   int16_t current_index = put_index-ringbufindex_ELM;
     /* fix overflow issue. */
   if((current_index) < 0) current_index = 15 - put_index;
   
   /* initialize value */
-  if(ringbufindex_ELM == 0) {
+  if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
+     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
+     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
+     ringbufindex_ELM == 0) {
           /* get_index to index temp. */
           zero_index = 0x00;
           one_index = 0x00;
@@ -322,7 +324,6 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
           //PRINTF("\nringbufindex : %u , get_index : %u , Go to Default.\n\n",ringbufindex_ELM,get_index);
   }
 
-  int dataLen=queuebuf_datalen(p->qb);
   //PRINTF("WHITE_TESTING TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
   PRINTF("\nShow RINGBUFFER_Elements: %u and First queue Packets : %u !!!\n", ringbufindex_ELM, current_index);
   PRINTF("TESTING data_tcflow : %u\n", data_tcflow);
@@ -330,28 +331,30 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
   /* Filter the packets from here. 
    * If first header is 0x21, be sure from coap.
    */
-  if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 && 
-      ringbufindex_ELM >= 0 &&
-      dataLen > 100) 
+  if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
+     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
+     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
+     ringbufindex_ELM >= 0 &&
+     dataLen > 100) 
     {
     /* check tcflow the value */
     switch((int)data_tcflow){
       case 0:
-                                            zero_flag = 0x01;
-                                            pkt_priority_same(n,p,&zero_index);           
+                              zero_flag = 0x01;
+                              pkt_priority_same(n,p,&zero_index);           
         break;
       case 1:
-        if      (zero_index && zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
+        if      (zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
         else                  
         {
-                                            one_flag = 0x01;
-                                            pkt_priority_same(n,p,&one_index);
+                              one_flag = 0x01;
+                              pkt_priority_same(n,p,&one_index);
         }
         break;
       case 2:
-        if      (one_index && one_flag)     pkt_priority_largerthan(n,p,&one_index);
-        else if (zero_index && zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
-        else                                pkt_priority_same(n,p,&two_index);
+        if      (one_flag)    pkt_priority_largerthan(n,p,&one_index);
+        else if (zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
+        else                  pkt_priority_same(n,p,&two_index);
         break;
     } 
     int16_t first;
@@ -400,13 +403,17 @@ pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *
   }
   */
   if((int)data_tcflow == 2) {
-    two_index = *index_temp;
-    if(one_index && one_flag)one_index = put_index;
-    else zero_index = put_index;
+    //two_index = *index_temp;
+    if(one_flag) {
+      if(zero_flag){
+        zero_index = (zero_index++)%16;
+      }
+      one_index = (one_index++)%16;
+    }else zero_index = (zero_index++)%16;
   }
   else if((int)data_tcflow == 1) {
-    one_index = *index_temp;
-    zero_index = put_index;
+    //one_index = *index_temp;
+    zero_index = (zero_index++)%16;
   }
   
   *index_temp = (*index_temp++)%16; // prevent overflow. 
