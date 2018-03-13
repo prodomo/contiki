@@ -329,7 +329,7 @@ get_packet_and_neighbor_for_link(struct tsch_link *link, struct tsch_neighbor **
   
   /* Is this a Tx link? */
   //printf("tsch-slot-operation link_option 0 (%d): %02x which TX is %d RX is %d,SHARED is %d.\n",(link->link_options & LINK_OPTION_TX),(uint8_t)link->link_options,LINK_OPTION_TX,LINK_OPTION_RX,LINK_OPTION_SHARED);
-    if(link->link_options & LINK_OPTION_TX) {
+    if(link->link_options & LINK_OPTION_TX || link->link_options & LINK_OPTION_SHARED) {
       /* is it for advertisement of EB? */
      
     if(((link->link_options & LINK_OPTION_SHARED) && (link->link_type == LINK_TYPE_ADVERTISING)) || link->link_type == LINK_TYPE_ADVERTISING_ONLY) {
@@ -357,18 +357,6 @@ get_packet_and_neighbor_for_link(struct tsch_link *link, struct tsch_neighbor **
       }
     }
   }
-  else if((link->link_options & LINK_OPTION_SHARED) && ((link->link_type == LINK_TYPE_ADVERTISING) || (link->link_type == LINK_TYPE_ADVERTISING_ONLY)))
-  {
-      /*send EB only in shard slot*/
-      /* fetch EB packets */
-      //printf("tsch-slot-operation link_option 1 (%d): %02x which TX is %d RX is %d,SHARED is %d.\n",(link->link_options & LINK_OPTION_SHARED),(uint8_t)link->link_options,LINK_OPTION_TX,LINK_OPTION_RX,LINK_OPTION_SHARED);
-      n = n_eb;
-      p = tsch_queue_get_packet_for_nbr(n, link);
-     /* if(p!=NULL)
-      {
-        printf("fetch EB packets\n");
-      }*/
-    }
   /* return nbr (by reference) */
   if(target_neighbor != NULL) {
     *target_neighbor = n;
