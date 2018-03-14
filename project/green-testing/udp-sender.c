@@ -133,7 +133,7 @@ tcpip_handler(void)
 
     printf("msg %u %u\n", msg.type, msg.value);
     leds_toggle(LEDS_RED);
-    which(msg.type)
+    switch(msg.type)
     {
       case RATE_TYPE:
       {
