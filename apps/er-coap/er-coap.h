@@ -176,9 +176,6 @@ typedef struct {
 extern coap_status_t erbium_status_code;
 extern char *coap_error_message;
 
-//Packet Traffic class function _ testing.
-void coap_set_uip_traffic_class(uint8_t priority);
-
 void coap_init_connection(uint16_t port);
 uint16_t coap_get_mid(void);
 
@@ -262,5 +259,8 @@ int coap_set_header_size1(void *packet, uint32_t size);
 
 int coap_get_payload(void *packet, const uint8_t **payload);
 int coap_set_payload(void *packet, const void *payload, size_t length);
+
+//Add function to set packet priority by setting traffic class
+void coap_set_uip_traffic_class(uint8_t priority);
 
 #endif /* ER_COAP_H_ */
