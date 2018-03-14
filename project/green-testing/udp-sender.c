@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include <dev/leds.h>
+#include "command-type.h"
 
 #define UDP_CLIENT_PORT 8775
 #define UDP_SERVER_PORT 5688
@@ -120,10 +121,42 @@ tcpip_handler(void)
 {
   if(uip_newdata()) {
     uint8_t *appdata;
+    uint8_t data;
+    struct command_msg msg;
+    memset(&msg, 0, sizeof(msg));
     appdata = (uint8_t *)uip_appdata;
     printf("--------------------recv data-----------------\n");
-    printf("%s\n", appdata);
+    printf("uip_datalen %u\n",uip_datalen());
+    memcpy(&msg.type, appdata, sizeof(data));
+    appdata+=sizeof(data);
+    memcpy(&msg.value, appdata, sizeof(data));
+
+    printf("msg %u %u\n", msg.type, msg.value);
     leds_toggle(LEDS_RED);
+    which(msg.type)
+    {
+      case RATE_TYPE:
+      {
+        set_send_rate(msg.value);
+        break;
+      }
+      case BEEP_TYPE:
+      {
+        if(msg.value == 0)
+        {
+          set_beep_on = 0;
+          leds_off(LEDS_ORANGE);
+        }
+        else if(msg.value ==1)
+        {
+          set_beep_on = 1;
+        }
+        break;
+      }
+      default:
+        break;
+    }
+
     /* Ignore incoming data */
   }
 }

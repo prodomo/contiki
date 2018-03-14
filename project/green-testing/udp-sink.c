@@ -49,6 +49,7 @@
 #include <string.h>
 #include "collect-common.h"
 #include "collect-view.h"
+#include "command-type.h"
 
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
@@ -109,6 +110,8 @@ collect_special_send(char* data)
   char temp[20][20];
   int count=0;
   uint8_t  dst_u8[2];
+  struct command_msg msg;
+  memset(&msg, 0, sizeof(msg));
 
   PRINTF("%s\n", data);
   if(server_conn == NULL) {
@@ -135,17 +138,44 @@ collect_special_send(char* data)
   uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
   
   /* assume command="send macaddr msg" */
-  split = strtok (data," ,.-");
+  /* command rule "send\dst_mac\type\value" */
+  split = strtok (data," ,.-\\");
   while (split != NULL)
   {
-    printf ("%s %d\n",split, strlen(split));
+    // printf ("%s %d\n",split, strlen(split));
     strcpy(temp[count], split);
     count++;
-    split = strtok (NULL, " ,.-");
+    split = strtok (NULL, " ,.-\\");
   }
-  for(int i=0; i<count; i++)
-    printf("temp %d %s %d\n",i , temp[i], strlen(temp[i]));
 
+  // printf("temp[2] %s\n", temp[2]);
+  if(strncmp(temp[2], "r", 1)==0)
+  {
+    printf("RATE_TYPE\n");
+    msg.type = RATE_TYPE;
+  }
+  else if(strncmp(temp[2], "b", 1)==0)
+  {
+    printf("BEEP_TYPE\n");
+    msg.type = BEEP_TYPE;
+  }
+  else
+  {
+    printf("UNKNOWN_TYPE\n");
+    msg.type = UNKNOWN_TYPE;
+  }
+  
+  if(count>=3)
+  {
+    if(atoi(temp[3])>0)
+      msg.value = atoi(temp[3]);
+    printf("atoi tmep[3] %d\n",atoi(temp[3]));
+  }
+   else
+  {
+    msg.value=0;
+  }
+  printf("msg %d %d \n", msg.type, msg.value);
   
   /* assume temp[1] is mac addr */
   /* ascii -> uint8 */
@@ -166,17 +196,17 @@ collect_special_send(char* data)
   client_ipaddr.u8[10]=0x4b;
   client_ipaddr.u8[11]=0x00;
   client_ipaddr.u8[12]=0x06;
-  client_ipaddr.u8[13]=0x0d; //openMote
-  // client_ipaddr.u8[13]=0x15; //ITRI_Mote
+  // client_ipaddr.u8[13]=0x0d; //openMote
+  client_ipaddr.u8[13]=0x15; //ITRI_Mote
   client_ipaddr.u8[14]=dst_u8[0];
   client_ipaddr.u8[15]=dst_u8[1];
   printf("\n-----------------------\n");
   printf("client_ipaddr2:");
   PRINT6ADDR(&client_ipaddr);
-  // printf("\n-----------------------\n");
-  // uip_udp_packet_sendto(server_conn, "Reply", sizeof("Reply"),
-  //                     &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
-  // leds_toggle(LEDS_RED);
+  printf("\n-----------------------\n");
+  uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+                      &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
+  leds_toggle(LEDS_RED);
 
 }
 /*---------------------------------------------------------------------------*/

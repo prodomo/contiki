@@ -64,9 +64,11 @@ static char* command_data;
 
 #ifndef PERIOD
 // #define PERIOD 20
-#define PERIOD 1
+#define PERIOD 6
 #endif
-#define RANDWAIT (PERIOD)
+#define RANDWAIT (send_period)
+
+static int send_period = PERIOD;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(collect_common_process, "collect common process");
@@ -133,6 +135,12 @@ collect_common_recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops,
   leds_blink();
 }
 /*---------------------------------------------------------------------------*/
+void
+set_send_rate(uint8_t value)
+{
+  send_period = value;
+}
+/*---------------------------------------------------------------------------*/
 PROCESS_THREAD(collect_common_process, ev, data)
 {
   static struct etimer period_timer, wait_timer, command_timer;
@@ -141,7 +149,7 @@ PROCESS_THREAD(collect_common_process, ev, data)
   collect_common_net_init();
 
   /* Send a packet every 60-62 seconds. */
-  etimer_set(&period_timer, CLOCK_SECOND * PERIOD);
+  etimer_set(&period_timer, CLOCK_SECOND * send_period);
   etimer_set(&command_timer, CLOCK_SECOND * COMMAND_PERIOD);
   while(1) {
     PROCESS_WAIT_EVENT();

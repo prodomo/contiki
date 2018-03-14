@@ -53,6 +53,7 @@ void collect_common_recv(const linkaddr_t *originator, uint8_t seqno,
                          uint16_t payload_len);
 void collect_common_set_send_active(int active);
 struct tsch_asn_t get_timesynch_time(void);
+void set_send_rate(uint8_t rate);
 
 PROCESS_NAME(collect_common_process);
 
