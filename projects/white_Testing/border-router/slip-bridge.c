@@ -154,7 +154,8 @@ output(void)
       PRINTF("\nStart ASN Numbers : %08x.\n",startASN);
       PRINTF("End ASN Numbers : %08x. \n",tsch_current_asn.ls4b);
 
-      PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
+      PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN)) * 10 ); //ms time.  
+      //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
       PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
       //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 

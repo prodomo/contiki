@@ -71,9 +71,7 @@
 
 #if ENABLE_QOS_WHITE
 #define TSCH_ENABLE_QOS 1
-int16_t zero_index, one_index, two_index; //define the packet start index.
-int16_t ringbufindex_ELM;
-int8_t data_tcflow, zero_flag, one_flag;
+
 #else
 #define TSCH_ENABLE_QOS 0
 #endif

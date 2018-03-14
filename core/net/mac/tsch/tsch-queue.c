@@ -59,7 +59,7 @@
 #if TSCH_LOG_LEVEL >= 1
 #define DEBUG DEBUG_PRINT
 #else /* TSCH_LOG_LEVEL */
-#define DEBUG DEBUG_FULL
+#define DEBUG DEBUG_NONE
 #endif /* TSCH_LOG_LEVEL */
 #include "net/net-debug.h"
 
@@ -72,6 +72,10 @@
 MEMB(packet_memb, struct tsch_packet, QUEUEBUF_NUM);
 MEMB(neighbor_memb, struct tsch_neighbor, TSCH_QUEUE_MAX_NEIGHBOR_QUEUES);
 LIST(neighbor_list);
+
+int16_t zero_index, one_index, two_index; //define the packet start index.
+int16_t ringbufindex_ELM;
+int8_t data_tcflow, zero_flag, one_flag;
 
 /* Broadcast and EB virtual neighbors */
 struct tsch_neighbor *n_broadcast;
