@@ -53,7 +53,7 @@
 #endif
 
 #ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE           1
+#define ENABLE_QOS_WHITE           0
 #endif
 
 #ifndef MAX_LOG_LENGTH
