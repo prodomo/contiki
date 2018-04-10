@@ -59,7 +59,7 @@
 #if TSCH_LOG_LEVEL >= 1
 #define DEBUG DEBUG_PRINT
 #else /* TSCH_LOG_LEVEL */
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_FULL
 #endif /* TSCH_LOG_LEVEL */
 #include "net/net-debug.h"
 
@@ -75,7 +75,7 @@ LIST(neighbor_list);
 
 int16_t zero_index, one_index, two_index; //define the packet start index.
 int16_t ringbufindex_ELM;
-int8_t data_tcflow, zero_flag, one_flag;
+uint8_t data_tcflow, zero_flag, one_flag;
 
 /* Broadcast and EB virtual neighbors */
 struct tsch_neighbor *n_broadcast;
@@ -262,8 +262,8 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             p->transmissions = 0;
 
             /* show queuebuf information. */
-            int i;
-            int dataLen=queuebuf_datalen(p->qb);
+            uint8_t i;
+            uint8_t dataLen=queuebuf_datalen(p->qb);
             for(i=0;i<dataLen;i++){
               uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[i];
               PRINTF("%02x ",data);
@@ -276,7 +276,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
                 dataLen >= 100) {
 
-              data_tcflow = ((int8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow location in queuebuf.
+              data_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow location in queuebuf.
               PRINTF("Traffic classes In TSCH queue : %02x\n", data_tcflow);
               
             }
@@ -305,8 +305,8 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 void
 tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p)
 {
-  int dataLen = queuebuf_datalen(p->qb); // packet dataLenght.
-  int ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
+  uint8_t dataLen = queuebuf_datalen(p->qb); // packet dataLenght.
+  uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
   ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
   int16_t current_index = put_index-ringbufindex_ELM;
@@ -342,7 +342,7 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
      dataLen > 100) 
     {
     /* check tcflow the value */
-    switch((int)data_tcflow){
+    switch((uint8_t)data_tcflow){
       case 0:
                               zero_flag = 0x01; // true
                               pkt_priority_same(n,p,&zero_index);           
@@ -377,8 +377,8 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
 void 
 pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp)
 {
-  int ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
-  int16_t i=0 , j=1;
+  uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
+  uint8_t i=0 , j=1;
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf);
   i = put_index;
   while(1)
@@ -391,7 +391,7 @@ pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *
   n->tx_array[*index_temp] = p;
 
   /* replace the index  */
-  if((int)data_tcflow == 2) {
+  if((uint8_t)data_tcflow == 2) {
     if(one_flag) {
       if(zero_flag) zero_index = (zero_index++)%ringbufSize;
       if(!two_index) two_index = one_index;
