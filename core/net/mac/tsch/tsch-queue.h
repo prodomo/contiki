@@ -209,4 +209,9 @@ void pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int1
 void pkt_priority_same(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp);
 */
 
+/* White resorting ringbuf method 2, using swap packet in ringbuf */
+
+void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p);
+void pkt_priority_sorting(struct tsch_neighbor *n,struct tsch_packet *p);
+
 #endif /* __TSCH_QUEUE_H__ */
