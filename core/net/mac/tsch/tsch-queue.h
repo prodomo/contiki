@@ -71,12 +71,13 @@
 
 #if ENABLE_QOS_WHITE
 #define TSCH_ENABLE_QOS 1
-
 #else
 #define TSCH_ENABLE_QOS 0
 #endif
 
 #define WHITE_DEBUG 1
+
+
 
 /* The number of neighbor queues. There are two queues allocated at all times:
  * one for EBs, one for broadcasts. Other queues are for unicast to neighbors */

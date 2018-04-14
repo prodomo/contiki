@@ -152,8 +152,11 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   // memcpy(buffer, rpl_parent_address, sizeof(rpl_parent_address));
   // packet_counter += sizeof(rpl_parent_address);
 
+  /* just for testing debug */
+  //packet_priority=(packet_priority+1)%3;
+  //PRINTF("%d \n",packet_priority);
+  /* end of testing */
 
-  
   coap_set_uip_traffic_class(packet_priority);
   REST.set_response_payload(response, buffer, sizeof(message));
 

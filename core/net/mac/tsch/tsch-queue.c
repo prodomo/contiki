@@ -345,15 +345,13 @@ tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet
     switch((uint8_t)data_tcflow){
       case 0:
                               zero_flag = 0x01; // true
-                              pkt_priority_same(n,p,&zero_index);           
+                              pkt_priority_same(n,p,&zero_index);
         break;
       case 1:
+                              one_flag = 0x01; //true
         if      (zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
         else                  
-        {
-                              one_flag = 0x01; //true
                               pkt_priority_same(n,p,&one_index);
-        }
         break;
       case 2:
         if      (one_flag)    pkt_priority_largerthan(n,p,&one_index);
@@ -378,7 +376,7 @@ void
 pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp)
 {
   uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
-  uint8_t i=0 , j=1;
+  uint8_t i=0;
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf);
   i = put_index;
   while(1)
@@ -392,20 +390,29 @@ pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *
 
   /* replace the index  */
   if((uint8_t)data_tcflow == 2) {
+
+    // check have P1 in ringbuffer
     if(one_flag) {
-      if(zero_flag) zero_index = (zero_index++)%ringbufSize;
+      // check have P0 in ringbuffer
+      if(zero_flag) {
+        // refresh zero_flag
+        zero_index = (zero_index+1)%ringbufSize;
+      }
+      // check have P2
       if(!two_index) two_index = one_index;
-      one_index = (one_index++)%ringbufSize;
+      //one_index = one_index+1;
+      one_index = (one_index+1)%ringbufSize;
     }else {
       if(!two_index) two_index = zero_index;
-      zero_index = (zero_index++)%ringbufSize;
+      //zero_index = zero_index+1;
+      zero_index = (zero_index+1)%ringbufSize;
     }
   }
-  else if((int)data_tcflow == 1) {
-    zero_index = (zero_index++)%ringbufSize;
+  else if((uint8_t)data_tcflow == 1) {
+    if(zero_flag) zero_index = (zero_index+1)%ringbufSize;
   }
-  
-  *index_temp = (*index_temp++)%ringbufSize; // prevent overflow. 
+  //*index_temp = *index_temp+1;
+  *index_temp = (*index_temp+1)%ringbufSize; // fix the overflow. 
 #if WHITE_DEBUG
   PRINTF("zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
   PRINTF("LARGE __ index_temp : %u  \n\n", *index_temp);
@@ -453,22 +460,6 @@ tsch_queue_remove_packet_from_queue(struct tsch_neighbor *n)
       int16_t get_index = ringbufindex_get(&n->tx_ringbuf);
       if(get_index != -1) {
         PRINTF("TSCH-queue: packet is removed, get_index=%u\n", get_index);
-
-      //   int dataLen = queuebuf_datalen(p->qb); // packet dataLenght.
-      //   /* initialize value */
-      // if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
-      //   ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
-      //   ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
-      //   ringbufindex_ELM == 0) {
-      //     /* get_index to index temp. */
-      //     zero_index = 0x00;
-      //     one_index = 0x00;
-      //     two_index = 0x00;
-      //     /* strong the index = 0 issue. */
-      //     zero_flag = 0x00;
-      //     one_flag = 0x00;
-      //   PRINTF("!!! GO TO DAFAULT !!!\n");
-      // }
         return n->tx_array[get_index];
       } else {
         return NULL;

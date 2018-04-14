@@ -150,15 +150,17 @@ output(void)
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4];
 
       // uint32_t event_counter.
-      uint32_t eventCounter = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 15] << 24 | 
+      /**
+       * uint32_t eventCounter = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 15] << 24 | 
                               ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 14] << 16 |
                               ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 13] << 8 |
                               ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 12];
+       */
       
       // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
       PRINTF("\nStart_ASN_Numbers:%08x\n",startASN);
       PRINTF("End_ASN_Numbers:%08x\n",tsch_current_asn.ls4b);
-      PRINTF("Event_Counter:%d\n",eventCounter);
+      //PRINTF("Event_Counter:%d\n",eventCounter);
       PRINTF("The_Packet_Latancy_is:%u",((tsch_current_asn.ls4b - startASN)) * 10 ); //ms time.
       PRINTF(" ms\n");
       //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       

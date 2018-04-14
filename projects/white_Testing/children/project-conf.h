@@ -48,6 +48,8 @@
 #define RPL_WITH_NON_STORING 1
 #define WITH_NON_STORING 1
 
+
+/* QoS function optional*/
 #ifndef ENABLE_QOS_WHITE
 #define ENABLE_QOS_WHITE           1
 #endif
