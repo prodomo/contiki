@@ -300,141 +300,141 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
   PRINTF("TSCH-queue:! add packet failed: %u %p %d %p %p\n", tsch_is_locked(), n, put_index, p, p ? p->qb : NULL);
   return 0;
 }
-/*---------------------------------------------------------------------------*/
-/* Resorting ringbuf packet by priority */
-void
-tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p)
-{
-  uint8_t dataLen = queuebuf_datalen(p->qb); // packet dataLenght.
-  uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
-  ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
-  int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
-  int16_t current_index = put_index-ringbufindex_ELM;
+// /*---------------------------------------------------------------------------*/
+// /* Resorting ringbuf packet by priority */
+// void
+// tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p)
+// {
+//   uint8_t dataLen = queuebuf_datalen(p->qb); // packet dataLenght.
+//   uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
+//   ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
+//   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
+//   int16_t current_index = put_index-ringbufindex_ELM;
 
-  /* fix overflow issue. */
-  if((current_index) < 0) current_index = (ringbufSize-1) - put_index; // for log view.
+//   /* fix overflow issue. */
+//   if((current_index) < 0) current_index = (ringbufSize-1) - put_index; // for log view.
   
-  /* initialize value */
-  if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
-     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
-     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
-     ringbufindex_ELM == 0) {
-          /* get_index to index temp. */
-          zero_index = 0x00;
-          one_index = 0x00;
-          two_index = 0x00;
-          /* strong the index = 0 issue. */
-          zero_flag = 0x00;
-          one_flag = 0x00;
-    PRINTF("!!! GO TO DAFAULT !!!\n");
-  }
+//   /* initialize value */
+//   if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
+//      ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && 
+//      ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff &&
+//      ringbufindex_ELM == 0) {
+//           /* get_index to index temp. */
+//           zero_index = 0x00;
+//           one_index = 0x00;
+//           two_index = 0x00;
+//           /* strong the index = 0 issue. */
+//           zero_flag = 0x00;
+//           one_flag = 0x00;
+//     PRINTF("!!! GO TO DAFAULT !!!\n");
+//   }
   
-  PRINTF("\nShow RINGBUFFER_Elements: %u and First queue Packets : %u !!!\n", ringbufindex_ELM, current_index);
-  PRINTF("TESTING data_tcflow : %u\n", data_tcflow);
+//   PRINTF("\nShow RINGBUFFER_Elements: %u and First queue Packets : %u !!!\n", ringbufindex_ELM, current_index);
+//   PRINTF("TESTING data_tcflow : %u\n", data_tcflow);
 
-  /* Filter the packets from here. 
-   * If first header is 0x21, be sure from coap.
-   */
-  if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
-     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && //endFlag[0]
-     ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff && //endFlag[1]
-     ringbufindex_ELM >= 0 &&
-     dataLen > 100) 
-    {
-    /* check tcflow the value */
-    switch((uint8_t)data_tcflow){
-      case 0:
-                              zero_flag = 0x01; // true
-                              pkt_priority_same(n,p,&zero_index);
-        break;
-      case 1:
-                              one_flag = 0x01; //true
-        if      (zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
-        else                  
-                              pkt_priority_same(n,p,&one_index);
-        break;
-      case 2:
-        if      (one_flag)    pkt_priority_largerthan(n,p,&one_index);
-        else if (zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
-        else                  pkt_priority_same(n,p,&two_index);
-        break;
-    } 
-    int16_t first;
-    for (first = 0; first <= ringbufindex_ELM ; first++) {
-      PRINTF("The RINGBUFFER packet sort : %u , %u\n",(current_index+first)%ringbufSize, first);
-    }
+//   /* Filter the packets from here. 
+//    * If first header is 0x21, be sure from coap.
+//    */
+//   if(((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
+//      ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-4] == 0xf0 && //endFlag[0]
+//      ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen-3] == 0xff && //endFlag[1]
+//      ringbufindex_ELM >= 0 &&
+//      dataLen > 100) 
+//     {
+//     /* check tcflow the value */
+//     switch((uint8_t)data_tcflow){
+//       case 0:
+//                               zero_flag = 0x01; // true
+//                               pkt_priority_same(n,p,&zero_index);
+//         break;
+//       case 1:
+//                               one_flag = 0x01; //true
+//         if      (zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
+//         else                  
+//                               pkt_priority_same(n,p,&one_index);
+//         break;
+//       case 2:
+//         if      (one_flag)    pkt_priority_largerthan(n,p,&one_index);
+//         else if (zero_flag)   pkt_priority_largerthan(n,p,&zero_index);
+//         else                  pkt_priority_same(n,p,&two_index);
+//         break;
+//     } 
+//     int16_t first;
+//     for (first = 0; first <= ringbufindex_ELM ; first++) {
+//       PRINTF("The RINGBUFFER packet sort : %u , %u\n",(current_index+first)%ringbufSize, first);
+//     }
 
-    ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
-  }else {
-    n->tx_array[(put_index)] = p; // end packet.
-    ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
-  }
-}
-/*---------------------------------------------------------------------------*/
-/* Large than it*/
-void 
-pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp)
-{
-  uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
-  uint8_t i=0;
-  int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf);
-  i = put_index;
-  while(1)
-  {
-    if(i<0) i = (ringbufSize-1);
-    n->tx_array[(i+1)%ringbufSize] = n->tx_array[i%ringbufSize];
-    if(i == *index_temp)break;
-    i--;
-  }
-  n->tx_array[*index_temp] = p;
+//     ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
+//   }else {
+//     n->tx_array[(put_index)] = p; // end packet.
+//     ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
+//   }
+// }
+// /*---------------------------------------------------------------------------*/
+// /* Large than it*/
+// void 
+// pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp)
+// {
+//   uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
+//   uint8_t i=0;
+//   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf);
+//   i = put_index;
+//   while(1)
+//   {
+//     if(i<0) i = (ringbufSize-1);
+//     n->tx_array[(i+1)%ringbufSize] = n->tx_array[i%ringbufSize];
+//     if(i == *index_temp)break;
+//     i--;
+//   }
+//   n->tx_array[*index_temp] = p;
 
-  /* replace the index  */
-  if((uint8_t)data_tcflow == 2) {
+//   /* replace the index  */
+//   if((uint8_t)data_tcflow == 2) {
 
-    // check have P1 in ringbuffer
-    if(one_flag) {
-      // check have P0 in ringbuffer
-      if(zero_flag) {
-        // refresh zero_flag
-        zero_index = (zero_index+1)%ringbufSize;
-      }
-      // check have P2
-      if(!two_index) two_index = one_index;
-      //one_index = one_index+1;
-      one_index = (one_index+1)%ringbufSize;
-    }else {
-      if(!two_index) two_index = zero_index;
-      //zero_index = zero_index+1;
-      zero_index = (zero_index+1)%ringbufSize;
-    }
-  }
-  else if((uint8_t)data_tcflow == 1) {
-    if(zero_flag) zero_index = (zero_index+1)%ringbufSize;
-  }
-  //*index_temp = *index_temp+1;
-  *index_temp = (*index_temp+1)%ringbufSize; // fix the overflow. 
-#if WHITE_DEBUG
-  PRINTF("zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
-  PRINTF("LARGE __ index_temp : %u  \n\n", *index_temp);
-#endif /* WHITE_DEBUG */
-}
-/*---------------------------------------------------------------------------*/
-/* same */
-void
-pkt_priority_same(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp) 
-{
-  int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
-  if(*index_temp){
-    n->tx_array[put_index] = p;
-  }else {
-    *index_temp = put_index;
-    n->tx_array[put_index] = p;
-  }
-#if WHITE_DEBUG
-  PRINTF("zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
-  PRINTF("SAME __ index_temp : %u  \n\n", *index_temp);  
-#endif /* WHITE_DEBUG */
-}
+//     // check have P1 in ringbuffer
+//     if(one_flag) {
+//       // check have P0 in ringbuffer
+//       if(zero_flag) {
+//         // refresh zero_flag
+//         zero_index = (zero_index+1)%ringbufSize;
+//       }
+//       // check have P2
+//       if(!two_index) two_index = one_index;
+//       //one_index = one_index+1;
+//       one_index = (one_index+1)%ringbufSize;
+//     }else {
+//       if(!two_index) two_index = zero_index;
+//       //zero_index = zero_index+1;
+//       zero_index = (zero_index+1)%ringbufSize;
+//     }
+//   }
+//   else if((uint8_t)data_tcflow == 1) {
+//     if(zero_flag) zero_index = (zero_index+1)%ringbufSize;
+//   }
+//   //*index_temp = *index_temp+1;
+//   *index_temp = (*index_temp+1)%ringbufSize; // fix the overflow. 
+// #if WHITE_DEBUG
+//   PRINTF("zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
+//   PRINTF("LARGE __ index_temp : %u  \n\n", *index_temp);
+// #endif /* WHITE_DEBUG */
+// }
+// /*---------------------------------------------------------------------------*/
+// /* same */
+// void
+// pkt_priority_same(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp) 
+// {
+//   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
+//   if(*index_temp){
+//     n->tx_array[put_index] = p;
+//   }else {
+//     *index_temp = put_index;
+//     n->tx_array[put_index] = p;
+//   }
+// #if WHITE_DEBUG
+//   PRINTF("zero : %u ,   one : %u ,    two : %u\n",zero_index,one_index,two_index);
+//   PRINTF("SAME __ index_temp : %u  \n\n", *index_temp);  
+// #endif /* WHITE_DEBUG */
+// }
 /*---------------------------------------------------------------------------*/
 /* Returns the number of packets currently in the queue */
 int

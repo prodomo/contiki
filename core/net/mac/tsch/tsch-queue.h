@@ -202,10 +202,11 @@ void tsch_queue_update_all_backoff_windows(const linkaddr_t *dest_addr);
 void tsch_queue_init(void);
 
 
-// White resorting ringbuf by priority.
-
+/* White resorting ringbuf by priority. */
+/*
 void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p);
 void pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp);
 void pkt_priority_same(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp);
+*/
 
 #endif /* __TSCH_QUEUE_H__ */
