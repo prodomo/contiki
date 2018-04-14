@@ -357,33 +357,44 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
   int8_t ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
   //uint8_t current_packet_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24];
-
+  int8_t flag = 0;
   // ((uint8_t *)queuebuf_dataptr(p->qb))
   int16_t i = put_index;
-  do
+  PRINTF("Start the put_index : %d \n", i);
+
+  while(1)
   {
+    PRINTF("put_index : %d\n", i);
     if (i < 0) i = (ringbufSize-1); //fix the i < 0 , will crash;
+    if (ringbufindex_ELM == 0) break;
+    if (flag) break;
+    //if (flag || ringbufindex_ELM == 0) break;
     //if (ringbufindex_ELM == 0) break; // ringbuf elements == 0 , will be back the sorting function.
     //struct tsch_packet *temp_p_c = n->tx_array[(i) % ringbufSize]; 
 
     struct tsch_packet *temp_p_c; // current packet to temp_p_c.
-    struct tsch_packet *temp_p_p = n->tx_array[(i - 1) % ringbufSize]; // previous the packet to temp_p.
+    struct tsch_packet *temp_p_p = (n->tx_array[(i - 1) % ringbufSize]); // previous the packet to temp_p.
 
     if ( i == put_index ) {temp_p_c = p; }
     else { temp_p_c = n->tx_array[(i) % ringbufSize]; }
 
-    if (((uint8_t *)queuebuf_dataptr(temp_p_c->qb))[24] > ((uint8_t *)queuebuf_dataptr(temp_p_p->qb))[24])
+    if (((int8_t *)queuebuf_dataptr(temp_p_c->qb))[24] > ((int8_t *)queuebuf_dataptr(temp_p_p->qb))[24])
     {
       PRINTF(" THE function was work. \n");
       n->tx_array[(i) % ringbufSize] = temp_p_p;
       n->tx_array[(i - 1) % ringbufSize] = temp_p_c;
-
-      // n->tx_array[(i) % ringbufSize] = p;
+    }else 
+    {
+      PRINTF(" Look the Same or Little priority of packet in ringbuffer. \n");
+      // same the priority, break the loop.
+      n->tx_array[(i) % ringbufSize] = temp_p_c;
+      flag = 1; // break
     }
     i = i - 1; // put_index
     ringbufindex_ELM = ringbufindex_ELM - 1; //ringbufsize
-  }while (ringbufindex_ELM > 0); 
-  
+  }
+  // }while (ringbufindex_ELM > 0 || flag != 1); 
+  PRINTF("End the put_index : %d\n", i);
   //n->tx_array[(i) % ringbufSize] = p;
   ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
 
