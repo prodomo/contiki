@@ -366,9 +366,8 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
   {
     int8_t previous_index;
 
-    PRINTF("put_index : %d\n", i);
-
     if (i < 0) i = (ringbufSize-1); //fix the i < 0 , will crash;
+    PRINTF("put_index : %d\n", i);
     PRINTF("left_Pkt_To_Scan: % d\n", ringbufindex_ELM);
     if(ringbufindex_ELM == 0) break;
   
@@ -400,7 +399,15 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
   PRINTF("End the put_index : %d\n", i);
   //n->tx_array[(i) % ringbufSize] = p;
   ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
-
+  int itor=put_index-ringbufindex_elements(&n->tx_ringbuf);
+  if(itor<0) itor+=16;
+  for(itor;itor<put_index;itor=(itor+1)%16)
+  {
+     struct tsch_packet *temp_p_p = (n->tx_array[itor]); // previous the packet to temp_p.
+    uint8_t previous_packet_tcflow = ((uint8_t *)queuebuf_dataptr(temp_p_p->qb))[24];
+    PRINTF("%d ",previous_packet_tcflow);
+  }
+  PRINTF("\n");
   //   uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
   //   uint8_t i=0;
   //   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf);
