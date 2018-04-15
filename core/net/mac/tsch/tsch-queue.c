@@ -263,7 +263,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
   int16_t put_index = -1;
   struct tsch_packet *p = NULL;
 
-  data_tcflow = 0; //by default.
+  data_tcflow = -1; //by default.
 
   if (!tsch_is_locked())
   {
