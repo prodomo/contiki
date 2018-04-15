@@ -345,7 +345,7 @@ void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n, struct tsch_
   }
   else
   {
-    PRINTF(" ringbufindex_ELM empty  & place first \n");
+    PRINTF(" ringbufindex_ELM empty  & place \n");
     n->tx_array[put_index] = p;
     ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
   }
@@ -384,7 +384,7 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
         current_packet_tcflow = 0 ;
     }
 
-    PRINTF("tcflow_current : %d   tcflow_previous: %d\n", (current_packet_tcflow,previous_packet_tcflow);
+    PRINTF("tcflow_current : %d   tcflow_previous: %d\n", current_packet_tcflow,previous_packet_tcflow);
 
     if (current_packet_tcflow <= previous_packet_tcflow || ringbufindex_ELM == 0) break;
     n->tx_array[(i+1)%ringbufSize] = n->tx_array[i%ringbufSize];
