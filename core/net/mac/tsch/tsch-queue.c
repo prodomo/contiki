@@ -389,7 +389,7 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
     PRINTF("tcflow_current : %d   tcflow_previous: %d \n", current_packet_tcflow,previous_packet_tcflow);
 
     if (current_packet_tcflow <= previous_packet_tcflow) break;
-    n->tx_array[i] = n->tx_array[previous_index];
+    n->tx_array[(i+1)%ringbufSize] = n->tx_array[i%ringbufSize];
    
     i = i - 1; // put_index
     ringbufindex_ELM = ringbufindex_ELM - 1; //ringbufsize
