@@ -44,8 +44,6 @@
 #include "dev/uart1.h"
 #include <string.h>
 
-
-
 #define UIP_IP_BUF        ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 #define UIP_UDP_BUF       ((struct uip_udp_hdr *)&uip_buf[UIP_LLIPH_LEN])
 
@@ -125,7 +123,7 @@ output(void)
     PRINTF(" dst=");
     PRINT6ADDR(&UIP_IP_BUF->destipaddr);
     PRINTF("\n");
-    PRINTF("packet length: %d \n", UIP_IP_BUF->len[1]);
+    PRINTF("packet_length:%d \n", UIP_IP_BUF->len[1]);
 
     uint8_t ip_payload_length = UIP_IP_BUF->len[1];
     uint8_t coap_packet_start_location = UIP_IPH_LEN + ip_payload_length - 40;  //42 is coap payload length
@@ -134,15 +132,16 @@ output(void)
     uint8_t flag2 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 1];
     
     if(flag1 == 0x54 && flag2 == 0x66){
-      PRINTF("Found flag: %02x %02x\n", flag1, flag2);  
+      PRINTF("\nFound_flag:%02x %02x\n", flag1, flag2);  
       // tsch_current_asn.ls4b
-      PRINTF("Source IP Address = ");
+      PRINTF("Source_IP_Address:");
       PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
 
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11] = tsch_current_asn.ls4b & 0xff;
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10] = (tsch_current_asn.ls4b >> 8) & 0xff;
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9] = (tsch_current_asn.ls4b >> 16) & 0xff;
-      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8] = (tsch_current_asn.ls4b >> 24) & 0xff;
+      // uint32_t endASN.
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 8] = tsch_current_asn.ls4b & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 9] = (tsch_current_asn.ls4b >> 8) & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 10] = (tsch_current_asn.ls4b >> 16) & 0xff;
+      ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 11] = (tsch_current_asn.ls4b >> 24) & 0xff;
 
       // uint32_t startASN.
       uint32_t startASN = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 7] << 24 | 
@@ -150,20 +149,30 @@ output(void)
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5] << 8 |
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4];
 
+      // uint32_t event_counter.
+      /**
+       * uint32_t eventCounter = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 15] << 24 | 
+                              ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 14] << 16 |
+                              ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 13] << 8 |
+                              ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 12];
+       */
+      
       // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
-      PRINTF("\nStart ASN Numbers : %08x.\n",startASN);
-      PRINTF("End ASN Numbers : %08x. \n",tsch_current_asn.ls4b);
-
-      PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
-      PRINTF("Traffic Classes : %02x. \n",UIP_IP_BUF->tcflow);
+      PRINTF("\nStart_ASN_Numbers:%08x\n",startASN);
+      PRINTF("End_ASN_Numbers:%08x\n",tsch_current_asn.ls4b);
+      //PRINTF("Event_Counter:%d\n",eventCounter);
+      PRINTF("The_Packet_Latancy_is:%u",((tsch_current_asn.ls4b - startASN)) * 10 ); //ms time.
+      PRINTF(" ms\n");
+      //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
+      PRINTF("Traffic_Classes:%02x. \n",UIP_IP_BUF->tcflow);
       //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 
-      // rebuilding UDP checksum.
+      //rebuilding UDP checksum.
       UIP_UDP_BUF->udpchksum = 0;
       uint16_t new_udp_checksum = ~(uip_udpchksum());
       UIP_UDP_BUF->udpchksum = new_udp_checksum;
 
-      PRINTF("new checksum: %04x\n\n", new_udp_checksum);
+      PRINTF("\nnew_checksum:%04x\n", new_udp_checksum);
 
       // uint8_t ndx;
       // for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp

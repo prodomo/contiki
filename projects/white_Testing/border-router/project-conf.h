@@ -53,12 +53,12 @@
 #endif
 
 #ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE           1
+#define ENABLE_QOS_WHITE           0
 #endif
 
-#ifndef MAX_LOG_LENGTH
-#define MAX_LOG_LENGTH 2048  //Log Length
-#endif
+// #ifndef MAX_LOG_LENGTH
+// #define MAX_LOG_LENGTH 2048  //Log Length
+// #endif
 
 #ifndef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE    1280

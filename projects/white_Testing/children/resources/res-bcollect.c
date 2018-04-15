@@ -152,8 +152,11 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   // memcpy(buffer, rpl_parent_address, sizeof(rpl_parent_address));
   // packet_counter += sizeof(rpl_parent_address);
 
+  /* just for testing debug */
+  //packet_priority=(packet_priority+1)%3;
+  //PRINTF("%d \n",packet_priority);
+  /* end of testing */
 
-  
   coap_set_uip_traffic_class(packet_priority);
   REST.set_response_payload(response, buffer, sizeof(message));
 
@@ -172,11 +175,11 @@ res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t prefer
   int threshold = -1;
   int priority = -1;
 
-  if(REST.get_query_variable(request, "threshold", &threshold_c)) {
+  if(REST.get_query_variable(request, "thd", &threshold_c)) {
     threshold = (uint8_t)atoi(threshold_c);
   }
 
-  if(REST.get_query_variable(request, "packet_priority", &priority_c)) {
+  if(REST.get_query_variable(request, "pp", &priority_c)) {
     priority = (uint8_t)atoi(priority_c);
   }
 
