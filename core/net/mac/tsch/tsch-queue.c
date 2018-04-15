@@ -367,8 +367,7 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
   {
     PRINTF("put_index : %d\n", i);
     if (i < 0) i = (ringbufSize-1); //fix the i < 0 , will crash;
-    if (ringbufindex_ELM == 0) break;
-    if (flag) break;
+    
     //if (flag || ringbufindex_ELM == 0) break;
     //if (ringbufindex_ELM == 0) break; // ringbuf elements == 0 , will be back the sorting function.
     //struct tsch_packet *temp_p_c = n->tx_array[(i) % ringbufSize]; 
@@ -391,6 +390,8 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
       n->tx_array[(i) % ringbufSize] = temp_p_c;
       flag = 1; // break
     }
+    if (ringbufindex_ELM == 0) break;
+    if (flag) break;
     i = i - 1; // put_index
     ringbufindex_ELM = ringbufindex_ELM - 1; //ringbufsize
   }
