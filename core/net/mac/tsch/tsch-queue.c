@@ -263,7 +263,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
   int16_t put_index = -1;
   struct tsch_packet *p = NULL;
 
-  data_tcflow = -1; //by default.
+  data_tcflow = 0; //by default.
 
   if (!tsch_is_locked())
   {
@@ -300,10 +300,9 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             PRINTF("\n");
 
             //check coap have created packet, if will, print it.
-            if (((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
+            if ( dataLen >= 100 &&((uint8_t *)queuebuf_dataptr(p->qb))[0] == 0x21 &&
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen - 4] == 0xf0 &&
-                ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen - 3] == 0xff &&
-                dataLen >= 100)
+                ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen - 3] == 0xff )
             {
               data_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow location in queuebuf.
               PRINTF("Traffic classes In TSCH queue : %02x\n", data_tcflow);
@@ -367,7 +366,8 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
   {
     PRINTF("put_index : %d\n", i);
     if (i < 0) i = (ringbufSize-1); //fix the i < 0 , will crash;
-    
+    if (ringbufindex_ELM == 0) break;
+    if (flag) break;
     //if (flag || ringbufindex_ELM == 0) break;
     //if (ringbufindex_ELM == 0) break; // ringbuf elements == 0 , will be back the sorting function.
     //struct tsch_packet *temp_p_c = n->tx_array[(i) % ringbufSize]; 
@@ -390,8 +390,7 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
       n->tx_array[(i) % ringbufSize] = temp_p_c;
       flag = 1; // break
     }
-    if (ringbufindex_ELM == 0) break;
-    if (flag) break;
+    
     i = i - 1; // put_index
     ringbufindex_ELM = ringbufindex_ELM - 1; //ringbufsize
   }
