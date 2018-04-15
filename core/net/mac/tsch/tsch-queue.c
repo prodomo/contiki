@@ -345,6 +345,7 @@ void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n, struct tsch_
   }
   else
   {
+    PRINTF(" ringbufindex_ELM empty  & place first \n");
     n->tx_array[put_index] = p;
     ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
   }
@@ -356,44 +357,42 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
   uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
   int8_t ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
-  //uint8_t current_packet_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24];
-  int8_t flag = 0;
+  uint8_t current_packet_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24];
   // ((uint8_t *)queuebuf_dataptr(p->qb))
   int16_t i = put_index;
   PRINTF("Start the put_index : %d \n", i);
 
   while(1)
   {
+    int8_t previous_index;
+
     PRINTF("put_index : %d\n", i);
+
     if (i < 0) i = (ringbufSize-1); //fix the i < 0 , will crash;
-    if (ringbufindex_ELM == 0) break;
-    if (flag) break;
-    //if (flag || ringbufindex_ELM == 0) break;
-    //if (ringbufindex_ELM == 0) break; // ringbuf elements == 0 , will be back the sorting function.
-    //struct tsch_packet *temp_p_c = n->tx_array[(i) % ringbufSize]; 
-
-    struct tsch_packet *temp_p_c; // current packet to temp_p_c.
-    struct tsch_packet *temp_p_p = (n->tx_array[(i - 1) % ringbufSize]); // previous the packet to temp_p.
-
-    if ( i == put_index ) {temp_p_c = p; } //first.
-    else { temp_p_c = n->tx_array[(i) % ringbufSize]; } //second or more.
-
-    if (((int8_t *)queuebuf_dataptr(temp_p_c->qb))[24] > ((int8_t *)queuebuf_dataptr(temp_p_p->qb))[24])
-    {
-      PRINTF(" THE function can working. \n");
-      n->tx_array[(i) % ringbufSize] = temp_p_p;
-      n->tx_array[(i - 1) % ringbufSize] = temp_p_c;
-    }else 
-    {
-      PRINTF(" Find the Same or Little priority of packet in ringbuffer. \n");
-      // same the priority, break the loop.
-      n->tx_array[(i) % ringbufSize] = temp_p_c;
-      flag = 1; // break
+    if(i==0){
+      previous_index=(ringbufSize-1);
     }
+    else
+    {
+      previous_index=i-1;
+    }
+
+    struct tsch_packet *temp_p_p = (n->tx_array[previous_index % ringbufSize]); // previous the packet to temp_p.
+    uint8_t previous_packet_tcflow = ((uint8_t *)queuebuf_dataptr(temp_p_p->qb))[24];
     
+    if(current_packet_tcflow<0 || current_packet_tcflow>2){
+        current_packet_tcflow = 0 ;
+    }
+
+    PRINTF("tcflow_current : %d   tcflow_previous: %d\n", (current_packet_tcflow,previous_packet_tcflow);
+
+    if (current_packet_tcflow <= previous_packet_tcflow || ringbufindex_ELM == 0) break;
+    n->tx_array[(i+1)%ringbufSize] = n->tx_array[i%ringbufSize];
+   
     i = i - 1; // put_index
     ringbufindex_ELM = ringbufindex_ELM - 1; //ringbufsize
   }
+  n->tx_array[(i) % ringbufSize] = p;
   // }while (ringbufindex_ELM > 0 || flag != 1); 
   PRINTF("End the put_index : %d\n", i);
   //n->tx_array[(i) % ringbufSize] = p;
