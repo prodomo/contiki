@@ -369,6 +369,9 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
     PRINTF("put_index : %d\n", i);
 
     if (i < 0) i = (ringbufSize-1); //fix the i < 0 , will crash;
+    PRINTF("left_Pkt_To_Scan: % d\n", ringbufindex_ELM);
+    if(ringbufindex_ELM == 0) break;
+  
     if(i==0){
       previous_index=(ringbufSize-1);
     }
@@ -384,9 +387,9 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
         current_packet_tcflow = 0 ;
     }
 
-    PRINTF("tcflow_current : %d   tcflow_previous: %d\n", current_packet_tcflow,previous_packet_tcflow);
+    PRINTF("tcflow_current : %d   tcflow_previous: %d \n", current_packet_tcflow,previous_packet_tcflow);
 
-    if (current_packet_tcflow <= previous_packet_tcflow || ringbufindex_ELM == 0) break;
+    if (current_packet_tcflow <= previous_packet_tcflow) break;
     n->tx_array[(i+1)%ringbufSize] = n->tx_array[i%ringbufSize];
    
     i = i - 1; // put_index
