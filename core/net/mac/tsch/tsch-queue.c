@@ -379,10 +379,10 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
       previous_index=i-1;
     }
 
-    struct tsch_packet *temp_p_p = (n->tx_array[previous_index % ringbufSize]); // previous the packet to temp_p.
+    struct tsch_packet *temp_p_p = (n->tx_array[previous_index % ringbufSize]); // previous packet to temp_p.
     uint8_t previous_packet_tcflow = ((uint8_t *)queuebuf_dataptr(temp_p_p->qb))[24];
     
-    /*if the position[24] of packet in is not 0~2(which means it might not br COAP packet) regard them with priority=0*/
+    //if the position[24] of packet in is not 0~2(which means it might not be COAP packet) regard them with priority=0
     if(current_packet_tcflow<0 || current_packet_tcflow>2){
         current_packet_tcflow = 0 ;
     }
@@ -399,9 +399,8 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
     ringbufindex_ELM = ringbufindex_ELM - 1; //ringbufsize
   }
   n->tx_array[(i) % ringbufSize] = p;
-  // }while (ringbufindex_ELM > 0 || flag != 1); 
+
   PRINTF("End the put_index : %d\n", i);
-  //n->tx_array[(i) % ringbufSize] = p;
   ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
   
   //   uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
