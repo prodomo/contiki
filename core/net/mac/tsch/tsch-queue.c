@@ -345,7 +345,7 @@ void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n, struct tsch_
   }
   else
   {
-    PRINTF(" ringbufindex_ELM empty  & place \n");
+    PRINTF(" ringbufindex_ELM empty & place \n");
     n->tx_array[put_index] = p;
     ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
   }
@@ -353,12 +353,12 @@ void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n, struct tsch_
 
 void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
 {
-  //uint8_t dataLen = queuebuf_datalen(p->qb);               // packet dataLenght.
+  
   uint8_t ringbufSize = ringbufindex_size(&n->tx_ringbuf); // %16 for loop ring.
   int8_t ringbufindex_ELM = ringbufindex_elements(&n->tx_ringbuf);
   int16_t put_index = ringbufindex_peek_put(&n->tx_ringbuf); //peek put ringbuf data.
   uint8_t current_packet_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24];
-  // ((uint8_t *)queuebuf_dataptr(p->qb))
+  
   int16_t i = put_index;
   PRINTF("Start the put_index : %d \n", i);
 
@@ -379,7 +379,7 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
       previous_index=i-1;
     }
 
-    struct tsch_packet *temp_p_p = (n->tx_array[previous_index % ringbufSize]); // previous packet to temp_p.
+    struct tsch_packet *temp_p_p = (n->tx_array[previous_index]); // previous packet to temp_p.
     uint8_t previous_packet_tcflow = ((uint8_t *)queuebuf_dataptr(temp_p_p->qb))[24];
     
     //if the position[24] of packet in is not 0~2(which means it might not be COAP packet) regard them with priority=0
@@ -393,12 +393,12 @@ void pkt_priority_sorting(struct tsch_neighbor *n, struct tsch_packet *p)
     PRINTF("tcflow_current : %d   tcflow_previous: %d \n", current_packet_tcflow,previous_packet_tcflow);
 
     if (current_packet_tcflow <= previous_packet_tcflow) break;
-    n->tx_array[i%ringbufSize] = n->tx_array[previous_index%ringbufSize];
+    n->tx_array[i] = n->tx_array[previous_index];
    
     i = i - 1; // put_index
-    ringbufindex_ELM = ringbufindex_ELM - 1; //ringbufsize
+    ringbufindex_ELM = ringbufindex_ELM - 1; //left_Pkt_To_Scan
   }
-  n->tx_array[(i) % ringbufSize] = p;
+  n->tx_array[i] = p;
 
   PRINTF("End the put_index : %d\n", i);
   ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
