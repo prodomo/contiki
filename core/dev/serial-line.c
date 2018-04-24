@@ -69,7 +69,6 @@ serial_line_input_byte(unsigned char c)
     /* Add character */
     if(ringbuf_put(&rxbuf, c) == 0) {
       /* Buffer overflow: ignore the rest of the line */
-      printf("overflow=1\n");
       overflow = 1;
     }
   } else {
@@ -102,18 +101,16 @@ PROCESS_THREAD(serial_line_process, ev, data)
     if(c == -1) {
       /* Buffer empty, wait for poll */
       PROCESS_YIELD();
-      printf("process_yield\n");
+      // printf("process_yield\n");
     } else {
       if(c != END) {
         if(ptr < BUFSIZE-1) {
           buf[ptr++] = (uint8_t)c;
-          printf("if buf c\n");
-        } else {
-          printf("ignore\n");
-          /* Ignore character (wait for EOL) */
+          // printf("if buf c\n");
         }
+          /* Ignore character (wait for EOL) */
       } else {
-        printf("|-|-|-serial_line_process-|-|-|-|\n");
+        // printf("|-|-|-serial_line_process-|-|-|-|\n");
         /* Terminate */
         // buf[ptr++] = (uint8_t)'\0';
         buf[ptr++] = (uint8_t)'\n';

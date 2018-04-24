@@ -143,6 +143,10 @@
 /** Read */
 #define COFFEE_READ(buf, size, offset) \
   cfs_coffee_arch_read((buf), (size), (offset))
+
+#define COFFEE_READ_1(buf, size, offset) \
+  cfs_coffee_arch_read_temp((buf), (size), (offset))
+
 /** @} */
 /*---------------------------------------------------------------------------*/
 /** \name Coffee port types

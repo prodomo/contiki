@@ -45,6 +45,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <dev/leds.h>
 #include "command-type.h"
@@ -59,6 +60,7 @@
 #define BEEP_PERIOD 1
 
 #include "cc2538-temp-sensor.h"
+#include "cfs-coffee-arch.h"
 // #include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;
@@ -68,6 +70,9 @@ volatile int set_beep_on =0;
 static temp_value=0;
 static int ain0_value=0, ain1_value=0;
 static uint8_t my_link_join=0;
+int temperature_threshold=50;
+#define MIN_TEMPERATURE -20
+#define MAX_TEMPERATURE 120
 
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -77,6 +82,39 @@ void
 collect_common_set_sink(void)
 {
   /* A udp client can never become sink */
+}
+/*---------------------------------------------------------------------------*/
+int
+change_TemperatureValue_to_RealValue(int value)
+{
+  // 13428=50c, 23428=120c
+
+  int result = 0;
+  int zero = 628550;
+  int one = 14285;
+
+  value = value*100;
+
+  if(value>=zero)
+  {
+    result= (value-zero)/one;
+    printf("%d to result: %d \n",value, result);
+    return result;
+  }
+  else
+  {
+    result = 0-((zero-value)/one);
+    printf("%d to result: %d \n",value, result);
+    return result;
+  }
+
+}
+/*---------------------------------------------------------------------------*/
+void set_temperature_threshold(int value)
+{
+  printf("orignal threshold %d\n", temperature_threshold);
+  temperature_threshold = value;
+  printf("after change %d\n", temperature_threshold);
 }
 /*---------------------------------------------------------------------------*/
 
@@ -144,14 +182,21 @@ tcpip_handler(void)
       {
         if(msg.value == 0)
         {
+          printf("set beep off\n");
           set_beep_on = 0;
-          leds_off(LEDS_ORANGE);
+          // leds_off(LEDS_ORANGE);
         }
         else if(msg.value ==1)
         {
+          printf("set beep on\n");
           set_beep_on = 1;
         }
         break;
+      }
+      case THRESHOLD_TYPE:
+      {
+        printf("set threshold\n");
+        set_temperature_threshold(msg.value);
       }
       default:
         break;
@@ -170,6 +215,7 @@ void
 collect_common_send(void)
 {
   static uint8_t seqno;
+  char flash[8];
   struct {
     uint8_t seqno;
     uint8_t for_alignment;
@@ -250,6 +296,17 @@ collect_common_send(void)
   printf("asn-%lx",time.ls4b);
   printf("msg[7 %lx .8 %lx]\n", (time.ls4b>>16), (uint16_t)time.ls4b);
 
+  cfs_offset_t offset;
+  offset = 0x00050000;
+  // for(int i=0; i<8 ; i++)
+  //   flash[i] = i;
+  // COFFEE_WRITE(flash, sizeof(flash), offset);
+  // printf ("write flash");
+
+  COFFEE_READ_1(flash, sizeof(flash), offset);
+  printf("flash: \n");
+  for(int i=0; i<8 ; i++)
+    printf("%x\n", flash[i]);
 
   printf("send packet\n");
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
@@ -357,11 +414,12 @@ PROCESS_THREAD(udp_client_process, ev, data)
       tcpip_handler();
     }else if(ev == PROCESS_EVENT_TIMER){
       // 13428=50c, 23428=120c
-      if((ain1_value>13428) && (ain1_value<23428))
+      int temperature = change_TemperatureValue_to_RealValue(ain1_value);
+      if((temperature>temperature_threshold) && (temperature<MAX_TEMPERATURE))
         set_beep_on=1;
       else{
         set_beep_on=0;
-        leds_off(LEDS_ORANGE);
+        // leds_off(LEDS_ORANGE);
       }
       
       if(data == &beep_timer){
@@ -373,8 +431,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
 
         //beep alarm
         if(set_beep_on)
-          leds_toggle(LEDS_ORANGE);
-
+          // leds_toggle(LEDS_ORANGE);
         etimer_reset(&beep_timer);
       }
     }

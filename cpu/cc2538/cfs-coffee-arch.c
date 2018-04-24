@@ -139,6 +139,18 @@ cfs_coffee_arch_read(void *buf, unsigned int size, cfs_offset_t offset)
   }
 }
 
+void
+cfs_coffee_arch_read_temp(void *buf, unsigned int size, cfs_offset_t offset)
+{
+  const uint8_t *src;
+  uint8_t *dst;
+
+  watchdog_periodic();
+  for(src = (const void *)(COFFEE_START + offset), dst = buf; size; size--) {
+    *dst++ = *src++;
+  }
+}
+
 #endif /* COFFEE_CONF_CUSTOM_PORT */
 
 /** @} */

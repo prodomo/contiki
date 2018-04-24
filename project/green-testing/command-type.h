@@ -4,6 +4,7 @@
 #define UNKNOWN_TYPE 0
 #define RATE_TYPE 1
 #define BEEP_TYPE 2
+#define THRESHOLD_TYPE 3
 
 struct command_msg {
   int8_t type;

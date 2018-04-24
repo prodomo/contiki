@@ -140,6 +140,7 @@ set_send_rate(uint8_t value)
 {
   send_period = value;
 }
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(collect_common_process, ev, data)
 {
@@ -212,7 +213,7 @@ PROCESS_THREAD(collect_common_process, ev, data)
           collect_common_send();
         }
       }else if(data == &command_timer){
-        printf("command_timer timeup");
+        printf("command_timer timeup\n");
         etimer_reset(&command_timer);
         if(send_command==1){
             printf("send_command = 1 \n");

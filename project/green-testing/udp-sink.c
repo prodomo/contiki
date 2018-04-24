@@ -33,6 +33,7 @@
 #include "net/ip/uip.h"
 #include "net/rpl/rpl.h"
 #include "net/linkaddr.h"
+#include "net/rpl/rpl-private.h"
 
 #include "net/netstack.h"
 #include "dev/button-sensor.h"
@@ -99,6 +100,7 @@ ascii_to_uint(char c)
 
   return result;
 }
+
 /*---------------------------------------------------------------------------*/
 void
 collect_special_send(char* data)
@@ -111,6 +113,7 @@ collect_special_send(char* data)
   int count=0;
   uint8_t  dst_u8[2];
   struct command_msg msg;
+  uip_ipaddr_t addr;
   memset(&msg, 0, sizeof(msg));
 
   PRINTF("%s\n", data);
@@ -159,6 +162,11 @@ collect_special_send(char* data)
     printf("BEEP_TYPE\n");
     msg.type = BEEP_TYPE;
   }
+  else if(strncmp(temp[2], "t", 1)==0)
+  {
+    printf("THRESHOLD_TYPE\n");
+    msg.type = THRESHOLD_TYPE;
+  }
   else
   {
     printf("UNKNOWN_TYPE\n");
@@ -177,35 +185,48 @@ collect_special_send(char* data)
   }
   printf("msg %d %d \n", msg.type, msg.value);
   
-  /* assume temp[1] is mac addr */
-  /* ascii -> uint8 */
-  dst_u8[0] =ascii_to_uint(temp[1][0])<<4;
-  dst_u8[0] += ascii_to_uint(temp[1][1]);
+   if(strncmp(temp[1], "all", 3)==0)
+   {
+    //broadcast command
+    uip_create_linklocal_rplnodes_mcast(&addr);
+    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+                      &addr, UIP_HTONS(UDP_CLIENT_PORT));
+   }
+   else
+   {
+    //unicast command 
 
-  dst_u8[1] = ascii_to_uint(temp[1][2])<<4;
-  dst_u8[1] += ascii_to_uint(temp[1][3]);
+    /* assume temp[1] is mac addr */
+    /* ascii -> uint8 */
+    dst_u8[0] =ascii_to_uint(temp[1][0])<<4;
+    dst_u8[0] += ascii_to_uint(temp[1][1]);
+
+    dst_u8[1] = ascii_to_uint(temp[1][2])<<4;
+    dst_u8[1] += ascii_to_uint(temp[1][3]);
   
-  printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
+    printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
 
  
-  /* destnation ipv6 address */
-  client_ipaddr.u8[0]=0xfe;
-  client_ipaddr.u8[1]=0x80;
-  client_ipaddr.u8[8]=0x02;
-  client_ipaddr.u8[9]=0x12;
-  client_ipaddr.u8[10]=0x4b;
-  client_ipaddr.u8[11]=0x00;
-  client_ipaddr.u8[12]=0x06;
-  // client_ipaddr.u8[13]=0x0d; //openMote
-  client_ipaddr.u8[13]=0x15; //ITRI_Mote
-  client_ipaddr.u8[14]=dst_u8[0];
-  client_ipaddr.u8[15]=dst_u8[1];
-  printf("\n-----------------------\n");
-  printf("client_ipaddr2:");
-  PRINT6ADDR(&client_ipaddr);
-  printf("\n-----------------------\n");
-  uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+    /* destnation ipv6 address */
+    client_ipaddr.u8[0]=0xfe;
+    client_ipaddr.u8[1]=0x80;
+    client_ipaddr.u8[8]=0x02;
+    client_ipaddr.u8[9]=0x12;
+    client_ipaddr.u8[10]=0x4b;
+    client_ipaddr.u8[11]=0x00;
+    client_ipaddr.u8[12]=0x06;
+    // client_ipaddr.u8[13]=0x0d; //openMote
+    client_ipaddr.u8[13]=0x15; //ITRI_Mote
+    client_ipaddr.u8[14]=dst_u8[0];
+    client_ipaddr.u8[15]=dst_u8[1];
+    printf("\n-----------------------\n");
+    printf("client_ipaddr2:");
+    PRINT6ADDR(&client_ipaddr);
+    printf("\n-----------------------\n");
+    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                       &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
+
+  }
   leds_toggle(LEDS_RED);
 
 }

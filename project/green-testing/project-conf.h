@@ -16,8 +16,8 @@
 
 #define UIP_CONF_ROUTER 1
 
-#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 12, 16, 20, 24 }
-// #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14, 18, 22, 26 }
+// #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 12, 16, 20, 24 }
+#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 14, 18, 22, 26 }
 // #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){25}
 
 // #define UART0_CONF_BAUD_RATE 230400
@@ -77,7 +77,7 @@
 /* TSCH logging. 0: disabled. 1: basic log. 2: with delayed
  * log messages from interrupt */
 #undef TSCH_LOG_CONF_LEVEL
-#define TSCH_LOG_CONF_LEVEL 2
+#define TSCH_LOG_CONF_LEVEL 0
 
 /* IEEE802.15.4 PANID */
 #undef IEEE802154_CONF_PANID
@@ -90,7 +90,7 @@
 /* 6TiSCH minimal schedule length.
  * Larger values result in less frequent active slots: reduces capacity and saves energy. */
 #undef TSCH_SCHEDULE_CONF_DEFAULT_LENGTH
-#define TSCH_SCHEDULE_CONF_DEFAULT_LENGTH 3
+#define TSCH_SCHEDULE_CONF_DEFAULT_LENGTH 101
 
 #if WITH_SECURITY
 
