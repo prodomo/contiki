@@ -70,6 +70,8 @@
 #endif
 
 #include "dev/leds.h"
+#include "dev/sht21.h"  //temporaly
+#include "dev/max44009.h"  //temporaly
 
 extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect;
 
@@ -216,13 +218,33 @@ print_network_status(void)
 PROCESS_THREAD(node_process, ev, data)
 {
   static struct etimer etaa;
-  PROCESS_BEGIN();
+  static int16_t sht21_present,max44009_present;  //uint16 to int16----important
+  static int16_t temperature, humidity,light;
 
-  etimer_set(&etaa, CLOCK_SECOND * 60);
+  PROCESS_BEGIN();
+  
+  //etimer_set(&etaa, CLOCK_SECOND * 60);
+  etimer_set(&etaa, CLOCK_SECOND * 5);
   while(1) {
     PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
     etimer_reset(&etaa);
-    print_network_status();
+    //print_network_status();
+
+    PRINTF("============================\n");
+     if(sht21.status(SENSORS_READY)==1) {//sht21_present != SHT21_ERROR
+        temperature = sht21.value(SHT21_READ_TEMP);
+        PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
+        humidity = sht21.value(SHT21_READ_RHUM);
+        PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
+       }
+       else{
+        PRINTF("%u\n",sht21.status(SENSORS_READY));
+        PRINTF("SHT21 doesn't open\n");
+       }
+ 
+ 
+      PRINTF("============================\n");
+
   }
 
   PROCESS_END();
