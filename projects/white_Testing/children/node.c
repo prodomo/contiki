@@ -114,6 +114,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   rest_activate_resource(&res_toggle, "actuators/toggle");
   rest_activate_resource(&res_collect, "g/collect");
   rest_activate_resource(&res_bcollect, "g/bcollect");
+  rest_activate_resource(&res_temperature, "g/res_temperature");
 
 #if PLATFORM_HAS_LEDS
  
@@ -213,13 +214,31 @@ print_network_status(void)
   PRINTF("----------------------\n");
 }
 
+static void
+print_tempAndhumi_status(void) {
+  static int16_t sht21_present,max44009_present;  //uint16 to int16----important
+  static int16_t temperature, humidity,light;
+
+  PRINTF("============================\n");
+  if(sht21.status(SENSORS_READY) == 1) {//sht21_present != SHT21_ERROR
+    temperature = sht21.value(SHT21_READ_TEMP);
+    PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
+    humidity = sht21.value(SHT21_READ_RHUM);
+    PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
+    }
+    else {
+      PRINTF("%u\n",sht21.status(SENSORS_READY));
+      PRINTF("SHT21 doesn't open\n");
+    } 
+  PRINTF("============================\n");
+}
+
 /*---------------------------------------------------------------------------*/
 
 PROCESS_THREAD(node_process, ev, data)
 {
   static struct etimer etaa;
-  static int16_t sht21_present,max44009_present;  //uint16 to int16----important
-  static int16_t temperature, humidity,light;
+  
 
   PROCESS_BEGIN();
   
@@ -229,21 +248,8 @@ PROCESS_THREAD(node_process, ev, data)
     PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
     etimer_reset(&etaa);
     //print_network_status();
+    print_tempAndhumi_status();
 
-    PRINTF("============================\n");
-     if(sht21.status(SENSORS_READY)==1) {//sht21_present != SHT21_ERROR
-        temperature = sht21.value(SHT21_READ_TEMP);
-        PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
-        humidity = sht21.value(SHT21_READ_RHUM);
-        PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
-       }
-       else{
-        PRINTF("%u\n",sht21.status(SENSORS_READY));
-        PRINTF("SHT21 doesn't open\n");
-       }
- 
- 
-      PRINTF("============================\n");
 
   }
 
