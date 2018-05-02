@@ -47,7 +47,7 @@
 
 // for contikiOS I2C 
 #include "dev/sht21.h"
-#include "dev/max44009.h"
+//#include "dev/max44009.h"
 
 #include <string.h>
 

@@ -57,7 +57,7 @@
 #include "orchestra.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -71,9 +71,9 @@
 
 #include "dev/leds.h"
 #include "dev/sht21.h"  //temporaly
-#include "dev/max44009.h"  //temporaly
+//#include "dev/max44009.h"  //light
 
-extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect;
+extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect, res_temperature;
 
 /*---------------------------------------------------------------------------*/
 
@@ -215,9 +215,10 @@ print_network_status(void)
 }
 
 static void
-print_tempAndhumi_status(void) {
-  static int16_t sht21_present,max44009_present;  //uint16 to int16----important
-  static int16_t temperature, humidity,light;
+print_tempAndhumi_status(void) 
+{
+  static int16_t sht21_present; //,max44009_present;  //uint16 to int16----important
+  static int16_t temperature, humidity; //,light;
 
   PRINTF("============================\n");
   if(sht21.status(SENSORS_READY) == 1) {//sht21_present != SHT21_ERROR
@@ -247,10 +248,8 @@ PROCESS_THREAD(node_process, ev, data)
   while(1) {
     PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
     etimer_reset(&etaa);
-    //print_network_status();
+    print_network_status();
     print_tempAndhumi_status();
-
-
   }
 
   PROCESS_END();

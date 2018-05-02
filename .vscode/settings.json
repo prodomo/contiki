@@ -42,7 +42,8 @@
     "istream": "c",
     "serial-line.h": "c",
     "watchdog.h": "c",
-    "rpl-private.h": "c"
+    "rpl-private.h": "c",
+    "sht21.h": "c"
   },
   "C_Cpp.errorSquiggles": "Disabled",
   "C_Cpp.intelliSenseEngineFallback": "Enabled",
