@@ -392,6 +392,28 @@ uart_isr(uint8_t uart)
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
 }
 /*---------------------------------------------------------------------------*/
+void uart_print_reg(uint8_t uart)
+{
+  const uart_regs_t *regs;
+  regs = &uart_regs[uart];
+  printf("print uart %d Reg\n", uart);
+  printf("REG(SYS_CTRL_RCGCUART):%lu\n", REG(SYS_CTRL_RCGCUART));
+  printf("REG(SYS_CTRL_SCGCUART):%lu\n", REG(SYS_CTRL_SCGCUART));
+  printf("REG(SYS_CTRL_DCGCUART):%lu\n", REG(SYS_CTRL_DCGCUART));
+  printf("REG(regs->base + UART_CC):%lu\n", REG(regs->base + UART_CC));
+  printf("REG(regs->ioc_uartrxd_uart):%lu\n", REG(regs->ioc_uartrxd_uart));
+  printf("REG(regs->base + UART_IM):%lu\n", REG(regs->base + UART_IM));
+  printf("REG(regs->base + UART_IFLS):%lu\n", REG(regs->base + UART_IFLS));
+  printf("REG(regs->base + UART_CTL):%lu\n", REG(regs->base + UART_CTL));
+  printf("REG(regs->base + UART_IBRD):%lu\n", REG(regs->base + UART_IBRD));
+  printf("REG(regs->base + UART_FBRD):%lu\n", REG(regs->base + UART_FBRD));
+  printf("REG(regs->base + UART_LCRH):%lu\n", REG(regs->base + UART_LCRH));
+  printf("REG(IOC_UARTCTS_UART1):%lu\n", REG(IOC_UARTCTS_UART1));
+  printf("REG(UART_1_BASE + UART_CTL):%lu\n", REG(UART_1_BASE + UART_CTL));
+  printf("REG(regs->base + UART_CTL):%lu\n", REG(regs->base + UART_CTL));
+}
+
+/*---------------------------------------------------------------------------*/
 #define UART_ISR(u)  void uart##u##_isr(void) { uart_isr(u); }
 UART_ISR(0)
 UART_ISR(1)

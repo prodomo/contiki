@@ -168,7 +168,7 @@ main(void)
    * slip_input_byte instead
    */
 #if UART_CONF_ENABLE
-  uart_init(0);
+  uart_init(0); //regs->rx.port < 0 || regs->tx.port < 0
   uart_init(1);
   uart_set_input(SERIAL_LINE_CONF_UART, serial_line_input_byte);
 #endif

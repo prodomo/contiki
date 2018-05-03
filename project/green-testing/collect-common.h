@@ -47,6 +47,7 @@ void collect_common_net_print(void);
 void collect_common_set_sink(void);
 void collect_common_send(void);
 void collect_special_send(char* data);
+void collect_ack_send(void);
 void collect_common_recv(const linkaddr_t *originator, uint8_t seqno,
                          uint8_t hops,
                          uint8_t *payload,
@@ -54,6 +55,7 @@ void collect_common_recv(const linkaddr_t *originator, uint8_t seqno,
 void collect_common_set_send_active(int active);
 struct tsch_asn_t get_timesynch_time(void);
 void set_send_rate(uint8_t rate);
+void set_ack_flag(void);
 
 PROCESS_NAME(collect_common_process);
 

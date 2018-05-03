@@ -92,6 +92,7 @@ crypto_init(void)
   for(i = 0; i < 16; i++);
   REG(SYS_CTRL_SRSEC) &= ~SYS_CTRL_SRSEC_AES;
 }
+
 /*---------------------------------------------------------------------------*/
 void
 crypto_enable(void)

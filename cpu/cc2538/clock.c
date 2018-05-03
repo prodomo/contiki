@@ -285,6 +285,16 @@ print_prev_rt_ticks_startup(void)
   printf("rt_ticks_startup: %llu\n",rt_ticks_startup);
 }
 
+void
+clock_print_reg()
+{
+  printf("REG(SYS_CTRL_RCGCGPT)%lu\n", REG(SYS_CTRL_RCGCGPT));
+  printf("REG(GPT_0_BASE + GPTIMER_CTL)%lu\n", REG(GPT_0_BASE + GPTIMER_CTL));
+  printf("REG(GPT_0_BASE + GPTIMER_CFG)%lu\n", REG(GPT_0_BASE + GPTIMER_CFG));
+  printf("REG(GPT_0_BASE + GPTIMER_TAMR)%lu\n", REG(GPT_0_BASE + GPTIMER_TAMR));
+  printf("REG(GPT_0_BASE + GPTIMER_TAPR)%lu\n", REG(GPT_0_BASE + GPTIMER_TAPR));
+}
+
 /**
  * @}
  * @}

@@ -176,6 +176,7 @@ tcpip_handler(void)
       case RATE_TYPE:
       {
         set_send_rate(msg.value);
+        set_ack_flag();
         break;
       }
       case BEEP_TYPE:
@@ -184,12 +185,14 @@ tcpip_handler(void)
         {
           printf("set beep off\n");
           set_beep_on = 0;
+          set_ack_flag();
           // leds_off(LEDS_ORANGE);
         }
         else if(msg.value ==1)
         {
           printf("set beep on\n");
           set_beep_on = 1;
+          set_ack_flag();
         }
         break;
       }
@@ -197,6 +200,7 @@ tcpip_handler(void)
       {
         printf("set threshold\n");
         set_temperature_threshold(msg.value);
+        set_ack_flag();
       }
       default:
         break;
@@ -210,6 +214,13 @@ collect_special_send(char* data)
 {
   /* Server never sends */
 }
+
+void
+collect_ack_send()
+{
+  printf("generate ack packet\n");
+}
+
 /*---------------------------------------------------------------------------*/
 void
 collect_common_send(void)
@@ -293,20 +304,21 @@ collect_common_send(void)
   time = get_timesynch_time();
   msg.msg.sensors[7]=(time.ls4b>>16);
   msg.msg.sensors[8]=(uint16_t)time.ls4b;
-  printf("asn-%lx",time.ls4b);
-  printf("msg[7 %lx .8 %lx]\n", (time.ls4b>>16), (uint16_t)time.ls4b);
+  // printf("asn-%lx",time.ls4b);
+  // printf("msg[7 %lx .8 %lx]\n", (time.ls4b>>16), (uint16_t)time.ls4b);
 
-  cfs_offset_t offset;
-  offset = 0x00050000;
+  // /* read from flash*/
+  // cfs_offset_t offset;
+  // offset = 0x00050000;
+  // // for(int i=0; i<8 ; i++)
+  // //   flash[i] = i;
+  // // COFFEE_WRITE(flash, sizeof(flash), offset);
+  // // printf ("write flash");
+
+  // COFFEE_READ_1(flash, sizeof(flash), offset);
+  // printf("flash: \n");
   // for(int i=0; i<8 ; i++)
-  //   flash[i] = i;
-  // COFFEE_WRITE(flash, sizeof(flash), offset);
-  // printf ("write flash");
-
-  COFFEE_READ_1(flash, sizeof(flash), offset);
-  printf("flash: \n");
-  for(int i=0; i<8 ; i++)
-    printf("%x\n", flash[i]);
+  //   printf("%x\n", flash[i]);
 
   printf("send packet\n");
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),

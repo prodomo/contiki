@@ -232,6 +232,12 @@ collect_special_send(char* data)
 }
 /*---------------------------------------------------------------------------*/
 void
+collect_ack_send(void)
+{
+  /*sink not send ack*/
+}
+/*---------------------------------------------------------------------------*/
+void
 collect_common_net_init(void)
 {
 #if CONTIKI_TARGET_Z1

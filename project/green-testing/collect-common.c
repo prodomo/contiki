@@ -58,9 +58,11 @@ static unsigned long time_offset;
 static int send_active = 1;
 static int send_command = 0;
 static int recv_counter =0;
+static int ack_flag = 0;
 static char* command_data;
 
 #define COMMAND_PERIOD 10
+#define ACK_PERIOD 1
 
 #ifndef PERIOD
 // #define PERIOD 20
@@ -110,6 +112,13 @@ collect_common_set_send_active(int active)
 }
 /*---------------------------------------------------------------------------*/
 void
+set_ack_flag(void)
+{
+  printf("~~~~~~~~~set_ack_flag\n");
+  ack_flag=1;
+}
+/*---------------------------------------------------------------------------*/
+void
 collect_common_recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops,
                     uint8_t *payload, uint16_t payload_len)
 {
@@ -144,7 +153,7 @@ set_send_rate(uint8_t value)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(collect_common_process, ev, data)
 {
-  static struct etimer period_timer, wait_timer, command_timer;
+  static struct etimer period_timer, wait_timer, command_timer, ack_timer;
   PROCESS_BEGIN();
 
   collect_common_net_init();
@@ -152,7 +161,21 @@ PROCESS_THREAD(collect_common_process, ev, data)
   /* Send a packet every 60-62 seconds. */
   etimer_set(&period_timer, CLOCK_SECOND * send_period);
   etimer_set(&command_timer, CLOCK_SECOND * COMMAND_PERIOD);
+
+  if(ack_flag)
+  {
+    printf("set ack_timer\n");
+    ack_flag=0;
+    // etimer_set(&ack_timer, CLOCK_SECOND * ACK_PERIOD);
+  }
+
   while(1) {
+    if(ack_flag)
+    {
+      printf("set ack_timer\n");
+      ack_flag=0;
+      // etimer_set(&ack_timer, CLOCK_SECOND * ACK_PERIOD);
+    }
     PROCESS_WAIT_EVENT();
     if(ev == serial_line_event_message) {
       char *line;
@@ -217,10 +240,15 @@ PROCESS_THREAD(collect_common_process, ev, data)
         etimer_reset(&command_timer);
         if(send_command==1){
             printf("send_command = 1 \n");
-            collect_special_send(command_data);
+            collect_special_send(command_data); //sink special send
             free(command_data);
             send_command = 0;
           }
+        }
+        else if(data == &ack_timer && ack_flag)
+        {
+          // collect_ack_send();
+          // ack_flag=0;
         }
     }
   }
