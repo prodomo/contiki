@@ -70,10 +70,10 @@
 #endif
 
 #include "dev/leds.h"
-#include "dev/sht21.h"  //temporaly
+//#include "dev/sht21.h"  //temporaly
 //#include "dev/max44009.h"  //light
 
-extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect, res_temperature;
+extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect; // , res_temperature;
 
 /*---------------------------------------------------------------------------*/
 
@@ -114,7 +114,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   rest_activate_resource(&res_toggle, "actuators/toggle");
   rest_activate_resource(&res_collect, "g/collect");
   rest_activate_resource(&res_bcollect, "g/bcollect");
-  rest_activate_resource(&res_temperature, "g/res_temperature");
+  //rest_activate_resource(&res_temperature, "g/res_temperature");
 
 #if PLATFORM_HAS_LEDS
  
@@ -132,6 +132,8 @@ PROCESS_THREAD(er_example_server, ev, data)
 }
 
 /*---------------------------------------------------------------------------*/
+
+#if DEBUG
 
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
@@ -213,7 +215,9 @@ print_network_status(void)
 
   PRINTF("----------------------\n");
 }
+#endif
 
+#if DEBUG
 static void
 print_tempAndhumi_status(void) 
 {
@@ -233,6 +237,7 @@ print_tempAndhumi_status(void)
     } 
   PRINTF("============================\n");
 }
+#endif
 
 /*---------------------------------------------------------------------------*/
 
