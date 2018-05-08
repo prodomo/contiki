@@ -45,13 +45,13 @@
    #define IEEE802154_CONF_PANID          0xABCD
  */
 
-#define RPL_WITH_NON_STORING 1
-#define WITH_NON_STORING 1
+#define RPL_WITH_NON_STORING        1
+#define WITH_NON_STORING            1
 
 
 /* QoS function optional*/
 #ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE           0
+#define ENABLE_QOS_WHITE            0 
 #endif
 
 // #ifndef QUEUEBUF_CONF_NUM
