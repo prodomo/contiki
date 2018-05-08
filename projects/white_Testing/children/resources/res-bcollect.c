@@ -2,17 +2,22 @@
  * \file
  *      Bcollect resource
  * \author
- *      Green
+ *      White_CPS
  */
 
 #include <string.h>
 #include "rest-engine.h"
 #include "er-coap.h"
 
+
+// for sensor
+#include "lib/sensors.h"
+#include "dev/sht21.h"
+
 #include "core/net/rpl/rpl.h"
 #include "core/net/link-stats.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -68,6 +73,17 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
    * This would be a TODO in the corresponding files in contiki/apps/erbium/!
    */
 
+  static int8_t sht21_present=0; //, max44009_present=0, adxl346_present=0; 
+  static int16_t temperature_temp, humidity_temp; //, light, accelx, accely, accelz;
+
+  if(sht21.status(SENSORS_READY)==1) {
+        temperature_temp = sht21.value(SHT21_READ_TEMP);
+        //PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
+        humidity_temp = sht21.value(SHT21_READ_RHUM);
+        //PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
+        sht21_present = 1;
+  }
+
 
   struct 
   {
@@ -80,10 +96,12 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     // padding 3
     uint32_t event_threshold_last_change;
     uint32_t packet_counter;
-    unsigned char parent_address[2];
+    unsigned char parent_address[2]; // uint8[0] , uint8[1]
     uint16_t rank;
     uint16_t parnet_link_etx;
     int16_t parent_link_rssi;
+    int16_t temperature;
+    int16_t humidity;
     uint8_t end_flag[2];
   } message;
 
@@ -100,6 +118,12 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   message.packet_counter = packet_counter;
 
   message.start_asn = tsch_current_asn.ls4b;
+
+  // for CPS enviorment Data.
+  message.temperature = temperature_temp / 100;
+  message.humidity = humidity_temp / 100;
+
+
 
   uint8_t packet_length = 0;
   rpl_dag_t *dag;

@@ -57,7 +57,7 @@
 #include "orchestra.h"
 #endif
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -249,7 +249,7 @@ PROCESS_THREAD(node_process, ev, data)
     PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
     etimer_reset(&etaa);
     //print_network_status();
-    print_tempAndhumi_status();
+    //print_tempAndhumi_status();
   }
 
   PROCESS_END();
