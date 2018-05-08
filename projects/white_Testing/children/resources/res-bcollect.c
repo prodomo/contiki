@@ -87,14 +87,14 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 
   struct 
   {
-    uint8_t flag[2];
-    uint32_t start_asn;
-    // padding 2 uint16_t
-    uint32_t end_asn;
-    uint32_t event_counter;
-    uint8_t event_threshold;
+    uint8_t flag[2];  // 0 1
+    // padding int16_t
+    uint32_t start_asn; // 4 5 6 7
+    uint32_t end_asn; // 8 9 10 11
+    uint32_t event_counter; // 12 13 14 15
+    uint8_t event_threshold; // 16
     // padding 3
-    uint32_t event_threshold_last_change;
+    uint32_t event_threshold_last_change; 
     uint32_t packet_counter;
     unsigned char parent_address[2]; // uint8[0] , uint8[1]
     uint16_t rank;

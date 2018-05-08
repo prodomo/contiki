@@ -165,6 +165,7 @@ output(void)
       PRINTF(" ms\n");
       //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
       PRINTF("Traffic_Classes:%02x. \n",UIP_IP_BUF->tcflow);
+      
       //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 
       //rebuilding UDP checksum.
@@ -174,12 +175,12 @@ output(void)
 
       PRINTF("\nnew_checksum:%04x\n", new_udp_checksum);
 
-      // uint8_t ndx;
-      // for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
-      //   uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
-      //   PRINTF("%02x", data);
-      // }
-      // PRINTF("\n"); 
+      uint8_t ndx;
+      for (ndx = coap_packet_start_location; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
+        uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
+        PRINTF("%02x", data);
+      }
+      PRINTF("\n"); 
     } else {
       uint8_t ndx;
       for (ndx = 0; ndx < UIP_IP_BUF->len[1] + UIP_IPH_LEN; ndx++) { //to udp
