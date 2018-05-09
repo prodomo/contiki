@@ -74,7 +74,7 @@
 
 //#include "dev/max44009.h"  //light
 
-extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect; // , res_temperature;
+extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect,res_bcollect_2; // , res_temperature;
 
 /*---------------------------------------------------------------------------*/
 
@@ -115,6 +115,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   rest_activate_resource(&res_toggle, "actuators/toggle");
   rest_activate_resource(&res_collect, "g/collect");
   rest_activate_resource(&res_bcollect, "g/bcollect");
+  rest_activate_resource(&res_bcollect_2, "g/bcollect_2");
   //rest_activate_resource(&res_temperature, "g/res_temperature");
 
 #if PLATFORM_HAS_LEDS
