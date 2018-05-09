@@ -148,7 +148,14 @@ output(void)
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 6] << 16 |
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5] << 8 |
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4];
+      // for CPS enviorment Data.
+      uint16_t temperature = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 37] << 8 |
+                             ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 36];
 
+      uint16_t humidity =    ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 39] << 8 |
+                             ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 38];
+      // Packet Priority.
+      uint8_t priority = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 2];
       // uint32_t event_counter.
       /**
        * uint32_t eventCounter = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 15] << 24 | 
@@ -164,7 +171,10 @@ output(void)
       PRINTF("The_Packet_Latancy_is:%u",((tsch_current_asn.ls4b - startASN)) * 10 ); //ms time.
       PRINTF(" ms\n");
       //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
-      PRINTF("Traffic_Classes:%02x. \n",UIP_IP_BUF->tcflow);
+      //PRINTF("Traffic_Classes:%02x. \n",UIP_IP_BUF->tcflow);
+      PRINTF("Traffic_Classes:%d. \n",priority);
+      PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
+      PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
       
       //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 
