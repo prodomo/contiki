@@ -132,7 +132,7 @@ uart1_send_bytes(const unsigned char *s, unsigned int len)
   }
   return i;
 }
-
+/*---------------------------------------------------------------------------*/
 void
 collect_common_net_print(void)
 {
@@ -159,66 +159,172 @@ tcpip_handler(void)
 {
   if(uip_newdata()) {
     uint8_t *appdata;
-    uint8_t data;
-    struct command_msg msg;
+    struct msg{
+      uint16_t commandId;
+      uint8_t commandType;
+    };
+    struct msg msg;
+    uint8_t sensor_num = 0;
+
     memset(&msg, 0, sizeof(msg));
+    printf("sizeof(msg) %d\n", sizeof(msg));
     appdata = (uint8_t *)uip_appdata;
     printf("--------------------recv data-----------------\n");
     printf("uip_datalen %u\n",uip_datalen());
-    memcpy(&msg.type, appdata, sizeof(data));
-    appdata+=sizeof(data);
-    memcpy(&msg.value, appdata, sizeof(data));
 
-    printf("msg %u %u\n", msg.type, msg.value);
-    leds_toggle(LEDS_RED);
-    switch(msg.type)
+    memcpy(&msg.commandId, appdata, sizeof(uint16_t));
+    appdata+=sizeof(uint16_t);
+    memcpy(&msg.commandType, appdata, sizeof(uint8_t));
+    appdata+=sizeof(uint8_t);
+    printf("msg.commandType %u\n", msg.commandType);
+    printf("msg.commandId %u\n", msg.commandId);
+
+    if(uip_datalen()>4)
     {
-      case RATE_TYPE:
+      memcpy(&sensor_num, appdata, sizeof(uint8_t));
+      appdata+=sizeof(uint8_t);
+    }
+
+    struct setting_msg setting_msg[sensor_num];
+
+    if(sensor_num>0)
+    {
+      for(int i=0; i<sensor_num; i++)
       {
-        set_send_rate(msg.value);
-        set_ack_flag();
+        memcpy(&setting_msg[i].setting_type, appdata, sizeof(uint8_t));
+        appdata+=sizeof(uint8_t);
+        memcpy(&setting_msg[i].sensor_tittle, appdata, sizeof(uint8_t));
+        appdata+=sizeof(uint8_t);
+        memcpy(&setting_msg[i].value, appdata, sizeof(uint8_t));
+        appdata+=sizeof(uint8_t);
+      }
+    }
+
+    switch(msg.commandType){
+      case CMD_TYPE_CONF:
+        printf("should send conf\n");
+        set_ack_flag(msg.commandId, 1);
         break;
-      }
-      case BEEP_TYPE:
-      {
-        if(msg.value == 0)
+      
+      case CMD_TYPE_SET:
+        printf("should set value\n");
+        set_ack_flag(msg.commandId, 0);
+        if(sensor_num>0)
         {
-          printf("set beep off\n");
-          set_beep_on = 0;
-          set_ack_flag();
-          // leds_off(LEDS_ORANGE);
+          for(int i=0; i<sensor_num; i++)
+          {
+            setting_value(setting_msg[i]);
+          }
         }
-        else if(msg.value ==1)
-        {
-          printf("set beep on\n");
-          set_beep_on = 1;
-          set_ack_flag();
-        }
-        break;
-      }
-      case THRESHOLD_TYPE:
-      {
-        printf("set threshold\n");
-        set_temperature_threshold(msg.value);
-        set_ack_flag();
-      }
-      default:
         break;
     }
 
+    leds_toggle(LEDS_RED);
+    
     /* Ignore incoming data */
   }
 }
+void setting_value(struct setting_msg msg)
+{
+  switch(msg.setting_type)
+  {
+    case SET_TYPE_RATE:
+      printf("changing sending rate%s\n");
+      if(msg.sensor_tittle == SNR_TLE_DEFAULT)
+        set_send_rate(msg.value);
+      break;
+    
+    case SET_TYPE_THRESHOLD:
+      switch(msg.sensor_tittle){
+        case SNR_TLE_DEFAULT:
+          break;
+        
+        case SNR_TLE_TEMPERATURE:
+          printf("changing temperature threshold%s\n");
+          break;
+        
+        case SNR_TLE_ELE_CURRENT:
+          printf("changing electric current threshold%s\n");
+          break;
+        
+        case SNR_TLE_ROTAT_SPEED:
+          printf("changing rotation speed threshold%s\n");
+          break;
+        default:
+          break;
+      }
+      break;
+    
+    default:
+      break;
+  }
+}
+
+/*---------------------------------------------------------------------------*/
 void
 collect_special_send(char* data)
 {
-  /* Server never sends */
+  /* Sender never sends */
 }
-
+/*---------------------------------------------------------------------------*/
 void
-collect_ack_send()
+collect_ask_send(char* mac, char* commandId)
 {
-  printf("generate ack packet\n");
+  /* Sender never sends */
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_setting_send(char* data)
+{
+  /* Sender never sends */
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_ack_send(uint16_t commandId)
+{
+  // printf("generate ack packet\n");
+  struct 
+  {
+    uint16_t command_id;
+    uint8_t command_type;
+    uint8_t is_received;
+  }ack;
+  rpl_parent_t *preferred_parent;
+  linkaddr_t parent;
+  rpl_dag_t *dag;
+
+  if(client_conn == NULL) {
+    /* Not setup yet */
+    return;
+  }
+  memset(&ack, 0, sizeof(ack));
+  linkaddr_copy(&parent, &linkaddr_null);
+
+  ack.command_id = commandId;
+  ack.command_type = CMD_TYPE_ACK;
+  ack.is_received = 1;
+  // printf("sizeof(ack) %d\n", sizeof(ack));
+
+  dag = rpl_get_any_dag();
+  if(dag != NULL) {
+    preferred_parent = dag->preferred_parent;
+    if(preferred_parent != NULL) {
+      uip_ds6_nbr_t *nbr;
+      nbr = uip_ds6_nbr_lookup(rpl_get_parent_ipaddr(preferred_parent));
+      if(nbr != NULL) {
+        /* Use parts of the IPv6 address as the parent address, in reversed byte order. */
+        parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
+        parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
+      }
+    }
+  }
+  printf("ack: %u %u %u\n", ack.command_type, ack.command_id, ack.is_received);
+
+  printf("send ack\n");
+  uip_udp_packet_sendto(client_conn, &ack, sizeof(ack),
+                        &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
+
+
 }
 
 /*---------------------------------------------------------------------------*/

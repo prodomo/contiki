@@ -49,6 +49,7 @@
 #include "net/mac/tsch/tsch-schedule.h"
 #include "net/mac/tsch/tsch-slot-operation.h"
 #include "collect-common.h"
+#include "command-type.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -71,6 +72,8 @@ static char* command_data;
 #define RANDWAIT (send_period)
 
 static int send_period = PERIOD;
+static uint16_t command_id=0;
+static int conf_flag=0;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(collect_common_process, "collect common process");
@@ -112,10 +115,53 @@ collect_common_set_send_active(int active)
 }
 /*---------------------------------------------------------------------------*/
 void
-set_ack_flag(void)
+set_ack_flag(uint16_t commandId, int is_config)
 {
-  printf("~~~~~~~~~set_ack_flag\n");
+  // printf("~~~~~~~~~set_ack_flag\n");
   ack_flag=1;
+  conf_flag = is_config;
+  command_id = commandId;
+
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_command_parse(char* data)
+{
+  char* split;
+  char temp[20][20];
+  int count=0;
+  
+  char* copy = malloc(strlen(data) + 1);
+  strcpy(copy, data);
+
+  split = strtok (data," ,.-\\");
+  while (split != NULL)
+  {
+    // printf ("%s %d\n",split, strlen(split));
+    strcpy(temp[count], split);
+    count++;
+    split = strtok (NULL, " ,.-\\");
+  }
+
+  switch(atoi(temp[1]))
+  {
+    case CMD_TYPE_CONF:
+    {
+      printf("collect_ask_send\n");
+      collect_ask_send(temp[2], temp[3]);
+      break;
+    }
+    case CMD_TYPE_SET:
+    {
+      printf("collect_setting_send\n");
+      printf("copy %s\n", copy);
+      collect_setting_send(copy);
+      free(copy);
+      break;
+    }
+    default:
+      break;
+  }
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -145,6 +191,23 @@ collect_common_recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops,
 }
 /*---------------------------------------------------------------------------*/
 void
+collect_ack_recv(const linkaddr_t *originator, uint8_t *payload)
+{
+  uint8_t data;
+  int i;
+  struct 
+  {
+    uint8_t command_type;
+    uint16_t data_length;
+    uint16_t command_id;
+    uint8_t is_received;
+  }ack;
+  printf("%u ",originator->u8[0] + (originator->u8[1] << 8)); //nodeID
+  memcpy(&ack, payload, sizeof(ack));
+  printf("%u %u %u %u\n", ack.command_type, ack.data_length, ack.command_id, ack.is_received);
+}
+/*---------------------------------------------------------------------------*/
+void
 set_send_rate(uint8_t value)
 {
   send_period = value;
@@ -153,7 +216,7 @@ set_send_rate(uint8_t value)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(collect_common_process, ev, data)
 {
-  static struct etimer period_timer, wait_timer, command_timer, ack_timer;
+  static struct etimer period_timer, wait_timer, command_timer, ack_timer, conf_timer;
   PROCESS_BEGIN();
 
   collect_common_net_init();
@@ -162,26 +225,25 @@ PROCESS_THREAD(collect_common_process, ev, data)
   etimer_set(&period_timer, CLOCK_SECOND * send_period);
   etimer_set(&command_timer, CLOCK_SECOND * COMMAND_PERIOD);
 
-  if(ack_flag)
-  {
-    printf("set ack_timer\n");
-    ack_flag=0;
-    // etimer_set(&ack_timer, CLOCK_SECOND * ACK_PERIOD);
-  }
 
   while(1) {
     if(ack_flag)
     {
       printf("set ack_timer\n");
-      ack_flag=0;
-      // etimer_set(&ack_timer, CLOCK_SECOND * ACK_PERIOD);
+      etimer_set(&ack_timer, CLOCK_SECOND * ACK_PERIOD);
+    }
+    if(conf_flag)
+    {
+      printf("set conf_timer\n");
+      etimer_set(&conf_timer, CLOCK_SECOND * ACK_PERIOD);
     }
     PROCESS_WAIT_EVENT();
     if(ev == serial_line_event_message) {
       char *line;
       line = (char *)data;
       printf("--------------rev command------------:%s\n", line);
-      if(strncmp(line, "send", 4)==0)
+      printf("strlen(line) %d\n", strlen(line));
+      if(strncmp(line, STARTWORD, 2)==0 && strncmp(line+strlen(line)-3, ENDWORD, 2)==0)
       {
         send_command=1;
         recv_counter++;
@@ -236,19 +298,26 @@ PROCESS_THREAD(collect_common_process, ev, data)
           collect_common_send();
         }
       }else if(data == &command_timer){
-        printf("command_timer timeup\n");
+        // printf("command_timer timeup\n");
         etimer_reset(&command_timer);
         if(send_command==1){
             printf("send_command = 1 \n");
-            collect_special_send(command_data); //sink special send
+            collect_command_parse(command_data); //sink special send
             free(command_data);
             send_command = 0;
           }
         }
         else if(data == &ack_timer && ack_flag)
         {
-          // collect_ack_send();
-          // ack_flag=0;
+          printf("ack_timer timeup\n");
+          ack_flag=0;
+          collect_ack_send(command_id);
+        }
+        else if(data == &conf_timer && conf_flag)
+        {
+          printf("conf_timer timeup\n");
+          conf_flag=0;
+          printf("send config\n");
         }
     }
   }

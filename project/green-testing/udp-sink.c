@@ -103,111 +103,83 @@ ascii_to_uint(char c)
 
 /*---------------------------------------------------------------------------*/
 void
-collect_special_send(char* data)
+collect_setting_send(char* data)
 {
-  /* Server never sends */
-  static uint8_t seqno;
   rpl_dag_t *dag;
   char* split;
   char temp[20][20];
   int count=0;
   uint8_t  dst_u8[2];
-  struct command_msg msg;
   uip_ipaddr_t addr;
-  memset(&msg, 0, sizeof(msg));
 
-  PRINTF("%s\n", data);
-  if(server_conn == NULL) {
-    /* Not setup yet */
-    return;
-  }
-
-  dag = rpl_get_any_dag();
-  if(dag != NULL)
-  {
-    printf("dag->joined: %d\n", dag->joined);
-  }
-  else
-  {
-    printf("dag is NULL\n");
-  }
-
-  PRINTF("DATA common send\n");
-  PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
-  printf("\n-----------------------\n");
-  printf("send pkt to:");
-  PRINT6ADDR(&server_conn->ripaddr);
-  printf("\n-----------------------\n");
-  uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
-  
-  /* assume command="send macaddr msg" */
-  /* command rule "send\dst_mac\type\value" */
+  /*----------parsing command--------- */
+  /*sw commandType mac commandid sensornum ...*/
   split = strtok (data," ,.-\\");
   while (split != NULL)
   {
-    // printf ("%s %d\n",split, strlen(split));
     strcpy(temp[count], split);
     count++;
     split = strtok (NULL, " ,.-\\");
   }
 
-  // printf("temp[2] %s\n", temp[2]);
-  if(strncmp(temp[2], "r", 1)==0)
+  int sensor_num = atoi(temp[4]);
+  printf("senor_num %d\n", sensor_num);
+
+  struct msg
   {
-    printf("RATE_TYPE\n");
-    msg.type = RATE_TYPE;
+    uint16_t commandId;
+    uint8_t commandType;
+    uint8_t sensorNum;
+    struct setting_msg setmsg[sensor_num];
+  };
+  struct msg msg;
+  memset(&msg, 0, sizeof(msg));
+
+  msg.commandType = CMD_TYPE_SET;
+  msg.commandId = (uint16_t)atoi(temp[3]);
+  msg.sensorNum = sensor_num;
+  printf("msg.commandType %d\n", msg.commandType);
+  printf("msg.commandId %d\n", msg.commandId);
+
+  for(int i=0; i<sensor_num; i++)
+  {
+    msg.setmsg[i].setting_type = atoi(temp[5+i*3]);
+    msg.setmsg[i].sensor_tittle = atoi(temp[6+i*3]);
+    msg.setmsg[i].value = atoi(temp[7+i*3]);
+    printf("setting_type %d\n", msg.setmsg[i].setting_type);
+    printf("sensor_tittle %d\n", msg.setmsg[i].sensor_tittle);
+    printf("value %d\n", msg.setmsg[i].value);
   }
-  else if(strncmp(temp[2], "b", 1)==0)
-  {
-    printf("BEEP_TYPE\n");
-    msg.type = BEEP_TYPE;
+
+  if(server_conn == NULL) {
+    /* Not setup yet */
+    return;
   }
-  else if(strncmp(temp[2], "t", 1)==0)
+  uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
+  
+  if(strncmp(temp[2], BROADCAST, 4)==0)
   {
-    printf("THRESHOLD_TYPE\n");
-    msg.type = THRESHOLD_TYPE;
+    //broadcast command
+    printf("broadcast\n");
+    uip_create_linklocal_rplnodes_mcast(&addr);
+    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+                        &addr, UIP_HTONS(UDP_CLIENT_PORT));
   }
   else
   {
-    printf("UNKNOWN_TYPE\n");
-    msg.type = UNKNOWN_TYPE;
-  }
-  
-  if(count>=3)
-  {
-    if(atoi(temp[3])>0)
-      msg.value = atoi(temp[3]);
-    printf("atoi tmep[3] %d\n",atoi(temp[3]));
-  }
-   else
-  {
-    msg.value=0;
-  }
-  printf("msg %d %d \n", msg.type, msg.value);
-  
-   if(strncmp(temp[1], "all", 3)==0)
-   {
-    //broadcast command
-    uip_create_linklocal_rplnodes_mcast(&addr);
-    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
-                      &addr, UIP_HTONS(UDP_CLIENT_PORT));
-   }
-   else
-   {
     //unicast command 
-
     /* assume temp[1] is mac addr */
     /* ascii -> uint8 */
-    dst_u8[0] =ascii_to_uint(temp[1][0])<<4;
-    dst_u8[0] += ascii_to_uint(temp[1][1]);
+    dst_u8[0] =ascii_to_uint(temp[2][0])<<4;
+    dst_u8[0] += ascii_to_uint(temp[2][1]);
 
-    dst_u8[1] = ascii_to_uint(temp[1][2])<<4;
-    dst_u8[1] += ascii_to_uint(temp[1][3]);
-  
+    dst_u8[1] = ascii_to_uint(temp[2][2])<<4;
+    dst_u8[1] += ascii_to_uint(temp[2][3]);
+      
     printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
 
- 
-    /* destnation ipv6 address */
+     
+    // /* destnation ipv6 address */
     client_ipaddr.u8[0]=0xfe;
     client_ipaddr.u8[1]=0x80;
     client_ipaddr.u8[8]=0x02;
@@ -224,15 +196,85 @@ collect_special_send(char* data)
     PRINT6ADDR(&client_ipaddr);
     printf("\n-----------------------\n");
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
-                      &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
+                          &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
 
   }
+
   leds_toggle(LEDS_RED);
 
 }
 /*---------------------------------------------------------------------------*/
 void
-collect_ack_send(void)
+collect_ask_send(char* mac, char* commandId)
+{
+  // printf("collect_ask_send\n");
+
+  uint8_t  dst_u8[2];
+  uip_ipaddr_t addr;
+  struct msg{
+    uint16_t commandId;
+    uint8_t commandType;
+  };
+
+  struct msg msg;
+  memset(&msg, 0, sizeof(msg));
+
+  msg.commandType = CMD_TYPE_CONF;
+  msg.commandId = (uint16_t)atoi(commandId);
+
+  if(server_conn == NULL) {
+    /* Not setup yet */
+    return;
+  }
+
+  uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
+
+  if(strncmp(mac, BROADCAST, 4)==0)
+  {
+    //broadcast command
+    printf("broadcast\n");
+    uip_create_linklocal_rplnodes_mcast(&addr);
+    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+                        &addr, UIP_HTONS(UDP_CLIENT_PORT));
+  }
+  else
+  {
+    //unicast command 
+    /* assume temp[1] is mac addr */
+    /* ascii -> uint8 */
+    dst_u8[0] =ascii_to_uint(mac[0])<<4;
+    dst_u8[0] += ascii_to_uint(mac[1]);
+
+    dst_u8[1] = ascii_to_uint(mac[2])<<4;
+    dst_u8[1] += ascii_to_uint(mac[3]);
+      
+    printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
+
+     
+    // /* destnation ipv6 address */
+    client_ipaddr.u8[0]=0xfe;
+    client_ipaddr.u8[1]=0x80;
+    client_ipaddr.u8[8]=0x02;
+    client_ipaddr.u8[9]=0x12;
+    client_ipaddr.u8[10]=0x4b;
+    client_ipaddr.u8[11]=0x00;
+    client_ipaddr.u8[12]=0x06;
+    // client_ipaddr.u8[13]=0x0d; //openMote
+    client_ipaddr.u8[13]=0x15; //ITRI_Mote
+    client_ipaddr.u8[14]=dst_u8[0];
+    client_ipaddr.u8[15]=dst_u8[1];
+    printf("\n-----------------------\n");
+    printf("client_ipaddr2:");
+    PRINT6ADDR(&client_ipaddr);
+    printf("\n-----------------------\n");
+    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+                          &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
+
+  }
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_ack_send(uint16_t commandId)
 {
   /*sink not send ack*/
 }
@@ -257,6 +299,8 @@ tcpip_handler(void)
   linkaddr_t sender;
   uint8_t seqno;
   uint8_t hops;
+  uint16_t commandId;
+  uint8_t data;
 
   if(uip_newdata()) {
     appdata = (uint8_t *)uip_appdata;
@@ -264,8 +308,26 @@ tcpip_handler(void)
     sender.u8[1] = UIP_IP_BUF->srcipaddr.u8[14];
     seqno = *appdata;
     hops = uip_ds6_if.cur_hop_limit - UIP_IP_BUF->ttl + 1;
-    collect_common_recv(&sender, seqno, hops,
+    printf("receive packet length %d\n", uip_datalen());
+    if(uip_datalen()>40)
+    {
+      collect_common_recv(&sender, seqno, hops,
                         appdata + 2, uip_datalen() - 2);
+    }
+    else if(uip_datalen()==4)
+    {
+      printf("%u ", sender.u8[0] + (sender.u8[1] << 8));
+      memcpy(&commandId, appdata, sizeof(uint16_t));
+      appdata+=sizeof(uint16_t);
+      printf("%u ",commandId);
+      for(int i=0; i<uip_datalen()-2; i++)
+      {
+        memcpy(&data , appdata, sizeof(uint8_t));
+        appdata+=sizeof(uint8_t);
+        printf("%u ",data);
+      }
+      printf("\n");
+    }
   }
 }
 /*---------------------------------------------------------------------------*/
