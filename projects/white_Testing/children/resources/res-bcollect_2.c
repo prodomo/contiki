@@ -223,6 +223,6 @@ res_periodic_handler()
     PRINTF("Generate a new packet! , %08x. \n",tsch_current_asn.ls4b);
         
     /* Notify the registered observers which will trigger the res_get_handler to create the response. */
-    REST.notify_subscribers(&res_bcollect);
+    REST.notify_subscribers(&res_bcollect_2);
   }
 }
