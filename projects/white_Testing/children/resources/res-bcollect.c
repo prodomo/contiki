@@ -10,10 +10,6 @@
 #include "er-coap.h"
 
 
-// for sensor
-#include "lib/sensors.h"
-#include "dev/sht21.h"
-
 #include "core/net/rpl/rpl.h"
 #include "core/net/link-stats.h"
 
