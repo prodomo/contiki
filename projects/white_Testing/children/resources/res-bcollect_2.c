@@ -117,9 +117,9 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   struct link_stats *parent_link_stats;
 
 
-  PRINTF("I am B_collect res_get hanlder!\n");
+  PRINTF("I am B_collect_2 res_get hanlder!\n");
   REST.set_header_content_type(response, REST.type.APPLICATION_OCTET_STREAM);
-  REST.set_header_max_age(response, res_bcollect.periodic->period / CLOCK_SECOND);
+  REST.set_header_max_age(response, res_res_bcollect_2.periodic->period / CLOCK_SECOND);
 
   
 
