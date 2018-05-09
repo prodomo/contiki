@@ -126,8 +126,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   message.start_asn = tsch_current_asn.ls4b;
 
   // for CPS enviorment Data.
-  message.temperature = temperature_temp / 100;
-  message.humidity = humidity_temp / 100;
+  message.temperature = temperature_temp;
+  message.humidity = humidity_temp;
 
   // for priority
   message.priority = packet_priority;
