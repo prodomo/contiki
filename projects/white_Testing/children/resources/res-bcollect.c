@@ -129,8 +129,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   message.temperature = temperature_temp / 100;
   message.humidity = humidity_temp / 100;
 
-  // for Prority
-  message.prority = packet_priority;
+  // for priority
+  message.priority = packet_priority;
 
 
   uint8_t packet_length = 0;
