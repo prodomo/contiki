@@ -223,7 +223,7 @@ static void
 print_tempAndhumi_status(void) 
 {
   static int16_t sht21_present; //,max44009_present;  //uint16 to int16----important
-  static int8_t temperature, humidity; //,light;
+  static int16_t temperature, humidity; //,light;
 
   PRINTF("============================\n");
   if(sht21.status(SENSORS_READY) == 1) {//sht21_present != SHT21_ERROR

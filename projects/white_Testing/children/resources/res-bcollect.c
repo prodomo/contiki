@@ -98,15 +98,15 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     uint32_t end_asn; // 8 9 10 11
     uint32_t event_counter; // 12 13 14 15
     uint8_t event_threshold; // 16
-    int8_t temperature;
-    int8_t humidity;
-    // padding 3 int8_t
+    // padding 3 int8_t and int16_t
     uint32_t event_threshold_last_change; 
     uint32_t packet_counter;
     unsigned char parent_address[2]; // uint8[0] , uint8[1]
     uint16_t rank;
     uint16_t parnet_link_etx;
     int16_t parent_link_rssi;
+    int16_t temperature;
+    int16_t humidity;
     uint8_t end_flag[2];
     // padding int16_t
   } message;
