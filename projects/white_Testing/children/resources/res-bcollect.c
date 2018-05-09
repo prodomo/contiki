@@ -73,21 +73,6 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
    * This would be a TODO in the corresponding files in contiki/apps/erbium/!
    */
 
-  static int8_t sht21_present=0; //, max44009_present=0, adxl346_present=0; 
-  static int16_t temperature_temp, humidity_temp; //, light, accelx, accely, accelz;
-
-  if(sht21.status(SENSORS_READY)==1) {
-        temperature_temp = sht21.value(SHT21_READ_TEMP);
-        //PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
-        humidity_temp = sht21.value(SHT21_READ_RHUM);
-        //PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
-        sht21_present = 1;
-  }else {
-      PRINTF("%u\n",sht21.status(SENSORS_READY));
-      PRINTF("SHT21 doesn't open\n");
-  } 
-
-
   struct 
   {
     // 32bits to 1 block
@@ -105,8 +90,6 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     uint16_t rank;
     uint16_t parnet_link_etx;
     int16_t parent_link_rssi;
-    int16_t temperature;
-    int16_t humidity;
     uint8_t end_flag[2];
     // padding int16_t
   } message;
@@ -125,9 +108,6 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 
   message.start_asn = tsch_current_asn.ls4b;
 
-  // for CPS enviorment Data.
-  message.temperature = temperature_temp;
-  message.humidity = humidity_temp;
 
   // for priority
   message.priority = packet_priority;

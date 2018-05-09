@@ -126,7 +126,7 @@ output(void)
     PRINTF("packet_length:%d \n", UIP_IP_BUF->len[1]);
 
     uint8_t ip_payload_length = UIP_IP_BUF->len[1];
-    uint8_t coap_packet_start_location = UIP_IPH_LEN + ip_payload_length - 44;  //44 is coap payload length
+    uint8_t coap_packet_start_location = UIP_IPH_LEN + ip_payload_length - 40;  //40 is coap payload length
 
     uint8_t flag1 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location];
     uint8_t flag2 = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 1];
@@ -148,12 +148,7 @@ output(void)
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 6] << 16 |
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 5] << 8 |
                           ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 4];
-      // for CPS enviorment Data.
-      uint16_t temperature = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 37] << 8 |
-                             ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 36];
-
-      uint16_t humidity =    ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 39] << 8 |
-                             ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 38];
+      
       // Packet Priority.
       uint8_t priority = ((uint8_t *) (UIP_IP_BUF))[coap_packet_start_location + 2];
       // uint32_t event_counter.
@@ -173,8 +168,7 @@ output(void)
       //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
       //PRINTF("Traffic_Classes:%02x. \n",UIP_IP_BUF->tcflow);
       PRINTF("Traffic_Classes:%d. \n",priority);
-      PRINTF("Temperature: %d.%dC\n", temperature / 100, temperature % 100);
-      PRINTF("Rel. humidity: %d.%d%%\n", humidity / 100, humidity % 100);
+     
       
       //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 
