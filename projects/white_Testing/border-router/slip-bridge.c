@@ -173,8 +173,8 @@ output(void)
       //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
       //PRINTF("Traffic_Classes:%02x. \n",UIP_IP_BUF->tcflow);
       PRINTF("Traffic_Classes:%d. \n",priority);
-      PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
-      PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
+      PRINTF("Temperature: %d.%dC\n", temperature / 100, temperature % 100);
+      PRINTF("Rel. humidity: %d.%d%%\n", humidity / 100, humidity % 100);
       
       //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 
