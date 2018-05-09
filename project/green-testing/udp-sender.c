@@ -226,38 +226,38 @@ tcpip_handler(void)
 }
 void setting_value(struct setting_msg msg)
 {
-  switch(msg.setting_type)
+
+  if(msg.setting_type == SET_TYPE_RATE && msg.sensor_tittle == SNR_TLE_DEFAULT)
   {
-    case SET_TYPE_RATE:
-      printf("changing sending rate%s\n");
-      if(msg.sensor_tittle == SNR_TLE_DEFAULT)
-        set_send_rate(msg.value);
-      break;
-    
-    case SET_TYPE_THRESHOLD:
-      switch(msg.sensor_tittle){
-        case SNR_TLE_DEFAULT:
-          break;
-        
-        case SNR_TLE_TEMPERATURE:
-          printf("changing temperature threshold%s\n");
-          break;
-        
-        case SNR_TLE_ELE_CURRENT:
-          printf("changing electric current threshold%s\n");
-          break;
-        
-        case SNR_TLE_ROTAT_SPEED:
-          printf("changing rotation speed threshold%s\n");
-          break;
-        default:
-          break;
-      }
-      break;
-    
-    default:
-      break;
+    printf("changing sending rate %u\n", msg.value);
+    set_send_rate(msg.value);
   }
+  else if(msg.setting_type == SET_TYPE_THRESHOLD)
+  {
+    switch(msg.sensor_tittle){
+      case SNR_TLE_DEFAULT:
+        break;
+      
+      case SNR_TLE_TEMPERATURE:
+        printf("changing temperature threshold\n");
+        break;
+      
+      case SNR_TLE_ELE_CURRENT:
+        printf("changing electric current threshold\n");
+        break;
+      
+      case SNR_TLE_ROTAT_SPEED:
+        printf("changing rotation speed threshold\n");
+        break;
+      
+      default:
+        break;
+      }
+  }
+  else{
+    return;
+  }
+
 }
 
 /*---------------------------------------------------------------------------*/
