@@ -74,7 +74,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
    */
 
   static int8_t sht21_present=0; //, max44009_present=0, adxl346_present=0; 
-  static int8_t temperature_temp, humidity_temp; //, light, accelx, accely, accelz;
+  static int16_t temperature_temp, humidity_temp; //, light, accelx, accely, accelz;
 
   if(sht21.status(SENSORS_READY)==1) {
         temperature_temp = sht21.value(SHT21_READ_TEMP);
