@@ -74,7 +74,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
    */
 
   static int8_t sht21_present=0; //, max44009_present=0, adxl346_present=0; 
-  static int16_t temperature_temp, humidity_temp; //, light, accelx, accely, accelz;
+  static int8_t temperature_temp, humidity_temp; //, light, accelx, accely, accelz;
 
   if(sht21.status(SENSORS_READY)==1) {
         temperature_temp = sht21.value(SHT21_READ_TEMP);
@@ -82,27 +82,33 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
         humidity_temp = sht21.value(SHT21_READ_RHUM);
         //PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
         sht21_present = 1;
-  }
+  }else {
+      PRINTF("%u\n",sht21.status(SENSORS_READY));
+      PRINTF("SHT21 doesn't open\n");
+  } 
 
 
   struct 
   {
+    // 32bits to 1 block
     uint8_t flag[2];  // 0 1
-    // padding int16_t
+    uint8_t priority;
+    // padding int8_t
     uint32_t start_asn; // 4 5 6 7
     uint32_t end_asn; // 8 9 10 11
     uint32_t event_counter; // 12 13 14 15
     uint8_t event_threshold; // 16
-    // padding 3
+    int8_t temperature;
+    int8_t humidity;
+    // padding 3 int8_t
     uint32_t event_threshold_last_change; 
     uint32_t packet_counter;
     unsigned char parent_address[2]; // uint8[0] , uint8[1]
     uint16_t rank;
     uint16_t parnet_link_etx;
     int16_t parent_link_rssi;
-    int16_t temperature;
-    int16_t humidity;
     uint8_t end_flag[2];
+    // padding int16_t
   } message;
 
   memset(&message, 0, sizeof(message));
@@ -123,6 +129,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   message.temperature = temperature_temp / 100;
   message.humidity = humidity_temp / 100;
 
+  // for Prority
+  message.prority = packet_priority;
 
 
   uint8_t packet_length = 0;

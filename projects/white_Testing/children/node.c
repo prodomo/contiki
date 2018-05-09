@@ -222,7 +222,7 @@ static void
 print_tempAndhumi_status(void) 
 {
   static int16_t sht21_present; //,max44009_present;  //uint16 to int16----important
-  static int16_t temperature, humidity; //,light;
+  static int8_t temperature, humidity; //,light;
 
   PRINTF("============================\n");
   if(sht21.status(SENSORS_READY) == 1) {//sht21_present != SHT21_ERROR
@@ -254,7 +254,9 @@ PROCESS_THREAD(node_process, ev, data)
     PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
     etimer_reset(&etaa);
     //print_network_status();
-    //print_tempAndhumi_status();
+    #if DEBUG
+      print_tempAndhumi_status();
+    #endif
   }
 
   PROCESS_END();
