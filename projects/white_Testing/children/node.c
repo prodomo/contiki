@@ -228,6 +228,8 @@ print_tempAndhumi_status(void)
   PRINTF("============================\n");
   if(sht21.status(SENSORS_READY) == 1) {//sht21_present != SHT21_ERROR
     temperature = sht21.value(SHT21_READ_TEMP);
+    PRINTF("Temperature Row Data: %d\n",temperature );
+    PRINTF("Temperature Row Data: %16x\n",temperature );
     PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
     humidity = sht21.value(SHT21_READ_RHUM);
     PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
