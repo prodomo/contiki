@@ -48,17 +48,19 @@
 #define RPL_WITH_NON_STORING 1
 #define WITH_NON_STORING 1
 
+
+/* QoS function optional*/
 #ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE           1
+#define ENABLE_QOS_WHITE           0
 #endif
 
 // #ifndef QUEUEBUF_CONF_NUM
 // #define QUEUEBUF_CONF_NUM   16
 // #endif
 
-#ifndef MAX_LOG_LENGTH
-#define MAX_LOG_LENGTH 2048  //Log Length
-#endif
+// #ifndef MAX_LOG_LENGTH
+// #define MAX_LOG_LENGTH 2048  //Log Length
+// #endif
 
 /* IP buffer size must match all other hops, in particular the border router. */
 #undef UIP_CONF_BUFFER_SIZE
