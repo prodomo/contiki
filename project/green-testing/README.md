@@ -14,8 +14,8 @@ Command Example
 2.ASK COMMAND
 
  send Broadcast packet to ask mote's configuration (command id =12)
-> SW 02 FFFF 12 EW
+> SW 01 FFFF 12 EW
 
  send unicast packet to ask a69d's configuration (command id =12)
-> SW 02 A69D 12 EW
+> SW 01 A69D 12 EW
 
