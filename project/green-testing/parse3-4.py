@@ -14,6 +14,7 @@ hasCommand = False
 current_CommandID =0
 command_count=0
 node_arr=[]
+BROADCAST = "FFFF"
 
 ser = serial.Serial('/dev/ttyUSB0', 115200)
 
@@ -136,12 +137,18 @@ def threadWork(client):
             print "Client send: " + msg 
             client.send("You say: " + msg + "\r\n")
             command_count=command_count+1
-            temp = "SW 01 a69d " + str(command_count) + " EW\n"
-            print temp
-            share_queue.put(temp)
-            print "share_queue size: ", share_queue.qsize()
+
+            temp_command = msg.split()
+            if(temp_command[0] == "SW" and temp_command[len(temp_command)-1] == "EW"):
+              temp_command[2]= temp_command[2].upper()
+              temp_command[3] = command_count
+              print temp_command
+              temp = " ".join(str(x) for x in temp_command)+"\n"
+              print temp
+              share_queue.put(temp)
+              print "share_queue size: ", share_queue.qsize()
+              hasCommand = True
             share_queue.task_done()
-            hasCommand = True
     client.close()
 
 def sendCommand(command):
@@ -157,16 +164,15 @@ def checkIsContinueSend(nodeId):
 
     print "in check ContinueSend"
     split_command = current_Command.split()
-    mac = split_command[ask_command_map['MAC']]
+    mac = split_command[ask_command_map['MAC']].lower()
 
-    # print mac
-    if mac == "FFFF":
+    if mac == BROADCAST or mac == BROADCAST.lower():
       for i in range(len(node_arr)):
-        if(node_arr[i][0] == nodeId):
+        if(node_arr[i][0].lower() == nodeId.lower()):
           node_arr[i][1]=1
         if(node_arr[i][1] == 0):
           is_allSend = False
-    elif mac != nodeId : 
+    elif mac.lower() != nodeId.lower(): 
       is_allSend = False
 
     return is_allSend
@@ -262,7 +268,7 @@ while True:
         if len(split_data)==30 and split_data[key_map['DATA_LEN']] == '30':
             checkIsNewNode(split_data[key_map['NODE_ID']])
             # print 'split_data={0}, s0={1}, s3={2}'.format(split_data, split_data[key_map['DATA_LEN']], split_data[key_map['NODE_ID']])
-            upload_to_DB(split_data)
+            # upload_to_DB(split_data)
         elif len(split_data)==5 and split_data[ack_map['DATA_LEN']] == '4':
             print 'get ack'
             revCommand(split_data[ack_map['NODE_ID']], split_data[ack_map['COMMAND_ID']])
