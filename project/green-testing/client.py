@@ -12,6 +12,7 @@ except socket.error, msg:
     sys.stderr.write("[ERROR] %s\n" % msg[1])
     exit(1)
 
-sock.send("send.all.t.22\n")
+
+sock.send("SW 01 FFFF 02 EW\n")
 print sock.recv(1024)
 sock.close()

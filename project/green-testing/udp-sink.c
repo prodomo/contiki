@@ -123,7 +123,7 @@ collect_setting_send(char* data)
   }
 
   int sensor_num = atoi(temp[4]);
-  printf("senor_num %d\n", sensor_num);
+  // printf("senor_num %d\n", sensor_num);
 
   struct msg
   {
@@ -138,17 +138,17 @@ collect_setting_send(char* data)
   msg.commandType = CMD_TYPE_SET;
   msg.commandId = (uint16_t)atoi(temp[3]);
   msg.sensorNum = sensor_num;
-  printf("msg.commandType %d\n", msg.commandType);
-  printf("msg.commandId %d\n", msg.commandId);
+  // printf("msg.commandType %d\n", msg.commandType);
+  // printf("msg.commandId %d\n", msg.commandId);
 
   for(int i=0; i<sensor_num; i++)
   {
     msg.setmsg[i].setting_type = atoi(temp[5+i*3]);
     msg.setmsg[i].sensor_tittle = atoi(temp[6+i*3]);
     msg.setmsg[i].value = atoi(temp[7+i*3]);
-    printf("setting_type %d\n", msg.setmsg[i].setting_type);
-    printf("sensor_tittle %d\n", msg.setmsg[i].sensor_tittle);
-    printf("value %d\n", msg.setmsg[i].value);
+    // printf("setting_type %d\n", msg.setmsg[i].setting_type);
+    // printf("sensor_tittle %d\n", msg.setmsg[i].sensor_tittle);
+    // printf("value %d\n", msg.setmsg[i].value);
   }
 
   if(server_conn == NULL) {
@@ -160,7 +160,7 @@ collect_setting_send(char* data)
   if(strncmp(temp[2], BROADCAST, 4)==0)
   {
     //broadcast command
-    printf("broadcast\n");
+    // printf("broadcast\n");
     uip_create_linklocal_rplnodes_mcast(&addr);
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                         &addr, UIP_HTONS(UDP_CLIENT_PORT));
@@ -191,10 +191,10 @@ collect_setting_send(char* data)
     client_ipaddr.u8[13]=0x15; //ITRI_Mote
     client_ipaddr.u8[14]=dst_u8[0];
     client_ipaddr.u8[15]=dst_u8[1];
-    printf("\n-----------------------\n");
-    printf("client_ipaddr2:");
-    PRINT6ADDR(&client_ipaddr);
-    printf("\n-----------------------\n");
+    // printf("\n-----------------------\n");
+    // printf("client_ipaddr2:");
+    // PRINT6ADDR(&client_ipaddr);
+    // printf("\n-----------------------\n");
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                           &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
 
@@ -232,7 +232,7 @@ collect_ask_send(char* mac, char* commandId)
   if(strncmp(mac, BROADCAST, 4)==0)
   {
     //broadcast command
-    printf("broadcast\n");
+    // printf("broadcast\n");
     uip_create_linklocal_rplnodes_mcast(&addr);
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                         &addr, UIP_HTONS(UDP_CLIENT_PORT));
@@ -263,10 +263,10 @@ collect_ask_send(char* mac, char* commandId)
     client_ipaddr.u8[13]=0x15; //ITRI_Mote
     client_ipaddr.u8[14]=dst_u8[0];
     client_ipaddr.u8[15]=dst_u8[1];
-    printf("\n-----------------------\n");
-    printf("client_ipaddr2:");
-    PRINT6ADDR(&client_ipaddr);
-    printf("\n-----------------------\n");
+    // printf("\n-----------------------\n");
+    // printf("client_ipaddr2:");
+    // PRINT6ADDR(&client_ipaddr);
+    // printf("\n-----------------------\n");
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                           &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
 
@@ -308,7 +308,7 @@ tcpip_handler(void)
     sender.u8[1] = UIP_IP_BUF->srcipaddr.u8[14];
     seqno = *appdata;
     hops = uip_ds6_if.cur_hop_limit - UIP_IP_BUF->ttl + 1;
-    printf("receive packet length %d\n", uip_datalen());
+    // printf("receive packet length %d\n", uip_datalen());
     if(uip_datalen()>40)
     {
       collect_common_recv(&sender, seqno, hops,
@@ -316,7 +316,8 @@ tcpip_handler(void)
     }
     else if(uip_datalen()==4)
     {
-      printf("%u ", sender.u8[0] + (sender.u8[1] << 8));
+      printf("%u ", uip_datalen());
+      printf("%04x ", sender.u8[0] + (sender.u8[1] << 8));
       memcpy(&commandId, appdata, sizeof(uint16_t));
       appdata+=sizeof(uint16_t);
       printf("%u ",commandId);

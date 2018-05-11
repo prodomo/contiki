@@ -179,7 +179,7 @@ collect_common_recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops,
   printf(" %lu %lu 0", ((time >> 16) & 0xffff), time & 0xffff);
   /* Ignore latency for now */
   asn = get_timesynch_time();
-  printf(" %u %u %u %u",
+  printf(" %04x %u %u %u",
          originator->u8[0] + (originator->u8[1] << 8), seqno, hops, asn.ls4b);
   for(i = 0; i < payload_len / 2; i++) {
     memcpy(&data, payload, sizeof(data));
