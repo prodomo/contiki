@@ -116,6 +116,7 @@ PROCESS_THREAD(serial_line_process, ev, data)
         buf[ptr++] = (uint8_t)'\n';
         /* Broadcast event */
         process_post(PROCESS_BROADCAST, serial_line_event_message, buf);
+        memset(rxbuf_data, 0, BUFSIZE);
 
         /* Wait until all processes have handled the serial line event */
         if(PROCESS_ERR_OK ==
@@ -123,6 +124,7 @@ PROCESS_THREAD(serial_line_process, ev, data)
           PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
         }
         ptr = 0;
+        memset(buf, 0, BUFSIZE);
       }
     }
   }
