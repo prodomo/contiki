@@ -41,8 +41,14 @@
  * Don't forget to also set a correct baud rate (460800 or higher) by defining
  * the corresponding UART0_CONF_BAUD_RATE or UART1_CONF_BAUD_RATE
  */
-#define CC2538_IO_CONF_USB         1
+#define CC2538_IO_CONF_USB         0
 #define CC2538_IO_CONF_USE_UART1   0
+
+#define BOARD_CONF_DEBUGGER_DEVPACK 0 
+#define PROP_MODE_CONF_SNIFFER 1 
+#define UART0_CONF_BAUD_RATE 460800 
+#define RF_CORE_CONF_CHANNEL 25
+
 /*---------------------------------------------------------------------------*/
 #if CC2538_IO_CONF_USB
 #define USB_SERIAL_CONF_ENABLE     1
