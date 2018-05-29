@@ -31,8 +31,8 @@
 #include "modbusMacros.h"
 #include "rs485-dev.h"
 
-#define MODBUS_ADDRESS 1
-#define MODBUS_SIZE 1
+static int modbusAddr = 0;
+static int modbusCount = 0;
 
 void init_crc16_tab( void );
 
@@ -50,21 +50,16 @@ modbusRdCoilStatus(unsigned int function,
                    st_modbusExceptionCode *exceptionCode,
                    unsigned char hasCrc, unsigned int registerModBus)
 {
-  int status = 0;
-  int count = 0;
+  int status = -1;
 
-  /* Number of registers that we want read */
-  /* Each value is a float type. A float type uses 2 registers (16 bits * 2 = 32 bits)*/
-  count = MODBUS_SIZE;
   /* Modbus device address */
-
-  modbusQuery->address = MODBUS_ADDRESS;
+  modbusQuery->address = modbusAddr;
   /* Function code to read registers(Modbus protocol), 0x04 --> Read Input Registers */
   modbusQuery->function = function;
   modbusQuery->startAddressHI = VAL_2_HIGH(registerModBus);
   modbusQuery->startAddressLO = VAL_2_LOW(registerModBus);
-  modbusQuery->countHI = VAL_2_HIGH(count);
-  modbusQuery->countLO = VAL_2_LOW(count);
+  modbusQuery->countHI = VAL_2_HIGH(modbusCount);
+  modbusQuery->countLO = VAL_2_LOW(modbusCount);
 
   /* TODO: check the zero and set it to what is needed */
   status = modbusReadCoilStatus(modbusQuery, modbusRdCoil,
@@ -84,13 +79,18 @@ static st_modbusIOGeneric modbusStatus;
 static st_modbusExceptionCode exceptionCode;
 
 int
-modbus_read_register(unsigned int function, unsigned int registerAddr)
+modbus_read_register(unsigned int devAddr,
+                     unsigned int function,
+                     unsigned int registerAddr,
+                     unsigned int regCount)
 {
-  int rv = 0;
-  unsigned char hasCrc;
-  /* Is necessary the use of CRC-16 (Modbus) */
-  hasCrc = 1;
+  modbusAddr = devAddr;
+  modbusCount = regCount;
 
+  int rv = 0;
+  /* Is necessary the use of CRC-16 (Modbus) */
+  unsigned char hasCrc = 1;
+  
   rv = modbusRdCoilStatus(function, &modbusStatus,
                           &modbusQuery, &exceptionCode, hasCrc,
                           registerAddr);

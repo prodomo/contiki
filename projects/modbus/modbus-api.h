@@ -40,7 +40,10 @@
 
 #include "modbusStructs.h"
 void modbus_init(void);
-int modbus_read_register(unsigned int function, unsigned int registerAddr);
+int modbus_read_register(unsigned int devAddr,
+                         unsigned int function,
+                         unsigned int registerAddr,
+                         unsigned int regCount);
 float modbus_get_float(int pos);
 int modbus_get_int(int pos);
 st_modbusIOGeneric *modbus_get_status();

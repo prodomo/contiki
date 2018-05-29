@@ -55,7 +55,7 @@ PROCESS_THREAD(modbus_test_process, ev, data)
 
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-    rv = modbus_read_register(MODBUS_RD_HOLD_REG, 0x0d);
+    rv = modbus_read_register(0x01, MODBUS_RD_HOLD_REG, 0x0d, 1);
     if(rv == 0) {
 	    int data = modbus_get_int(0);
       printf("Success state after sending modbus packet\n\r");
