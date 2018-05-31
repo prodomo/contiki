@@ -30,7 +30,7 @@
 
 /**
  * \file
- *         A brief description of what this file is
+ *         This is the main file of modbus protocol
  * \author
  *         Joakim Eriksson <joakime@sics.se>
  */
@@ -40,12 +40,12 @@
 
 #include "modbusStructs.h"
 void modbus_init(void);
-int modbus_read_register(unsigned int devAddr,
+uint8_t modbus_read_register(unsigned int devAddr,
                          unsigned int function,
                          unsigned int registerAddr,
                          unsigned int regCount);
 float modbus_get_float(int pos);
-int modbus_get_int(int pos);
+uint16_t modbus_get_int(int pos);
 st_modbusIOGeneric *modbus_get_status();
 
 #endif /* __MODBUS_API_H__ */

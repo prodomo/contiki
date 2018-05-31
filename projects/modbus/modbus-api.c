@@ -4,9 +4,9 @@
  * \author
  *         Germ�n Ramos <german.ramos@sensingcontrol.com>
  *         Joakim Eriksson <joakime@sics.se>
+ *         Jason Huang <jason840507@gmail.com>
  * \company
- *                 Sensing & Control Systems S.L.
- *                 SICS
+ *                 Industrial Technology Research Institute Taiwan
  */
 
 /**
@@ -78,7 +78,7 @@ static st_modbusQuery modbusQuery;
 static st_modbusIOGeneric modbusStatus;
 static st_modbusExceptionCode exceptionCode;
 
-int
+uint8_t
 modbus_read_register(unsigned int devAddr,
                      unsigned int function,
                      unsigned int registerAddr,
@@ -137,7 +137,7 @@ modbus_get_float(int pos) {
   return f;
 }
 
-int
+uint16_t
 modbus_get_int(int pos) {
   uint8_t *data = modbusStatus.data;
   int len = modbusStatus.byteCount;

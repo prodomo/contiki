@@ -1,6 +1,7 @@
 /****************************************************/
 /* \brief This file contains the functions responsible to implement
-   the MODBUS protocol.*/
+   the MODBUS protocol.
+*/
 /****************************************************/
 #include "contiki.h"
 #include <stdio.h>
@@ -79,14 +80,14 @@ int modbusSendQuery(unsigned char *data, unsigned char dataLen,
 /*   } */
 /*   printf("\n\r"); */
   
-  clock_wait(2);
+  clock_delay(2000);
 
   /* reset input buffer before transmit */
   rs485_input_reset();
   sendStatus = rs485_transmit(data, dataLen);
 
   /* wait some time for reception... */
-  clock_wait(5);
+  clock_delay(5000);
 
   return sendStatus;
 }
@@ -205,8 +206,7 @@ int modbusReadCoilStatus(st_modbusQuery *modbusQuery,
   if (modbusSendQuery(queryPacket, len, hasCrc) < 0)
     return -1;
 
-  //printf("Delay before reading\n\r");
-  clock_wait(50);
+  clock_delay(50000);
 
   /* read the response */
   byteCount = modbusReadResponse(responsePacket, hasCrc);

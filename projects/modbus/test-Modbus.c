@@ -1,11 +1,12 @@
 /**
  * \file
- *         Read Modbus address from Archmeter power meter using Modbus protocols
+ *         Read Modbus address using Modbus protocols
  * \author
  *         Germ�n Ramos <german.ramos@sensingcontrol.com>
  *         Joakim Eriksson <joakime@sics.se>
+ *         Jason Huang <jason840507@gmail.com>
  * \company
- *                 Sensing & Control Systems S.L.
+ *         Industrial Technology Research Institute Taiwan
  */
 
 /**
@@ -22,10 +23,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "leds.h"
 
 #include "modbus-api.h"
-#include "rs485-dev.h"
 
 /*---------------------------------------------------------------------------*/
 PROCESS(modbus_test_process, "Modbus tester");
@@ -42,29 +41,33 @@ AUTOSTART_PROCESSES(&modbus_test_process);
 PROCESS_THREAD(modbus_test_process, ev, data)
 {
   static struct etimer et;
-  int rv = 0;
+  static uint8_t rv = 0;
+  static uint8_t i = 1;
+  const uint8_t devAddr[2] = {11, 12};
+  const int regAddr = 0x4700;
   PROCESS_BEGIN();
 
   printf("Starting up tester...\n\r");
   modbus_init();
 
+  etimer_set(&et, 3 * CLOCK_SECOND);
+
   while(1) {
-
     printf("Waiting 1 sec.\n\r");
-    etimer_set(&et, 1 * CLOCK_SECOND);
-
+    etimer_set(&et, 3 * CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-    rv = modbus_read_register(0x01, MODBUS_RD_HOLD_REG, 0x0d, 1);
+    rv = modbus_read_register(devAddr[i], MODBUS_RD_HOLD_REG, regAddr, 1);
     if(rv == 0) {
-	    int data = modbus_get_int(0);
+	    uint16_t data = modbus_get_int(0);
       printf("Success state after sending modbus packet\n\r");
-      printf("Value read: %x = %d \n\r", 0x0d, data);
-    } else if(rv == -1) {
-      printf("Error state after sending modbus packet: -1\n\r");
+      printf("Value read form %d: 0x%x = %d \n\r", devAddr[i], regAddr, data);
     } else {
       printf("Error state after sending modbus packet: %d\n\r", rv);
     }
+
+    i = i ^ 1;
   }
+
   PROCESS_END();
 }

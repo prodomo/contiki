@@ -31,7 +31,7 @@
 
 /**
  * \file
- *         A brief description of what this file is
+ *         This is a uart driver for modbus portocal.
  * \author
  *         Joakim Eriksson <joakime@sics.se>
  */
