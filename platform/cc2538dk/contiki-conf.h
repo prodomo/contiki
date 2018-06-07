@@ -143,7 +143,7 @@ typedef uint32_t rtimer_clock_t;
 #endif
 
 #ifndef UART1_CONF_BAUD_RATE
-#define UART1_CONF_BAUD_RATE   115200 /**< Default UART1 baud rate */
+#define UART1_CONF_BAUD_RATE   9600 /**< Default UART1 baud rate */
 #endif
 
 #ifndef SLIP_ARCH_CONF_USB

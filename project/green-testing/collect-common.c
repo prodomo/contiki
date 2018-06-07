@@ -50,6 +50,7 @@
 #include "net/mac/tsch/tsch-slot-operation.h"
 #include "collect-common.h"
 #include "command-type.h"
+#include "modbus-api.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -220,6 +221,7 @@ PROCESS_THREAD(collect_common_process, ev, data)
   PROCESS_BEGIN();
 
   collect_common_net_init();
+  modbus_init();
 
   /* Send a packet every 60-62 seconds. */
   etimer_set(&period_timer, CLOCK_SECOND * send_period);
@@ -295,7 +297,7 @@ PROCESS_THREAD(collect_common_process, ev, data)
       } else if(data == &wait_timer) {
         if(send_active) {
           /* Time to send the data */
-          collect_common_send();
+          collect_rs485_send(11, 0x4700);
         }
       }else if(data == &command_timer){
         // printf("command_timer timeup\n");

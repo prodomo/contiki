@@ -278,6 +278,13 @@ collect_ack_send(uint16_t commandId)
 {
   /*sink not send ack*/
 }
+
+void
+collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
+{
+  /*sink not send ack*/
+}
+
 /*---------------------------------------------------------------------------*/
 void
 collect_common_net_init(void)
@@ -300,7 +307,7 @@ tcpip_handler(void)
   uint8_t seqno;
   uint8_t hops;
   uint16_t commandId;
-  uint8_t data;
+  uint16_t data;
 
   if(uip_newdata()) {
     appdata = (uint8_t *)uip_appdata;
@@ -308,7 +315,7 @@ tcpip_handler(void)
     sender.u8[1] = UIP_IP_BUF->srcipaddr.u8[14];
     seqno = *appdata;
     hops = uip_ds6_if.cur_hop_limit - UIP_IP_BUF->ttl + 1;
-    // printf("receive packet length %d\n", uip_datalen());
+    printf("receive packet length %d\r\n", uip_datalen());
     if(uip_datalen()>40)
     {
       collect_common_recv(&sender, seqno, hops,
@@ -328,6 +335,16 @@ tcpip_handler(void)
         printf("%u ",data);
       }
       printf("\n");
+    }
+    else if(uip_datalen()==6)
+    {
+      for(int i=0; i<uip_datalen()/2; i++)
+      {
+        memcpy(&data , appdata, sizeof(uint16_t));
+        appdata += 2;
+        printf("%u ",data);
+      }
+      printf("\n\r");
     }
   }
 }

@@ -143,11 +143,11 @@
 #define UART0_TX_PORT           GPIO_A_NUM
 #define UART0_TX_PIN            1
 
-#define UART1_CTS_PORT          GPIO_B_NUM
-#define UART1_CTS_PIN           0
+#define UART1_RX_PORT          GPIO_B_NUM
+#define UART1_RX_PIN           2
 
-#define UART1_RTS_PORT          GPIO_D_NUM
-#define UART1_RTS_PIN           3
+#define UART1_TX_PORT          GPIO_B_NUM
+#define UART1_TX_PIN           3
 /** @} */
 /*---------------------------------------------------------------------------*/
 /** \name SmartRF Button configuration

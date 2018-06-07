@@ -61,6 +61,7 @@
 
 #include "cc2538-temp-sensor.h"
 #include "cfs-coffee-arch.h"
+#include "modbus-api.h"
 // #include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;
@@ -325,6 +326,61 @@ collect_ack_send(uint16_t commandId)
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 
 
+}
+
+void
+collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
+{
+  printf("\n\r\n\rScaning rs485\n\r");
+  static struct {
+    uint16_t seqno;
+    uint16_t hasErr;
+    uint16_t data;
+  } msg;
+
+  rpl_parent_t *preferred_parent;
+  linkaddr_t parent;
+  rpl_dag_t *dag;
+
+  if(client_conn == NULL) {
+    /* Not setup yet */
+    return;
+  }
+
+  //memset(&msg, 0, sizeof(msg));
+  linkaddr_copy(&parent, &linkaddr_null);
+
+  msg.seqno = msg.seqno++ == 0xFFFF ? 0x80 : msg.seqno;
+
+  uint8_t rv = modbus_read_register(devAddr, MODBUS_RD_HOLD_REG, regAddr, 1);
+  if(rv == 0) {
+	  msg.data = modbus_get_int(0);
+    printf("Success state after sending modbus packet\n\r");
+    printf("Value read form %d: 0x%x = %d \n\r", devAddr, regAddr, msg.data);
+    msg.hasErr = 0;
+  } else {
+    printf("Error state after sending modbus packet: %d\n\r", rv);
+    msg.hasErr = 1;
+  }
+
+  dag = rpl_get_any_dag();
+  if(dag != NULL) {
+    preferred_parent = dag->preferred_parent;
+    if(preferred_parent != NULL) {
+      uip_ds6_nbr_t *nbr;
+      nbr = uip_ds6_nbr_lookup(rpl_get_parent_ipaddr(preferred_parent));
+      if(nbr != NULL) {
+        /* Use parts of the IPv6 address as the parent address, in reversed byte order. */
+        parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
+        parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
+      }
+    }
+  }
+
+  printf("Ready to send msg [seqno:%d, hasErr:%d, data:%d]\n\r", msg.seqno, msg.hasErr, msg.data);
+  
+  uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
+                        &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 }
 
 /*---------------------------------------------------------------------------*/
