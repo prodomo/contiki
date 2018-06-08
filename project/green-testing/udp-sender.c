@@ -225,6 +225,7 @@ tcpip_handler(void)
     /* Ignore incoming data */
   }
 }
+/*---------------------------------------------------------------------------*/
 void setting_value(struct setting_msg msg)
 {
 
@@ -305,20 +306,6 @@ collect_ack_send(uint16_t commandId)
   ack.command_type = CMD_TYPE_ACK;
   ack.is_received = 1;
   // printf("sizeof(ack) %d\n", sizeof(ack));
-
-  dag = rpl_get_any_dag();
-  if(dag != NULL) {
-    preferred_parent = dag->preferred_parent;
-    if(preferred_parent != NULL) {
-      uip_ds6_nbr_t *nbr;
-      nbr = uip_ds6_nbr_lookup(rpl_get_parent_ipaddr(preferred_parent));
-      if(nbr != NULL) {
-        /* Use parts of the IPv6 address as the parent address, in reversed byte order. */
-        parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
-        parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
-      }
-    }
-  }
   printf("ack: %u %u %u\n", ack.command_type, ack.command_id, ack.is_received);
 
   printf("send ack\n");
@@ -327,7 +314,7 @@ collect_ack_send(uint16_t commandId)
 
 
 }
-
+/*---------------------------------------------------------------------------*/
 void
 collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
 {
@@ -348,7 +335,7 @@ collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
   }
 
   //memset(&msg, 0, sizeof(msg));
-  linkaddr_copy(&parent, &linkaddr_null);
+  // linkaddr_copy(&parent, &linkaddr_null);
 
   msg.seqno = msg.seqno++ == 0xFFFF ? 0x80 : msg.seqno;
 
@@ -361,20 +348,6 @@ collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
   } else {
     printf("Error state after sending modbus packet: %d\n\r", rv);
     msg.hasErr = 1;
-  }
-
-  dag = rpl_get_any_dag();
-  if(dag != NULL) {
-    preferred_parent = dag->preferred_parent;
-    if(preferred_parent != NULL) {
-      uip_ds6_nbr_t *nbr;
-      nbr = uip_ds6_nbr_lookup(rpl_get_parent_ipaddr(preferred_parent));
-      if(nbr != NULL) {
-        /* Use parts of the IPv6 address as the parent address, in reversed byte order. */
-        parent.u8[LINKADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
-        parent.u8[LINKADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
-      }
-    }
   }
 
   printf("Ready to send msg [seqno:%d, hasErr:%d, data:%d]\n\r", msg.seqno, msg.hasErr, msg.data);

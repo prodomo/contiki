@@ -155,51 +155,7 @@ collect_setting_send(char* data)
     /* Not setup yet */
     return;
   }
-  uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
-  
-  if(strncmp(temp[2], BROADCAST, 4)==0)
-  {
-    //broadcast command
-    // printf("broadcast\n");
-    uip_create_linklocal_rplnodes_mcast(&addr);
-    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
-                        &addr, UIP_HTONS(UDP_CLIENT_PORT));
-  }
-  else
-  {
-    //unicast command 
-    /* assume temp[1] is mac addr */
-    /* ascii -> uint8 */
-    dst_u8[0] =ascii_to_uint(temp[2][0])<<4;
-    dst_u8[0] += ascii_to_uint(temp[2][1]);
-
-    dst_u8[1] = ascii_to_uint(temp[2][2])<<4;
-    dst_u8[1] += ascii_to_uint(temp[2][3]);
-      
-    printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
-
-     
-    // /* destnation ipv6 address */
-    client_ipaddr.u8[0]=0xfe;
-    client_ipaddr.u8[1]=0x80;
-    client_ipaddr.u8[8]=0x02;
-    client_ipaddr.u8[9]=0x12;
-    client_ipaddr.u8[10]=0x4b;
-    client_ipaddr.u8[11]=0x00;
-    client_ipaddr.u8[12]=0x06;
-    // client_ipaddr.u8[13]=0x0d; //openMote
-    client_ipaddr.u8[13]=0x15; //ITRI_Mote
-    client_ipaddr.u8[14]=dst_u8[0];
-    client_ipaddr.u8[15]=dst_u8[1];
-    // printf("\n-----------------------\n");
-    // printf("client_ipaddr2:");
-    // PRINT6ADDR(&client_ipaddr);
-    // printf("\n-----------------------\n");
-    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
-                          &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
-
-  }
-
+  send_packet(msg, temp[2]);
   leds_toggle(LEDS_RED);
 
 }
@@ -210,7 +166,7 @@ collect_ask_send(char* mac, char* commandId)
   // printf("collect_ask_send\n");
 
   uint8_t  dst_u8[2];
-  uip_ipaddr_t addr;
+  // uip_ipaddr_t addr;
   struct msg{
     uint16_t commandId;
     uint8_t commandType;
@@ -226,6 +182,15 @@ collect_ask_send(char* mac, char* commandId)
     /* Not setup yet */
     return;
   }
+
+  send_packet(msg, mac);
+}
+/*---------------------------------------------------------------------------*/
+void
+send_packet(const void *msg, char* mac)
+{
+  uip_ipaddr_t addr;
+  uint8_t  dst_u8[2];
 
   uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
 
@@ -278,7 +243,7 @@ collect_ack_send(uint16_t commandId)
 {
   /*sink not send ack*/
 }
-
+/*---------------------------------------------------------------------------*/
 void
 collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
 {
