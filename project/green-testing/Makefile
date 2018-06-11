@@ -1,9 +1,9 @@
 # CONTIKI_PROJECT = udp-sink
-CONTIKI_PROJECT = udp-sender udp-sink
+CONTIKI_PROJECT = udp-sink udp-sender
 
 all: $(CONTIKI_PROJECT)
 
-PROJECT_SOURCEFILES += modbus-api.c modbusProtocol.c rs485-dev.c collect-common.c
+PROJECT_SOURCEFILES += modbus-api.c modbusProtocol.c rs485-dev.c 
 
 CONTIKI=../..
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"

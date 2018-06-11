@@ -48,9 +48,17 @@
 #include <string.h>
 #include <ctype.h>
 #include <string.h>
-#include "collect-common.h"
+// #include "collect-common.h"
 #include "collect-view.h"
 #include "command-type.h"
+#include "net/mac/tsch/tsch.h"
+#include "net/mac/tsch/tsch-queue.h"
+#include "net/mac/tsch/tsch-private.h"
+#include "net/mac/tsch/tsch-log.h"
+#include "net/mac/tsch/tsch-packet.h"
+#include "net/mac/tsch/tsch-schedule.h"
+#include "net/mac/tsch/tsch-slot-operation.h"
+
 
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
@@ -63,24 +71,22 @@
 static struct uip_udp_conn *server_conn;
 static uip_ipaddr_t client_ipaddr;
 
+static unsigned long time_offset;
+static int send_command = 0;
+static int recv_counter =0;
+static char* command_data;
+
+#define COMMAND_PERIOD 10
+
+static uint16_t command_id=0;
+
 PROCESS(udp_server_process, "UDP server process");
-AUTOSTART_PROCESSES(&udp_server_process,&collect_common_process);
-/*---------------------------------------------------------------------------*/
-void
-collect_common_set_sink(void)
-{
-}
+AUTOSTART_PROCESSES(&udp_server_process);
 /*---------------------------------------------------------------------------*/
 void
 collect_common_net_print(void)
 {
   printf("I am sink!\n");
-}
-/*---------------------------------------------------------------------------*/
-void
-collect_common_send(void)
-{
-  /* Server never sends */
 }
 /*---------------------------------------------------------------------------*/
 uint8_t
@@ -138,25 +144,75 @@ collect_setting_send(char* data)
   msg.commandType = CMD_TYPE_SET;
   msg.commandId = (uint16_t)atoi(temp[3]);
   msg.sensorNum = sensor_num;
-  // printf("msg.commandType %d\n", msg.commandType);
-  // printf("msg.commandId %d\n", msg.commandId);
+  printf("msg.commandType %d\n", msg.commandType);
+  printf("msg.commandId %d\n", msg.commandId);
+  printf("sensor_num%d\n", sensor_num);
 
   for(int i=0; i<sensor_num; i++)
   {
     msg.setmsg[i].setting_type = atoi(temp[5+i*3]);
     msg.setmsg[i].sensor_tittle = atoi(temp[6+i*3]);
     msg.setmsg[i].value = atoi(temp[7+i*3]);
-    // printf("setting_type %d\n", msg.setmsg[i].setting_type);
-    // printf("sensor_tittle %d\n", msg.setmsg[i].sensor_tittle);
-    // printf("value %d\n", msg.setmsg[i].value);
+    printf("setting_type %d\n", msg.setmsg[i].setting_type);
+    printf("sensor_tittle %d\n", msg.setmsg[i].sensor_tittle);
+    printf("value %d\n", msg.setmsg[i].value);
   }
 
   if(server_conn == NULL) {
     /* Not setup yet */
     return;
   }
-  send_packet(msg, temp[2]);
+
+  printf("sizeof(msg):%d\n", sizeof(msg));
+  // send_packet(&msg, temp[2], sizeof(msg));
   leds_toggle(LEDS_RED);
+
+  uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
+
+  if(strncmp(temp[2], BROADCAST, 4)==0)
+  {
+    //broadcast command
+    // printf("broadcast\n");
+    uip_create_linklocal_rplnodes_mcast(&addr);
+    printf("sizeof(msg) %d\n", sizeof(msg));
+    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+                        &addr, UIP_HTONS(UDP_CLIENT_PORT));
+  }
+  else
+  {
+    //unicast command 
+    /* assume temp[1] is mac addr */
+    /* ascii -> uint8 */
+    dst_u8[0] =ascii_to_uint(temp[2][0])<<4;
+    dst_u8[0] += ascii_to_uint(temp[2][1]);
+
+    dst_u8[1] = ascii_to_uint(temp[2][2])<<4;
+    dst_u8[1] += ascii_to_uint(temp[2][3]);
+      
+    printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
+
+     
+    // /* destnation ipv6 address */
+    client_ipaddr.u8[0]=0xfe;
+    client_ipaddr.u8[1]=0x80;
+    client_ipaddr.u8[8]=0x02;
+    client_ipaddr.u8[9]=0x12;
+    client_ipaddr.u8[10]=0x4b;
+    client_ipaddr.u8[11]=0x00;
+    client_ipaddr.u8[12]=0x06;
+    // client_ipaddr.u8[13]=0x0d; //openMote
+    client_ipaddr.u8[13]=0x15; //ITRI_Mote
+    client_ipaddr.u8[14]=dst_u8[0];
+    client_ipaddr.u8[15]=dst_u8[1];
+    // printf("\n-----------------------\n");
+    // printf("client_ipaddr2:");
+    // PRINT6ADDR(&client_ipaddr);
+    // printf("\n-----------------------\n");
+    printf("sizeof(msg) %d\n", sizeof(msg));
+    uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
+                          &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
+
+  }
 
 }
 /*---------------------------------------------------------------------------*/
@@ -166,7 +222,7 @@ collect_ask_send(char* mac, char* commandId)
   // printf("collect_ask_send\n");
 
   uint8_t  dst_u8[2];
-  // uip_ipaddr_t addr;
+  uip_ipaddr_t addr;
   struct msg{
     uint16_t commandId;
     uint8_t commandType;
@@ -177,20 +233,15 @@ collect_ask_send(char* mac, char* commandId)
 
   msg.commandType = CMD_TYPE_CONF;
   msg.commandId = (uint16_t)atoi(commandId);
+  printf("msg.commandType %d\n", msg.commandType);
+  printf("msg.commandId %d\n", msg.commandId);
 
   if(server_conn == NULL) {
     /* Not setup yet */
     return;
   }
 
-  send_packet(msg, mac);
-}
-/*---------------------------------------------------------------------------*/
-void
-send_packet(const void *msg, char* mac)
-{
-  uip_ipaddr_t addr;
-  uint8_t  dst_u8[2];
+  // send_packet(&msg, mac, sizeof(msg));
 
   uip_ipaddr_copy(&client_ipaddr, &UIP_IP_BUF->srcipaddr);
 
@@ -199,6 +250,7 @@ send_packet(const void *msg, char* mac)
     //broadcast command
     // printf("broadcast\n");
     uip_create_linklocal_rplnodes_mcast(&addr);
+    printf("sizeof(msg) %d\n", sizeof(msg));
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                         &addr, UIP_HTONS(UDP_CLIENT_PORT));
   }
@@ -232,22 +284,11 @@ send_packet(const void *msg, char* mac)
     // printf("client_ipaddr2:");
     // PRINT6ADDR(&client_ipaddr);
     // printf("\n-----------------------\n");
+    printf("sizeof(msg) %d\n", sizeof(msg));
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                           &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
 
   }
-}
-/*---------------------------------------------------------------------------*/
-void
-collect_ack_send(uint16_t commandId)
-{
-  /*sink not send ack*/
-}
-/*---------------------------------------------------------------------------*/
-void
-collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
-{
-  /*sink not send ack*/
 }
 
 /*---------------------------------------------------------------------------*/
@@ -334,12 +375,126 @@ print_local_addresses(void)
   }
 }
 /*---------------------------------------------------------------------------*/
+struct tsch_asn_t
+get_timesynch_time(void)
+{
+  /*---------tsch_asn_t------------------------
+    uint32_t ls4b; //least significant 4 bytes
+    uint8_t  ms1b; // most significant 1 byte
+  ----------------------------------------- */
+  // struct tsch_asn_t asn = tsch_current_asn;
+  // printf("TSCH: {asn-%x.%lx link-NULL} ", tsch_current_asn.ms1b, tsch_current_asn.ls4b);
+  return tsch_current_asn;
+}
+
+static unsigned long
+get_time(void)
+{
+  // return clock_seconds() + time_offset;
+  return clock_seconds();
+}
+/*---------------------------------------------------------------------------*/
+static unsigned long
+strtolong(const char *data) {
+  unsigned long value = 0;
+  int i;
+  for(i = 0; i < 10 && isdigit(data[i]); i++) {
+    value = value * 10 + data[i] - '0';
+  }
+  return value;
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_command_parse(char* data)
+{
+  char* split;
+  char temp[20][20];
+  int count=0;
+  
+  char* copy = malloc(strlen(data) + 1);
+  strcpy(copy, data);
+
+  split = strtok (data," ,.-\\");
+  while (split != NULL)
+  {
+    // printf ("%s %d\n",split, strlen(split));
+    strcpy(temp[count], split);
+    count++;
+    split = strtok (NULL, " ,.-\\");
+  }
+
+  switch(atoi(temp[1]))
+  {
+    case CMD_TYPE_CONF:
+    {
+      printf("collect_ask_send\n");
+      collect_ask_send(temp[2], temp[3]);
+      break;
+    }
+    case CMD_TYPE_SET:
+    {
+      printf("collect_setting_send\n");
+      printf("copy %s\n", copy);
+      collect_setting_send(copy);
+      free(copy);
+      break;
+    }
+    default:
+      break;
+  }
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_common_recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops,
+                    uint8_t *payload, uint16_t payload_len)
+{
+  unsigned long time;
+  struct tsch_asn_t asn;
+  uint16_t data;
+  int i;
+
+  printf("%u", 8 + payload_len / 2);
+  /* Timestamp. Ignore time synch for now. */
+  time=get_time();
+  printf(" %lu %lu 0", ((time >> 16) & 0xffff), time & 0xffff);
+  /* Ignore latency for now */
+  asn = get_timesynch_time();
+  printf(" %04x %u %u %u",
+         originator->u8[0] + (originator->u8[1] << 8), seqno, hops, asn.ls4b);
+  for(i = 0; i < payload_len / 2; i++) {
+    memcpy(&data, payload, sizeof(data));
+    payload += sizeof(data);
+    printf(" %u", data);
+  }
+  printf("\n");
+  leds_blink();
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_ack_recv(const linkaddr_t *originator, uint8_t *payload)
+{
+  uint8_t data;
+  int i;
+  struct 
+  {
+    uint8_t command_type;
+    uint16_t data_length;
+    uint16_t command_id;
+    uint8_t is_received;
+  }ack;
+  printf("%u ",originator->u8[0] + (originator->u8[1] << 8)); //nodeID
+  memcpy(&ack, payload, sizeof(ack));
+  printf("%u %u %u %u\n", ack.command_type, ack.data_length, ack.command_id, ack.is_received);
+}
+/*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_server_process, ev, data)
 {
   uip_ipaddr_t ipaddr;
   struct uip_ds6_addr *root_if;
+  static struct etimer command_timer;
 
   PROCESS_BEGIN();
+  collect_common_net_init();
 
   PROCESS_PAUSE();
 
@@ -378,14 +533,48 @@ PROCESS_THREAD(udp_server_process, ev, data)
   PRINTF(" local/remote port %u/%u\n", UIP_HTONS(server_conn->lport),
          UIP_HTONS(server_conn->rport));
 
+    /* Send a packet every 60-62 seconds. */
+  etimer_set(&command_timer, CLOCK_SECOND * COMMAND_PERIOD);
+
   while(1) {
     PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
-    } else if (ev == sensors_event && data == &button_sensor) {
+    }
+    else if (ev == sensors_event && data == &button_sensor) {
       PRINTF("Initiating global repair\n");
       rpl_repair_root(RPL_DEFAULT_INSTANCE);
     }
+    else if(ev == serial_line_event_message) {
+      char *line;
+      line = (char *)data;
+      printf("--------------rev command------------:%s\n", line);
+      printf("strlen(line) %d\n", strlen(line));
+      if(strncmp(line, STARTWORD, 2)==0 && strncmp(line+strlen(line)-3, ENDWORD, 2)==0)
+      {
+        send_command=1;
+        recv_counter++;
+        command_data = malloc(strlen(line) + 1);
+        strcpy(command_data, line);
+        printf("recv_counter: %d\n", recv_counter);
+        printf("command_data: %s\n", command_data);
+        printf("-----------recv send command-----------\n");
+      } else {
+        printf("unhandled command: %s\n", line);
+      }
+    }
+    else if(ev == PROCESS_EVENT_TIMER) {
+      if(data == &command_timer){
+        // printf("command_timer timeup\n");
+        etimer_reset(&command_timer);
+        if(send_command==1){
+            printf("send_command = 1 \n");
+            collect_command_parse(command_data); //sink special send
+            free(command_data);
+            send_command = 0;
+          }
+        }
+      }
   }
 
   PROCESS_END();

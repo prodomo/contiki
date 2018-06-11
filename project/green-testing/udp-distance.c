@@ -49,13 +49,6 @@
 
 #include <dev/leds.h>
 #include "command-type.h"
-#include "net/mac/tsch/tsch.h"
-#include "net/mac/tsch/tsch-queue.h"
-#include "net/mac/tsch/tsch-private.h"
-#include "net/mac/tsch/tsch-log.h"
-#include "net/mac/tsch/tsch-packet.h"
-#include "net/mac/tsch/tsch-schedule.h"
-#include "net/mac/tsch/tsch-slot-operation.h"
 
 #define UDP_CLIENT_PORT 8775
 #define UDP_SERVER_PORT 5688
@@ -78,33 +71,19 @@ volatile int set_beep_on =0;
 static temp_value=0;
 static int ain0_value=0, ain1_value=0;
 static uint8_t my_link_join=0;
-
 int temperature_threshold=50;
 #define MIN_TEMPERATURE -20
 #define MAX_TEMPERATURE 120
 
-static unsigned long time_offset;
-static int send_active = 1;
-static int send_command = 0;
-static int recv_counter =0;
-static int ack_flag = 0;
-static char* command_data;
-
-#define ACK_PERIOD 1
-
-#ifndef PERIOD
-// #define PERIOD 20
-#define PERIOD 6
-#endif
-#define RANDWAIT (send_period)
-
-static int send_period = PERIOD;
-static uint16_t command_id=0;
-static int conf_flag=0;
-
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
-AUTOSTART_PROCESSES(&udp_client_process);
+AUTOSTART_PROCESSES(&udp_client_process, &collect_common_process);
+/*---------------------------------------------------------------------------*/
+void
+collect_common_set_sink(void)
+{
+  /* A udp client can never become sink */
+}
 /*---------------------------------------------------------------------------*/
 int
 change_TemperatureValue_to_RealValue(int value)
@@ -281,6 +260,25 @@ void setting_value(struct setting_msg msg)
     return;
   }
 
+}
+
+/*---------------------------------------------------------------------------*/
+void
+collect_special_send(char* data)
+{
+  /* Sender never sends */
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_ask_send(char* mac, char* commandId)
+{
+  /* Sender never sends */
+}
+/*---------------------------------------------------------------------------*/
+void
+collect_setting_send(char* data)
+{
+  /* Sender never sends */
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -532,68 +530,11 @@ set_global_address(void)
 
 }
 /*---------------------------------------------------------------------------*/
-struct tsch_asn_t
-get_timesynch_time(void)
-{
-  /*---------tsch_asn_t------------------------
-    uint32_t ls4b; //least significant 4 bytes
-    uint8_t  ms1b; // most significant 1 byte
-  ----------------------------------------- */
-  // struct tsch_asn_t asn = tsch_current_asn;
-  // printf("TSCH: {asn-%x.%lx link-NULL} ", tsch_current_asn.ms1b, tsch_current_asn.ls4b);
-  return tsch_current_asn;
-}
-
-static unsigned long
-get_time(void)
-{
-  // return clock_seconds() + time_offset;
-  return clock_seconds();
-}
-/*---------------------------------------------------------------------------*/
-static unsigned long
-strtolong(const char *data) {
-  unsigned long value = 0;
-  int i;
-  for(i = 0; i < 10 && isdigit(data[i]); i++) {
-    value = value * 10 + data[i] - '0';
-  }
-  return value;
-}
-/*---------------------------------------------------------------------------*/
-void
-collect_common_set_send_active(int active)
-{
-  send_active = active;
-}
-/*---------------------------------------------------------------------------*/
-void
-set_ack_flag(uint16_t commandId, int is_config)
-{
-  // printf("~~~~~~~~~set_ack_flag\n");
-  ack_flag=1;
-  conf_flag = is_config;
-  command_id = commandId;
-
-}
-/*---------------------------------------------------------------------------*/
-void
-set_send_rate(uint8_t value)
-{
-  send_period = value;
-}
-/*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
-  static struct etimer period_timer, wait_timer, ack_timer, conf_timer;
+  static struct etimer beep_timer;
 
   PROCESS_BEGIN();
-
-  collect_common_net_init();
-  modbus_init();
-
-  /* Send a packet every 60-62 seconds. */
-  etimer_set(&period_timer, CLOCK_SECOND * send_period);
 
   PROCESS_PAUSE();
 
@@ -612,59 +553,33 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINTF(" local/remote port %u/%u\n",
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
 
+  etimer_set(&beep_timer, CLOCK_SECOND * BEEP_PERIOD / 5 );
+
   while(1) {
-    if(ack_flag)
-    {
-      printf("set ack_timer\n");
-      etimer_set(&ack_timer, CLOCK_SECOND * ACK_PERIOD);
-    }
-    if(conf_flag)
-    {
-      printf("set conf_timer\n");
-      etimer_set(&conf_timer, CLOCK_SECOND * ACK_PERIOD);
-    }
-    PROCESS_YIELD();
+        PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
     }else if(ev == PROCESS_EVENT_TIMER){
-      if(data == &period_timer) {
-        etimer_reset(&period_timer);
-        etimer_set(&wait_timer, random_rand() % (CLOCK_SECOND * RANDWAIT));
-      } else if(data == &wait_timer) {
-        if(send_active) {
-          /* Time to send the data */
-          collect_rs485_send(11, 0x4700);
-          // collect_common_send();
-        }
-      }else if(data == &ack_timer && ack_flag)
-        {
-          printf("ack_timer timeup\n");
-          ack_flag=0;
-          collect_ack_send(command_id);
-        }
-        else if(data == &conf_timer && conf_flag)
-        {
-          printf("conf_timer timeup\n");
-          conf_flag=0;
-          printf("send config\n");
-        }
-    }
-    else if(ev == serial_line_event_message) {
-      char *line;
-      line = (char *)data;
-      printf("--------------rev command------------:%s\n", line);
-      printf("strlen(line) %d\n", strlen(line));
-      if(strncmp(line, STARTWORD, 2)==0 && strncmp(line+strlen(line)-3, ENDWORD, 2)==0)
-      {
-        send_command=1;
-        recv_counter++;
-        command_data = malloc(strlen(line) + 1);
-        strcpy(command_data, line);
-        printf("recv_counter: %d\n", recv_counter);
-        printf("command_data: %s\n", command_data);
-        printf("-----------recv send command-----------\n");
-      } else {
-        printf("unhandled command: %s\n", line);
+      // 13428=50c, 23428=120c
+      int temperature = change_TemperatureValue_to_RealValue(ain1_value);
+      if((temperature>temperature_threshold) && (temperature<MAX_TEMPERATURE))
+        set_beep_on=1;
+      else{
+        set_beep_on=0;
+        // leds_off(LEDS_ORANGE);
+      }
+      
+      if(data == &beep_timer){
+        //decide link LEDs
+        if(my_link_join == 1)
+          leds_toggle(LEDS_GREEN);
+        else
+          leds_on(LEDS_GREEN);
+
+        //beep alarm
+        if(set_beep_on)
+          // leds_toggle(LEDS_ORANGE);
+        etimer_reset(&beep_timer);
       }
     }
   }
