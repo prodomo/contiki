@@ -38,7 +38,7 @@
 #else
 #include "dev/uart1.h"
 #endif
-#include "collect-common.h"
+
 #include "collect-view.h"
 
 #include "net/link-stats.h"
@@ -101,6 +101,8 @@ static char* command_data;
 static int send_period = PERIOD;
 static uint16_t command_id=0;
 static int conf_flag=0;
+
+struct tsch_asn_t get_timesynch_time(void);
 
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -629,8 +631,10 @@ PROCESS_THREAD(udp_client_process, ev, data)
     }else if(ev == PROCESS_EVENT_TIMER){
       if(data == &period_timer) {
         etimer_reset(&period_timer);
+        /*
         etimer_set(&wait_timer, random_rand() % (CLOCK_SECOND * RANDWAIT));
       } else if(data == &wait_timer) {
+        */
         if(send_active) {
           /* Time to send the data */
           collect_rs485_send(11, 0x4700);
