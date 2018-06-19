@@ -72,7 +72,7 @@ static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
 
 static unsigned long time_offset;
-static int send_active = 1;
+static int send_active = 0;
 static int send_command = 0;
 static int recv_counter =0;
 static int ack_flag = 0;
@@ -80,19 +80,22 @@ static char* command_data;
 
 #define ACK_PERIOD 1
 
-#define PERIOD 6
+#define PERIOD 1
 
 #define DEFAULT_DISTANCE 1000
 #define DISTANCE_THRESHOLD 650
 
-struct tsch_asn_t start_time;
-struct tsch_asn_t end_time;
+struct tsch_asn_t start_time, end_time, open_time, close_time;
 static uint16_t last_distance = DEFAULT_DISTANCE;
 static uint16_t minimun_distance;
 static int send_period = PERIOD;
 static uint16_t command_id=0;
 static int conf_flag=0;
 static uint8_t current_state = 0;
+static uint8_t sub_state = 0, send_state=0;
+static int32_t asn_diff_buffer[3];
+static int amount_counter = 0;
+
 
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -385,17 +388,21 @@ void reset_values()
   last_distance = DEFAULT_DISTANCE;
   TSCH_ASN_INIT(start_time,0,0);
   TSCH_ASN_INIT(end_time,0,0);
+  amount_counter= 0 ;
+  current_state = DEFAULT_STATE;
+  sub_state = DEFAULT_STATE;
+  send_state = DEFAULT_STATE;
+
 
 }
 /*---------------------------------------------------------------------------*/
-void change_state_send(uint8_t state, struct tsch_asn_t time)
+void change_state_send(uint8_t state)
 {
   struct data{
     uint16_t command_id;
     uint8_t  command_type;
     uint8_t  change_state;
-    uint16_t asn1;
-    uint16_t asn2;
+    uint16_t value;
   };
   static uint16_t seqno;
   struct data data;
@@ -410,52 +417,71 @@ void change_state_send(uint8_t state, struct tsch_asn_t time)
   data.command_type= CMD_TYPE_DATA;
   data.command_id = seqno;
   data.change_state = state;
-  data.asn1 = (time.ls4b>>16);
-  data.asn2 = (uint16_t)time.ls4b;
 
   printf("change_state_send packet\n");
-  printf("{asn-%x.%lx link-NULL} ", time.ms1b, time.ls4b);
   uip_udp_packet_sendto(client_conn, &data, sizeof(data),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 }
 /*---------------------------------------------------------------------------*/
 void check_value()
 {
-  uint16_t current_distance;
+  uint16_t current_distance = last_distance;
+  int active=1;
 
-  if(current_state == DEFAULT_STATE)
+  if(current_distance < last_distance)
   {
-    if(current_distance < last_distance && current_distance < DISTANCE_THRESHOLD)
+    sub_state = START_CLOSE;
+    if(current_distance< minimun_distance)
     {
-      if(start_time.ls4b == 0)
-      {
-        start_time = get_timesynch_time();
-      }
-      minimun_distance=current_distance;
-      last_distance=current_distance;
-      change_state_send(SOL_STATE, start_time);
-      printf("send packet to Root SOL State\n");
-    }
-  }
-  else if(current_state == SOL_STATE)
-  {
-    if(current_distance < last_distance && current_distance < minimun_distance)
-    {
-      last_distance = current_distance;
       minimun_distance = current_distance;
     }
   }
-  else if(current_state == MP_STATE)
+  else if(last_distance == current_distance && sub_state == START_CLOSE)
   {
-    if(current_distance > minimun_distance)
+    printf("last_distance == current_distance\n");
+    sub_state=CLOSE;
+    close_time=get_timesynch_time();
+    if(current_state==SOL_STATE)
     {
-      change_state_send(EOL_STATE, end_time);
-      end_time = get_timesynch_time();
-      printf("send packet to Root EOL STATE\n");
+      send_state =  PVT_STATE;
+      printf("send_state change to PVT_STATE\n");
+      // collect_common_set_send_active(active);
+    }
+  }else if(current_distance > last_distance && sub_state == CLOSE)
+  {
+    open_time=get_timesynch_time();
+    amount_counter++;
+    sub_state=START_OPEN;
+    asn_diff_buffer[amount_counter%3]=TSCH_ASN_DIFF(open_time,close_time);
+  }
+  else if(current_distance == last_distance && sub_state == START_OPEN )
+  {
+    sub_state=OPEN;
+    if(check_PVT_to_MP())
+    {
+      send_state = MP_STATE;
+      // collect_common_set_send_active(active);
     }
   }
-  printf("current_distance %u\n", current_distance);
-  printf("last_distance %u\n", last_distance);
+  last_distance = current_distance;
+
+}
+/*---------------------------------------------------------------------------*/
+int
+check_PVT_to_MP()
+{
+  int32_t temp_diff_asn;
+  int is_same=1;
+  temp_diff_asn = asn_diff_buffer[0];
+  for(int i=0; i<3; i++)
+  {
+    if(temp_diff_asn != asn_diff_buffer[i])
+    {
+      is_same = 0;
+    }
+  }
+
+  return is_same;
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -466,26 +492,37 @@ change_state(uint8_t state)
     case SOL_STATE:
       if(current_state == DEFAULT_STATE)
       {
+        printf("got SOL state\n");
         current_state=SOL_STATE;
       }
       break;
     case PVT_STATE:
       if (current_state == SOL_STATE)
       {
+        printf("got PVT state\n");
         current_state=PVT_STATE;
+        if(send_state == PVT_STATE)
+        {
+          collect_common_set_send_active(0);
+        }
       }
       break;
     case MP_STATE:
       if (current_state == PVT_STATE)
       {
         current_state=MP_STATE;
+        printf("got MP state\n");
+        if(send_state == MP_STATE)
+        {
+          collect_common_set_send_active(0);
+        }
       }
       break;
     case EOL_STATE:
       if (current_state == MP_STATE)
       {
         reset_values();
-
+        printf("got EOL state\n");
       }
       break;
     default:
@@ -503,7 +540,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
   modbus_init();
 
   /* Send a packet every 60-62 seconds. */
-  etimer_set(&period_timer, CLOCK_SECOND * send_period);
 
   PROCESS_PAUSE();
 
@@ -533,6 +569,11 @@ PROCESS_THREAD(udp_client_process, ev, data)
       printf("set conf_timer\n");
       etimer_set(&conf_timer, CLOCK_SECOND * ACK_PERIOD);
     }
+    if(current_state >= SOL_STATE && current_state != EOL_STATE)
+    {
+      // printf("start to get distance\n");
+      etimer_set(&period_timer, CLOCK_SECOND * send_period);
+    }
     PROCESS_YIELD();
     if(ev == tcpip_event)
     {
@@ -542,11 +583,12 @@ PROCESS_THREAD(udp_client_process, ev, data)
       if(data == &period_timer){
         etimer_reset(&period_timer);
         check_value();
-        // if(send_active)
-        // {
-        //   /* Time to send the data */
-        //   collect_rs485_send(11, 0x4700);
-        // }
+        if(send_active)
+        {
+          /* Time to send the data */
+          // collect_rs485_send(11, 0x4700);
+          change_state_send(send_state);
+        }
       }else if(data == &ack_timer && ack_flag)
         {
           printf("ack_timer timeup\n");

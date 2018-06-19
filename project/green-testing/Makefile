@@ -1,5 +1,5 @@
 # CONTIKI_PROJECT = udp-sink
-CONTIKI_PROJECT = udp-sink udp-sender
+CONTIKI_PROJECT = udp-displacement udp-sink udp-distance udp-all
 
 all: $(CONTIKI_PROJECT)
 

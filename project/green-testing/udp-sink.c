@@ -352,6 +352,21 @@ tcpip_handler(void)
       }
       printf("\n\r");
     }
+    else if(uip_datalen()==8)
+    {
+      printf("%u ", uip_datalen());
+      printf("%04x ", sender.u8[0] + (sender.u8[1] << 8));
+      memcpy(&commandId, appdata, sizeof(uint16_t));
+      appdata+=sizeof(uint16_t);
+      printf("%u ",commandId);
+      for(int i=0; i<uip_datalen()-2; i++)
+      {
+        memcpy(&data , appdata, sizeof(uint8_t));
+        appdata+=sizeof(uint8_t);
+        printf("%x ",data);
+      }
+      printf("\n\r");
+    }
   }
 }
 /*---------------------------------------------------------------------------*/
