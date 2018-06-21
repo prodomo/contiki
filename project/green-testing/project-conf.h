@@ -163,4 +163,9 @@
 #define COOJA_CONF_SIMULATE_TURNAROUND 0
 #endif /* CONTIKI_TARGET_COOJA */
 
+/* CFS */
+#define COFFEE_CONF_SIZE              (CC2538_DEV_FLASH_SIZE / 2)
+#define COFFEE_CONF_MICRO_LOGS        1
+#define COFFEE_CONF_APPEND_ONLY 0
+
 #endif /* __PROJECT_CONF_H__ */

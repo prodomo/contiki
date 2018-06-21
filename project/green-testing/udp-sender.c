@@ -67,8 +67,8 @@
 #define BEEP_PERIOD 1
 
 #include "cc2538-temp-sensor.h"
-#include "cfs-coffee-arch.h"
-#include "modbus-api.h"
+
+#include "flashMemory.h"
 // #include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;
@@ -343,18 +343,14 @@ collect_rs485_send(uint16_t devAddr, uint16_t regAddr)
 
   msg.seqno = msg.seqno++ == 0xFFFF ? 0x80 : msg.seqno;
 
-  uint8_t rv = modbus_read_register(devAddr, MODBUS_RD_HOLD_REG, regAddr, 1);
-  if(rv == 0) {
-	  msg.data = modbus_get_int(0);
-    printf("Success state after sending modbus packet\n\r");
-    printf("Value read form %d: 0x%x = %d \n\r", devAddr, regAddr, msg.data);
-    msg.hasErr = 0;
-  } else {
-    printf("Error state after sending modbus packet: %d\n\r", rv);
+  msg.data = modbus_query(0x11);
+  msg.hasErr = 0;
+  if(msg.data < 0){
     msg.hasErr = 1;
   }
 
-  printf("Ready to send msg [seqno:%d, hasErr:%d, data:%d]\n\r", msg.seqno, msg.hasErr, msg.data);
+  printf("Ready to send msg [seqno:%d, hasErr:%d, data:%d]\n\r", 
+         msg.seqno, msg.hasErr, msg.data);
   
   uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
@@ -587,12 +583,26 @@ set_send_rate(uint8_t value)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
-  static struct etimer period_timer, wait_timer, ack_timer, conf_timer;
+  static struct etimer period_timer, wait_timer, ack_timer, conf_timer, modbus_timer;
+  uint8_t list[10];
 
   PROCESS_BEGIN();
 
   collect_common_net_init();
-  modbus_init();
+  fs_init(list);
+
+  modbusQuery query;
+  query.addr = 0x11;
+  query.reg  = 0x4700;
+  query.freq = 10;
+  query.type = 1;
+  add_modbus_query(query);
+
+  if(modbus_get_freq(0x11) != 10) {
+    printf("Nooooooooo %d", modbus_get_freq(0x11));
+  }
+
+  etimer_set(&modbus_timer, CLOCK_SECOND * query.freq / 10);
 
   /* Send a packet every 60-62 seconds. */
   etimer_set(&period_timer, CLOCK_SECOND * send_period);
@@ -637,21 +647,20 @@ PROCESS_THREAD(udp_client_process, ev, data)
         */
         if(send_active) {
           /* Time to send the data */
-          collect_rs485_send(11, 0x4700);
+          // collect_rs485_send(11, 0x4700);
           // collect_common_send();
         }
-      }else if(data == &ack_timer && ack_flag)
-        {
-          printf("ack_timer timeup\n");
-          ack_flag=0;
-          collect_ack_send(command_id);
-        }
-        else if(data == &conf_timer && conf_flag)
-        {
-          printf("conf_timer timeup\n");
-          conf_flag=0;
-          printf("send config\n");
-        }
+      }else if(data == &ack_timer && ack_flag){
+        printf("ack_timer timeup\n");
+        ack_flag=0;
+        collect_ack_send(command_id);
+      }else if(data == &conf_timer && conf_flag){
+        printf("conf_timer timeup\n");
+        conf_flag=0;
+        printf("send config\n");
+      }else if(data == &modbus_timer){
+        collect_rs485_send(11, 0x4700);
+      }
     }
     else if(ev == serial_line_event_message) {
       char *line;
