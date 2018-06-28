@@ -52,13 +52,13 @@ static uint32_t event_threshold_last_change = 0;
 /* Record the packet have been generated. (Server perspective) */
 static uint32_t packet_counter = 0;
 
-static uint8_t packet_priority = 1;
+static uint8_t packet_priority = 2;
 
 #if CONTIKI_TARGET_COOJA
 #include "node-id.h"
-void set_bcollect() {
+void set_bcollect2() {
   if(node_id == 2 || node_id == 8 || node_id == 9 || node_id == 10) {
-    packet_priority = 0;
+    packet_priority = 1;
   }
 }
 #endif /* CONTIKI_TARGET_COOJA */

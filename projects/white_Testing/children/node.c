@@ -112,7 +112,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   rest_activate_resource(&res_toggle, "actuators/toggle");
   rest_activate_resource(&res_collect, "g/collect");
   rest_activate_resource(&res_bcollect, "g/bcollect");
-  rest_activate_resource(&res_bcollect, "g/bcollect2");
+  rest_activate_resource(&res_bcollect2, "g/bcollect2");
 
 #if PLATFORM_HAS_LEDS
  
@@ -216,15 +216,32 @@ print_network_status(void)
 
 PROCESS_THREAD(node_process, ev, data)
 {
-  static struct etimer etaa;
+  //static struct etimer etaa;
   PROCESS_BEGIN();
 
-  etimer_set(&etaa, CLOCK_SECOND * 60);
-  while(1) {
-    PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
-    etimer_reset(&etaa);
-    print_network_status();
+  #if CONTIKI_TARGET_COOJA
+  extern void set_bcollect();
+  extern void set_bcollect2();
+  set_bcollect();
+  set_bcollect2();
+#endif /* CONTIKI_TARGET_COOJA */
+
+#if CONTIKI_TARGET_COOJA && 0
+#include "node-id.h"
+  extern uint8_t event_threshold;
+  if((node_id == 11) || (node_id) == 3) {
+    event_threshold = 1;
+    printf("set event_threshold = %d\n", event_threshold);
   }
+#endif /* CONTIKI_TARGET_COOJA */
+
+
+  // etimer_set(&etaa, CLOCK_SECOND * 60);
+  // while(1) {
+  //   PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
+  //   etimer_reset(&etaa);
+  //   print_network_status();
+  // }
 
   PROCESS_END();
 }
