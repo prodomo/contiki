@@ -83,7 +83,8 @@ config(uint32_t port_base, uint32_t pin_mask)
   GPIO_TRIGGER_SINGLE_EDGE(port_base, pin_mask);
 
   /* Trigger interrupt on Falling edge */
-  GPIO_DETECT_RISING(port_base, pin_mask);
+  // GPIO_DETECT_RISING(port_base, pin_mask);
+  GPIO_DETECT_FALLING(port_base, pin_mask);
 
   GPIO_ENABLE_INTERRUPT(port_base, pin_mask);
 }
