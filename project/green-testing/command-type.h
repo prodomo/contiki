@@ -36,6 +36,7 @@
 #define PVT_STATE     0x02  //Production Validation Test 
 #define MP_STATE      0x03  //Mass Production
 #define EOL_STATE     0x04  //End of Life
+
 #define START_CLOSE   0x05
 #define CLOSE         0x06
 #define START_OPEN	  0x07
@@ -43,9 +44,9 @@
 
 
 struct setting_msg {
-	uint8_t setting_type;
-	uint8_t sensor_tittle;
-	uint8_t value;
+	uint16_t setting_type;
+	uint16_t sensor_tittle;
+	uint16_t value;
 };
 
 #endif

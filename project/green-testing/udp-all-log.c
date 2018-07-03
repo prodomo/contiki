@@ -66,36 +66,49 @@
 #include "cc2538-temp-sensor.h"
 #include "cfs-coffee-arch.h"
 #include "modbus-api.h"
-// #include "dev/ain0-sensor.h"
+#include "dev/sensor-gpio.h"
+// #include "dev/button-sensor.h"
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
 
 static unsigned long time_offset;
-static int send_active = 0;
+static int send_active = 1;
 static int send_command = 0;
 static int recv_counter =0;
 static int ack_flag = 0;
 static char* command_data;
 
 #define ACK_PERIOD 1
-
-#define PERIOD 1
+#define PERIOD 2
+#define BUFFSIZE 5
 
 #define DEFAULT_DISTANCE 1000
-#define DISTANCE_THRESHOLD 650 //down to up (SOL and EOL)
-// #define DISPLACEMENT_THRESHOLD 650 //side to side (PVT AND MP)
+#define DISTANCE_THRESHOLD 650
+#define DISTANCE_ERROR 5
+
+static int send_period = PERIOD;
 
 struct tsch_asn_t start_time, end_time, open_time, close_time;
+rtimer_clock_t sensor_upper_time=0, sensor_downer_time =0;
+
 static uint16_t last_distance = DEFAULT_DISTANCE;
 static uint16_t minimun_distance;
-static int send_period = PERIOD;
 static uint16_t command_id=0;
 static int conf_flag=0;
-static uint8_t current_state = 0;
-static uint8_t sub_state = 0, send_state=0;
-static int32_t asn_diff_buffer[3];
-static int amount_counter = 0;
+
+static uint16_t current_state = 0;
+static uint16_t sub_state = 0, send_state=0;  
+static uint16_t amount_counter = 0;           //production amount counter
+static uint16_t counter = 0;                  //Order counter
+static int32_t last_asn_diff;
+static int same_counter = 0;                  //asn_diff same counter
+static int buff_counter=0;
+
+static uint16_t distance_buff[BUFFSIZE];
+static uint16_t sub_state_buff[BUFFSIZE];
+static uint16_t temperature_v_buff[BUFFSIZE];
+static uint16_t total_v_buff[BUFFSIZE];
 
 
 /*---------------------------------------------------------------------------*/
@@ -176,10 +189,10 @@ tcpip_handler(void)
     uint8_t *appdata;
     struct msg{
       uint16_t commandId;
-      uint8_t commandType;
+      uint16_t commandType;
     };
     struct msg msg;
-    uint8_t sensor_num = 0;
+    uint16_t sensor_num = 0;
 
     memset(&msg, 0, sizeof(msg));
     printf("sizeof(msg) %d\n", sizeof(msg));
@@ -189,15 +202,15 @@ tcpip_handler(void)
 
     memcpy(&msg.commandId, appdata, sizeof(uint16_t));
     appdata+=sizeof(uint16_t);
-    memcpy(&msg.commandType, appdata, sizeof(uint8_t));
-    appdata+=sizeof(uint8_t);
+    memcpy(&msg.commandType, appdata, sizeof(uint16_t));
+    appdata+=sizeof(uint16_t);
     printf("msg.commandType %u\n", msg.commandType);
     printf("msg.commandId %u\n", msg.commandId);
 
     if(uip_datalen()>4)
     {
-      memcpy(&sensor_num, appdata, sizeof(uint8_t));
-      appdata+=sizeof(uint8_t);
+      memcpy(&sensor_num, appdata, sizeof(uint16_t));
+      appdata+=sizeof(uint16_t);
     }
 
     struct setting_msg setting_msg[sensor_num];
@@ -206,12 +219,12 @@ tcpip_handler(void)
     {
       for(int i=0; i<sensor_num; i++)
       {
-        memcpy(&setting_msg[i].setting_type, appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
-        memcpy(&setting_msg[i].sensor_tittle, appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
-        memcpy(&setting_msg[i].value, appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
+        memcpy(&setting_msg[i].setting_type, appdata, sizeof(uint16_t));
+        appdata+=sizeof(uint16_t);
+        memcpy(&setting_msg[i].sensor_tittle, appdata, sizeof(uint16_t));
+        appdata+=sizeof(uint16_t);
+        memcpy(&setting_msg[i].value, appdata, sizeof(uint16_t));
+        appdata+=sizeof(uint16_t);
       }
     }
 
@@ -248,8 +261,8 @@ collect_ack_send(uint16_t commandId)
   struct 
   {
     uint16_t command_id;
-    uint8_t command_type;
-    uint8_t is_received;
+    uint16_t command_type;
+    uint16_t is_received;
   }ack;
   rpl_parent_t *preferred_parent;
   linkaddr_t parent;
@@ -275,7 +288,6 @@ collect_ack_send(uint16_t commandId)
 
 }
 /*---------------------------------------------------------------------------*/
-/*---------------------------------------------------------------------------*/
 void
 collect_common_net_init(void)
 {
@@ -285,6 +297,11 @@ collect_common_net_init(void)
   uart1_set_input(serial_line_input_byte);
 #endif
   serial_line_init();
+
+  memset(&distance_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+  memset(&sub_state_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+  memset(&total_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+  memset(&temperature_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -374,7 +391,7 @@ void setting_value(struct setting_msg msg)
   else if(msg.setting_type == SET_TYPE_STATE)
   {
     change_state(msg.value);
-    printf("change state!\n");
+    printf("change state! value=%d \n", msg.value);
   }
   else{
     return;
@@ -387,24 +404,49 @@ void reset_values()
   current_state = DEFAULT_STATE;
   sub_state = DEFAULT_STATE;
   send_state = DEFAULT_STATE;
-  minimun_distance = DEFAULT_DISTANCE;
+
+  amount_counter = 0;           //production amount counter
+  same_counter = 0;                  //asn_diff same counter
+  buff_counter = 0;
+
   last_distance = DEFAULT_DISTANCE;
-  TSCH_ASN_INIT(start_time,0,0);
-  TSCH_ASN_INIT(end_time,0,0);
-  amount_counter= 0 ;
+
+  // collect_common_set_send_active(0);
+  TSCH_ASN_INIT(start_time, 0, 0);
+  TSCH_ASN_INIT(end_time, 0, 0);
+  TSCH_ASN_INIT(open_time, 0, 0);
+  TSCH_ASN_INIT(close_time, 0, 0);
+
+  sensor_upper_time=0;
+  sensor_downer_time =0;
+
+  memset(&distance_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+  memset(&sub_state_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+  memset(&total_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+  memset(&temperature_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+
+  counter++;
+
 }
 /*---------------------------------------------------------------------------*/
-void change_state_send(uint8_t state)
+void change_state_send(uint16_t state)
 {
+  struct tsch_asn_t current_time;
   struct data{
     uint16_t command_id;
-    uint8_t  command_type;
-    uint8_t  change_state;
-    uint16_t value;
+    uint16_t command_type;
+    uint16_t change_state;
+    uint16_t counter;
+    uint16_t amount_counter;
+    uint16_t sub_state[BUFFSIZE];
+    uint16_t distance[BUFFSIZE];
+    uint16_t total_v[BUFFSIZE];
+    uint16_t temp_v [BUFFSIZE];
   };
   static uint16_t seqno;
   struct data data;
 
+  current_time=get_timesynch_time();
   if(client_conn == NULL) {
     /* Not setup yet */
     return;
@@ -412,87 +454,40 @@ void change_state_send(uint8_t state)
   memset(&data, 0, sizeof(data));
   
   seqno++;
-  data.command_type= CMD_TYPE_DATA;
+  data.command_type= CMD_TYPE_DATA;  //0
   data.command_id = seqno;
   data.change_state = state;
-  data.value = amount_counter;
-
+  data.counter = counter;
+  data.amount_counter = amount_counter;
+  for(int i=0; i<BUFFSIZE; i++)
+  {
+    data.sub_state[i] = sub_state_buff[i];
+    data.distance[i] = distance_buff[i];
+    data.total_v[i] = total_v_buff[i];
+    data.temp_v[i] = temperature_v_buff[i];
+  }
+  buff_counter=0;
   printf("change_state_send packet\n");
+  printf("state %d counter %d \n",data.change_state, data.counter);
+  printf("sub_state %u distance %u total_v %u temp_v %u \n", data.sub_state[0], data.distance[0], data.total_v[0], data.temp_v[0]);
   uip_udp_packet_sendto(client_conn, &data, sizeof(data),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 }
 /*---------------------------------------------------------------------------*/
-void
-check_value()
+void check_v_value()
 {
-  if (current_state == DEFAULT_STATE)
-  {
-    check_distance_value();
-  }
-  else if(current_state ==SOL_STATE || current_state == PVT_STATE)
-  {
-    check_displacement_value();
-  }
-  else if(current_state == MP_STATE)
-  {
-    check_displacement_value();
-    if(amount_counter%5==0)
-    {
-      check_distance_value();
-    }
-  }
-  else
-  {
-  }
+  uint16_t current_total_v =1000;
+  uint16_t current_tempature_v = 522;
+
+  temperature_v_buff[buff_counter]=current_tempature_v+buff_counter;
+  total_v_buff[buff_counter]=current_total_v+buff_counter;
 }
 /*---------------------------------------------------------------------------*/
-void 
-check_distance_value()
+void check_distance_value()
 {
-  uint16_t current_distance;
+  uint16_t current_distance = last_distance-1;
 
-  if(current_state == DEFAULT_STATE)
-  {
-    if(current_distance < last_distance && current_distance < DISTANCE_THRESHOLD)
-    {
-      if(start_time.ls4b == 0)
-      {
-        start_time = get_timesynch_time();
-      }
-      minimun_distance = current_distance;
-      last_distance = current_distance;
-      change_state_send(SOL_STATE);
-      printf("send packet to Root SOL State\n");
-    }
-  }
-  else if(current_state == SOL_STATE)
-  {
-    if(current_distance < last_distance && current_distance < minimun_distance)
-    {
-      last_distance = current_distance;
-      minimun_distance = current_distance;
-    }
-  }
-  else if(current_state == MP_STATE)
-  {
-    if(current_distance > minimun_distance)
-    {
-      change_state_send(EOL_STATE);
-      end_time = get_timesynch_time();
-      printf("send packet to Root EOL STATE\n");
-    }
-  }
-  printf("current_distance %u\n", current_distance);
-  printf("last_distance %u\n", last_distance);
-}
-/*---------------------------------------------------------------------------*/
-void 
-check_displacement_value()  //check value of displacement which for PVT_STATE & MP_STATE
-{
-  uint16_t current_distance;
-  int active = 1;
-
-  if(current_distance < last_distance)
+  if((last_distance-current_distance)>DISTANCE_ERROR) //current < last
   {
     sub_state = START_CLOSE;
     if(current_distance< minimun_distance)
@@ -500,7 +495,7 @@ check_displacement_value()  //check value of displacement which for PVT_STATE & 
       minimun_distance = current_distance;
     }
   }
-  else if(last_distance == current_distance && sub_state == START_CLOSE)
+  else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_CLOSE)
   {
     printf("last_distance == current_distance\n");
     sub_state=CLOSE;
@@ -509,84 +504,115 @@ check_displacement_value()  //check value of displacement which for PVT_STATE & 
     {
       send_state =  PVT_STATE;
       printf("send_state change to PVT_STATE\n");
-      collect_common_set_send_active(active);
     }
-  }else if(current_distance > last_distance && sub_state == CLOSE)
+  }else if((current_distance-last_distance)>DISTANCE_ERROR && sub_state == CLOSE )
   {
     open_time=get_timesynch_time();
-    amount_counter++;
     sub_state=START_OPEN;
-    asn_diff_buffer[amount_counter%3]=TSCH_ASN_DIFF(open_time,close_time);
+    if(last_asn_diff == TSCH_ASN_DIFF(open_time,close_time))
+    {
+      same_counter++;
+    }
+    else
+    {
+      same_counter=0;
+    }
+    amount_counter++;
   }
-  else if(current_distance == last_distance && sub_state == START_OPEN )
+  else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_OPEN )
   {
     sub_state=OPEN;
-    if(check_PVT_to_MP() && current_state!=MP_STATE)
+    if(same_counter>2)
     {
       send_state = MP_STATE;
-      collect_common_set_send_active(active);
     }
+    last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
   }
   last_distance = current_distance;
-
-}
-/*---------------------------------------------------------------------------*/
-int
-check_PVT_to_MP()
-{
-  int32_t temp_diff_asn;
-  int is_same=1;
-  temp_diff_asn = asn_diff_buffer[0];
-  for(int i=0; i<3; i++)
-  {
-    if(temp_diff_asn != asn_diff_buffer[i])
-    {
-      is_same = 0;
-    }
-  }
-
-  return is_same;
+  sub_state_buff[buff_counter] = sub_state;
+  distance_buff[buff_counter] = current_distance;
+  printf("sub_state %u distance_buff %u \n", sub_state, current_distance);
 }
 /*---------------------------------------------------------------------------*/
 void
-change_state(uint8_t state)
+check_photoelectric_sensors()
 {
+  // send_state = SOL_STATE;
+  printf("check sensor\n");
+
+  if(current_state == SOL_STATE || current_state == PVT_STATE)
+  {
+    sensor_upper_time=0;
+    sensor_downer_time=0;
+  }
+
+  if(sensor_upper_time && sensor_downer_time)
+  {
+    if((int)(sensor_downer_time-sensor_upper_time)>0 && current_state==DEFAULT_STATE)
+    {
+      send_state = SOL_STATE;
+      // collect_common_set_send_active(1);
+      start_time = get_timesynch_time();
+      printf("down, in \n");
+      sensor_upper_time=0;
+      sensor_downer_time=0;
+    }
+    else if((int)(sensor_downer_time-sensor_upper_time)<0 && current_state==MP_STATE)
+    {
+      send_state = EOL_STATE;
+      // collect_common_set_send_active(1);
+      end_time = get_timesynch_time();
+      printf("up, out \n");
+      sensor_upper_time=0;
+      sensor_downer_time=0;
+      reset_values();
+    }
+  }
+  // }
+}
+/*---------------------------------------------------------------------------*/
+void 
+check_value(){
+  check_distance_value();
+  check_v_value();
+  buff_counter++;
+}
+/*---------------------------------------------------------------------------*/
+void
+change_state(uint16_t state)
+{
+  // if(send_state == state)
+  // {
+  //   printf("active=0\n");
+  //   collect_common_set_send_active(0);
+  // }
   switch(state)
   {
     case SOL_STATE:
       if(current_state == DEFAULT_STATE)
       {
-        printf("got SOL state\n");
         current_state=SOL_STATE;
       }
       break;
     case PVT_STATE:
-      if (current_state == SOL_STATE)
+      if (current_state <= SOL_STATE)
       {
-        printf("got PVT state\n");
         current_state=PVT_STATE;
-        if(send_state == PVT_STATE)
-        {
-          collect_common_set_send_active(0);
-        }
+
       }
       break;
     case MP_STATE:
-      if (current_state == PVT_STATE)
+      if (current_state <= PVT_STATE)
       {
         current_state=MP_STATE;
-        printf("got MP state\n");
-        if(send_state == MP_STATE)
-        {
-          collect_common_set_send_active(0);
-        }
+        printf("MP_STATE\n");
       }
       break;
     case EOL_STATE:
       if (current_state == MP_STATE)
       {
+        printf("reset\n");
         reset_values();
-        printf("got EOL state\n");
       }
       break;
     default:
@@ -604,6 +630,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
   modbus_init();
 
   /* Send a packet every 60-62 seconds. */
+  etimer_set(&period_timer, CLOCK_SECOND * send_period);
 
   PROCESS_PAUSE();
 
@@ -621,7 +648,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINT6ADDR(&client_conn->ripaddr);
   PRINTF(" local/remote port %u/%u\n",
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
-  etimer_set(&period_timer, CLOCK_SECOND * send_period);
 
   while(1) {
     if(ack_flag)
@@ -643,10 +669,11 @@ PROCESS_THREAD(udp_client_process, ev, data)
       if(data == &period_timer){
         etimer_reset(&period_timer);
         check_value();
-        if(send_active)
+
+        // if(send_active)
+        if(buff_counter==BUFFSIZE)
         {
-          /* Time to send the data */
-          // collect_rs485_send(11, 0x4700);
+          // change_state_send(send_state);
           change_state_send(send_state);
         }
       }else if(data == &ack_timer && ack_flag)
@@ -678,6 +705,18 @@ PROCESS_THREAD(udp_client_process, ev, data)
         printf("-----------recv send command-----------\n");
       } else {
         printf("unhandled command: %s\n", line);
+      }
+    }else if(ev == sensors_event){
+      if(data == &sensor_num1) {
+        printf("PC5\n"); //inner
+        sensor_upper_time = rtimer_arch_now();
+        printf("{sensor_upper_time-%u} ", sensor_upper_time);
+        check_photoelectric_sensors();
+      }if(data == &sensor_num2) {
+        printf("Pc6\n"); //outer
+        sensor_downer_time = rtimer_arch_now();
+        printf("{sensor_downer_time-%u} ", sensor_downer_time);
+        check_photoelectric_sensors();
       }
     }
   }

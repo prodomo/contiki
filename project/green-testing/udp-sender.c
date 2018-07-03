@@ -68,7 +68,6 @@
 
 #include "cc2538-temp-sensor.h"
 #include "cfs-coffee-arch.h"
-#include "modbus-api.h"
 // #include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;

@@ -19,3 +19,5 @@ Command Example
  send unicast packet to ask a69d's configuration (command id =12)
 > SW 01 A69D 12 EW
 
+change state to SOL_STATE
+> SW 02 FFFF 01 01 03 00 01 EW

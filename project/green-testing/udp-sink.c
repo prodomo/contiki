@@ -36,7 +36,7 @@
 #include "net/rpl/rpl-private.h"
 
 #include "net/netstack.h"
-#include "dev/button-sensor.h"
+// #include "dev/button-sensor.h"
 #include "dev/serial-line.h"
 #if CONTIKI_TARGET_Z1
 #include "dev/uart0.h"
@@ -76,7 +76,7 @@ static int send_command = 0;
 static int recv_counter =0;
 static char* command_data;
 
-#define COMMAND_PERIOD 10
+#define COMMAND_PERIOD 2
 
 static uint16_t command_id=0;
 
@@ -134,8 +134,8 @@ collect_setting_send(char* data)
   struct msg
   {
     uint16_t commandId;
-    uint8_t commandType;
-    uint8_t sensorNum;
+    uint16_t commandType;
+    uint16_t sensorNum;
     struct setting_msg setmsg[sensor_num];
   };
   struct msg msg;
@@ -225,7 +225,7 @@ collect_ask_send(char* mac, char* commandId)
   uip_ipaddr_t addr;
   struct msg{
     uint16_t commandId;
-    uint8_t commandType;
+    uint16_t commandType;
   };
 
   struct msg msg;
@@ -322,51 +322,26 @@ tcpip_handler(void)
     seqno = *appdata;
     hops = uip_ds6_if.cur_hop_limit - UIP_IP_BUF->ttl + 1;
     printf("receive packet length %d\r\n", uip_datalen());
-    if(uip_datalen()>40)
-    {
-      collect_common_recv(&sender, seqno, hops,
-                        appdata + 2, uip_datalen() - 2);
-    }
-    else if(uip_datalen()==4)
-    {
+    // if(uip_datalen()>40)
+    // {
+    //   collect_common_recv(&sender, seqno, hops,
+    //                     appdata + 2, uip_datalen() - 2);
+    // }
+    // else
+    // {
       printf("%u ", uip_datalen());
       printf("%04x ", sender.u8[0] + (sender.u8[1] << 8));
       memcpy(&commandId, appdata, sizeof(uint16_t));
       appdata+=sizeof(uint16_t);
       printf("%u ",commandId);
-      for(int i=0; i<uip_datalen()-2; i++)
+      for(int i=0; i<(uip_datalen()-2)/2; i++)
       {
-        memcpy(&data , appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
+        memcpy(&data , appdata, sizeof(uint16_t));
+        appdata+=sizeof(uint16_t);
         printf("%u ",data);
       }
       printf("\n");
-    }
-    else if(uip_datalen()==6)
-    {
-      for(int i=0; i<uip_datalen()/2; i++)
-      {
-        memcpy(&data , appdata, sizeof(uint16_t));
-        appdata += 2;
-        printf("%u ",data);
-      }
-      printf("\n\r");
-    }
-    else if(uip_datalen()==8)
-    {
-      printf("%u ", uip_datalen());
-      printf("%04x ", sender.u8[0] + (sender.u8[1] << 8));
-      memcpy(&commandId, appdata, sizeof(uint16_t));
-      appdata+=sizeof(uint16_t);
-      printf("%u ",commandId);
-      for(int i=0; i<uip_datalen()-2; i++)
-      {
-        memcpy(&data , appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
-        printf("%x ",data);
-      }
-      printf("\n\r");
-    }
+    // }
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -492,10 +467,10 @@ collect_ack_recv(const linkaddr_t *originator, uint8_t *payload)
   int i;
   struct 
   {
-    uint8_t command_type;
+    uint16_t command_type;
     uint16_t data_length;
     uint16_t command_id;
-    uint8_t is_received;
+    uint16_t is_received;
   }ack;
   printf("%u ",originator->u8[0] + (originator->u8[1] << 8)); //nodeID
   memcpy(&ack, payload, sizeof(ack));
@@ -513,7 +488,7 @@ PROCESS_THREAD(udp_server_process, ev, data)
 
   PROCESS_PAUSE();
 
-  SENSORS_ACTIVATE(button_sensor);
+  // SENSORS_ACTIVATE(button_sensor);
 
   PRINTF("UDP server started\n");
 
@@ -555,10 +530,6 @@ PROCESS_THREAD(udp_server_process, ev, data)
     PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
-    }
-    else if (ev == sensors_event && data == &button_sensor) {
-      PRINTF("Initiating global repair\n");
-      rpl_repair_root(RPL_DEFAULT_INSTANCE);
     }
     else if(ev == serial_line_event_message) {
       char *line;

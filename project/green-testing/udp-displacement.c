@@ -66,13 +66,12 @@
 #include "cc2538-temp-sensor.h"
 #include "cfs-coffee-arch.h"
 #include "modbus-api.h"
-// #include "dev/ain0-sensor.h"
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
 
 static unsigned long time_offset;
-static int send_active = 0;
+static int send_active = 1;
 static int send_command = 0;
 static int recv_counter =0;
 static int ack_flag = 0;
@@ -84,6 +83,7 @@ static char* command_data;
 
 #define DEFAULT_DISTANCE 1000
 #define DISTANCE_THRESHOLD 650
+#define DISTANCE_ERROR 5
 
 struct tsch_asn_t start_time, end_time, open_time, close_time;
 static uint16_t last_distance = DEFAULT_DISTANCE;
@@ -91,10 +91,13 @@ static uint16_t minimun_distance;
 static int send_period = PERIOD;
 static uint16_t command_id=0;
 static int conf_flag=0;
-static uint8_t current_state = 0;
-static uint8_t sub_state = 0, send_state=0;
-static int32_t asn_diff_buffer[3];
+static uint16_t current_state = 0;
+static uint16_t sub_state = 0, send_state=0;
 static int amount_counter = 0;
+static int32_t last_asn_diff;
+static int same_counter = 0;
+static uint16_t distance_buff[10];
+static int distance_buff_counter=0;
 
 
 /*---------------------------------------------------------------------------*/
@@ -105,12 +108,6 @@ AUTOSTART_PROCESSES(&udp_client_process);
 struct tsch_asn_t
 get_timesynch_time(void)
 {
-  /*---------tsch_asn_t------------------------
-    uint32_t ls4b; //least significant 4 bytes
-    uint8_t  ms1b; // most significant 1 byte
-  ----------------------------------------- */
-  // struct tsch_asn_t asn = tsch_current_asn;
-  // printf("TSCH: {asn-%x.%lx link-NULL} ", tsch_current_asn.ms1b, tsch_current_asn.ls4b);
   return tsch_current_asn;
 }
 
@@ -175,10 +172,10 @@ tcpip_handler(void)
     uint8_t *appdata;
     struct msg{
       uint16_t commandId;
-      uint8_t commandType;
+      uint16_t commandType;
     };
     struct msg msg;
-    uint8_t sensor_num = 0;
+    uint16_t sensor_num = 0;
 
     memset(&msg, 0, sizeof(msg));
     printf("sizeof(msg) %d\n", sizeof(msg));
@@ -188,15 +185,15 @@ tcpip_handler(void)
 
     memcpy(&msg.commandId, appdata, sizeof(uint16_t));
     appdata+=sizeof(uint16_t);
-    memcpy(&msg.commandType, appdata, sizeof(uint8_t));
-    appdata+=sizeof(uint8_t);
+    memcpy(&msg.commandType, appdata, sizeof(uint16_t));
+    appdata+=sizeof(uint16_t);
     printf("msg.commandType %u\n", msg.commandType);
     printf("msg.commandId %u\n", msg.commandId);
 
     if(uip_datalen()>4)
     {
-      memcpy(&sensor_num, appdata, sizeof(uint8_t));
-      appdata+=sizeof(uint8_t);
+      memcpy(&sensor_num, appdata, sizeof(uint16_t));
+      appdata+=sizeof(uint16_t);
     }
 
     struct setting_msg setting_msg[sensor_num];
@@ -205,12 +202,12 @@ tcpip_handler(void)
     {
       for(int i=0; i<sensor_num; i++)
       {
-        memcpy(&setting_msg[i].setting_type, appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
-        memcpy(&setting_msg[i].sensor_tittle, appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
-        memcpy(&setting_msg[i].value, appdata, sizeof(uint8_t));
-        appdata+=sizeof(uint8_t);
+        memcpy(&setting_msg[i].setting_type, appdata, sizeof(uint16_t));
+        appdata+=sizeof(uint16_t);
+        memcpy(&setting_msg[i].sensor_tittle, appdata, sizeof(uint16_t));
+        appdata+=sizeof(uint16_t);
+        memcpy(&setting_msg[i].value, appdata, sizeof(uint16_t));
+        appdata+=sizeof(uint16_t);
       }
     }
 
@@ -247,8 +244,8 @@ collect_ack_send(uint16_t commandId)
   struct 
   {
     uint16_t command_id;
-    uint8_t command_type;
-    uint8_t is_received;
+    uint16_t command_type;
+    uint16_t is_received;
   }ack;
   rpl_parent_t *preferred_parent;
   linkaddr_t parent;
@@ -388,21 +385,26 @@ void reset_values()
   last_distance = DEFAULT_DISTANCE;
   TSCH_ASN_INIT(start_time,0,0);
   TSCH_ASN_INIT(end_time,0,0);
+  TSCH_ASN_INIT(open_time,0,0);
+  TSCH_ASN_INIT(close_time,0,0);
   amount_counter= 0 ;
+  same_counter=0;
   current_state = DEFAULT_STATE;
   sub_state = DEFAULT_STATE;
   send_state = DEFAULT_STATE;
-
-
 }
 /*---------------------------------------------------------------------------*/
-void change_state_send(uint8_t state)
+void change_state_send(uint16_t state)
 {
+  struct tsch_asn_t current_time;
   struct data{
     uint16_t command_id;
-    uint8_t  command_type;
-    uint8_t  change_state;
-    uint16_t value;
+    uint16_t  command_type;
+    uint16_t  change_state;
+    uint16_t asn1;
+    uint16_t asn2;
+    uint16_t amount_counter;
+    uint16_t distance[10];
   };
   static uint16_t seqno;
   struct data data;
@@ -414,9 +416,18 @@ void change_state_send(uint8_t state)
   memset(&data, 0, sizeof(data));
   
   seqno++;
-  data.command_type= CMD_TYPE_DATA;
+  current_time = get_timesynch_time();
+  data.command_type = CMD_TYPE_DATA;
   data.command_id = seqno;
-  data.change_state = state;
+  data.change_state = current_state;
+  data.asn1 = (current_time.ls4b>>16);
+  data.asn2 = (uint16_t)current_time.ls4b;
+  data.amount_counter = amount_counter;
+  for(int i=0; i<10; i++)
+  {
+    data.distance[i] = distance_buff[i];
+  }
+  distance_buff_counter=0;
 
   printf("change_state_send packet\n");
   uip_udp_packet_sendto(client_conn, &data, sizeof(data),
@@ -425,10 +436,9 @@ void change_state_send(uint8_t state)
 /*---------------------------------------------------------------------------*/
 void check_value()
 {
-  uint16_t current_distance = last_distance;
-  int active=1;
+  uint16_t current_distance = 400;
 
-  if(current_distance < last_distance)
+  if((last_distance-current_distance)>DISTANCE_ERROR) //current < last
   {
     sub_state = START_CLOSE;
     if(current_distance< minimun_distance)
@@ -436,7 +446,7 @@ void check_value()
       minimun_distance = current_distance;
     }
   }
-  else if(last_distance == current_distance && sub_state == START_CLOSE)
+  else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_CLOSE)
   {
     printf("last_distance == current_distance\n");
     sub_state=CLOSE;
@@ -445,53 +455,46 @@ void check_value()
     {
       send_state =  PVT_STATE;
       printf("send_state change to PVT_STATE\n");
-      // collect_common_set_send_active(active);
     }
-  }else if(current_distance > last_distance && sub_state == CLOSE)
+  }else if((current_distance-last_distance)>DISTANCE_ERROR && sub_state == CLOSE )
   {
     open_time=get_timesynch_time();
-    amount_counter++;
     sub_state=START_OPEN;
-    asn_diff_buffer[amount_counter%3]=TSCH_ASN_DIFF(open_time,close_time);
+    if(last_asn_diff == TSCH_ASN_DIFF(open_time,close_time))
+    {
+      same_counter++;
+    }
+    else
+    {
+      same_counter=0;
+    }
+    amount_counter++;
   }
-  else if(current_distance == last_distance && sub_state == START_OPEN )
+  else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_OPEN )
   {
     sub_state=OPEN;
-    if(check_PVT_to_MP())
+    if(same_counter>2)
     {
       send_state = MP_STATE;
-      // collect_common_set_send_active(active);
     }
+    last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
   }
   last_distance = current_distance;
-
+  distance_buff[distance_buff_counter] = current_distance+distance_buff_counter;
+  distance_buff_counter++;
 }
 /*---------------------------------------------------------------------------*/
-int
-check_PVT_to_MP()
-{
-  int32_t temp_diff_asn;
-  int is_same=1;
-  temp_diff_asn = asn_diff_buffer[0];
-  for(int i=0; i<3; i++)
-  {
-    if(temp_diff_asn != asn_diff_buffer[i])
-    {
-      is_same = 0;
-    }
-  }
 
-  return is_same;
-}
 /*---------------------------------------------------------------------------*/
 void
-change_state(uint8_t state)
+change_state(uint16_t state)
 {
   switch(state)
   {
     case SOL_STATE:
       if(current_state == DEFAULT_STATE)
       {
+        send_state=SOL_STATE;
         printf("got SOL state\n");
         current_state=SOL_STATE;
       }
@@ -501,10 +504,6 @@ change_state(uint8_t state)
       {
         printf("got PVT state\n");
         current_state=PVT_STATE;
-        if(send_state == PVT_STATE)
-        {
-          collect_common_set_send_active(0);
-        }
       }
       break;
     case MP_STATE:
@@ -512,10 +511,6 @@ change_state(uint8_t state)
       {
         current_state=MP_STATE;
         printf("got MP state\n");
-        if(send_state == MP_STATE)
-        {
-          collect_common_set_send_active(0);
-        }
       }
       break;
     case EOL_STATE:
@@ -558,6 +553,8 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINTF(" local/remote port %u/%u\n",
         UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
 
+  etimer_set(&period_timer, CLOCK_SECOND * send_period);
+
   while(1) {
     if(ack_flag)
     {
@@ -569,40 +566,38 @@ PROCESS_THREAD(udp_client_process, ev, data)
       printf("set conf_timer\n");
       etimer_set(&conf_timer, CLOCK_SECOND * ACK_PERIOD);
     }
-    if(current_state >= SOL_STATE && current_state != EOL_STATE)
-    {
-      // printf("start to get distance\n");
-      etimer_set(&period_timer, CLOCK_SECOND * send_period);
-    }
     PROCESS_YIELD();
     if(ev == tcpip_event)
     {
       tcpip_handler();
-    }else if(ev == PROCESS_EVENT_TIMER)
+    }
+    else if(ev == PROCESS_EVENT_TIMER)
     {
-      if(data == &period_timer){
+      if(data == &period_timer)
+      {
         etimer_reset(&period_timer);
         check_value();
-        if(send_active)
+        if(distance_buff_counter==10)
         {
           /* Time to send the data */
-          // collect_rs485_send(11, 0x4700);
-          change_state_send(send_state);
-        }
-      }else if(data == &ack_timer && ack_flag)
-        {
-          printf("ack_timer timeup\n");
-          ack_flag=0;
-          collect_ack_send(command_id);
-        }
-        else if(data == &conf_timer && conf_flag)
-        {
-          printf("conf_timer timeup\n");
-          conf_flag=0;
-          printf("send config\n");
-        }
+          change_state_send(current_state);
+        } 
+      }
+      else if(data == &ack_timer && ack_flag)
+      {
+        printf("ack_timer timeup\n");
+        ack_flag=0;
+        collect_ack_send(command_id);
+      }
+      else if(data == &conf_timer && conf_flag)
+      {
+        printf("conf_timer timeup\n");
+        conf_flag=0;
+        printf("send config\n");
+      }
     }
-    else if(ev == serial_line_event_message) {
+    else if(ev == serial_line_event_message)
+    {
       char *line;
       line = (char *)data;
       printf("--------------rev command------------:%s\n", line);
@@ -616,7 +611,9 @@ PROCESS_THREAD(udp_client_process, ev, data)
         printf("recv_counter: %d\n", recv_counter);
         printf("command_data: %s\n", command_data);
         printf("-----------recv send command-----------\n");
-      } else {
+      }
+      else
+      {
         printf("unhandled command: %s\n", line);
       }
     }
