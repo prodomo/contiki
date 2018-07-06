@@ -127,7 +127,7 @@
 /*******************************************************/
 /* Set to run orchestra */
 #ifndef WITH_ORCHESTRA
-#define WITH_ORCHESTRA 0
+#define WITH_ORCHESTRA 1
 #endif /* WITH_ORCHESTRA */
 
 

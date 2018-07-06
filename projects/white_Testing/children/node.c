@@ -219,21 +219,21 @@ PROCESS_THREAD(node_process, ev, data)
   //static struct etimer etaa;
   PROCESS_BEGIN();
 
-//   #if CONTIKI_TARGET_COOJA
-//   extern void set_bcollect();
-//   extern void set_bcollect2();
-//   set_bcollect();
-//   set_bcollect2();
-// #endif /* CONTIKI_TARGET_COOJA */
+  #if CONTIKI_TARGET_COOJA
+  extern void set_bcollect();
+  extern void set_bcollect2();
+  set_bcollect();
+  set_bcollect2();
+  #endif /* CONTIKI_TARGET_COOJA */
 
-// #if CONTIKI_TARGET_COOJA && 0
-// #include "node-id.h"
-//   extern uint8_t event_threshold;
-//   if((node_id == 11) || (node_id) == 3) {
-//     event_threshold = 1;
-//     printf("set event_threshold = %d\n", event_threshold);
-//   }
-// #endif /* CONTIKI_TARGET_COOJA */
+#if CONTIKI_TARGET_COOJA && 0
+#include "node-id.h"
+  extern uint8_t event_threshold;
+  if((node_id == 11) || (node_id) == 3) {
+    event_threshold = 1;
+    printf("set event_threshold = %d\n", event_threshold);
+  }
+#endif /* CONTIKI_TARGET_COOJA */
 
 
   // etimer_set(&etaa, CLOCK_SECOND * 60);
