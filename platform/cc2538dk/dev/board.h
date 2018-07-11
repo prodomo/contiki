@@ -182,16 +182,16 @@
 
 /** BUTTON_DOWN -> PC7 */
 #define BUTTON_DOWN_PORT        GPIO_C_NUM
-#define BUTTON_DOWN_PIN         7
+#define BUTTON_DOWN_PIN         4
 #define BUTTON_DOWN_VECTOR      GPIO_C_IRQn
 
 
 #define SENSOR_NUM1_PORT		GPIO_C_NUM
-#define SENSOR_NUM1_PIN         5
+#define SENSOR_NUM1_PIN         6
 #define SENSOR_NUM1_VECTOR      GPIO_C_IRQn
 
 #define SENSOR_NUM2_PORT		GPIO_C_NUM
-#define SENSOR_NUM2_PIN         6
+#define SENSOR_NUM2_PIN         7
 #define SENSOR_NUM2_VECTOR      GPIO_C_IRQn
 
 /* Notify various examples that we have Buttons */

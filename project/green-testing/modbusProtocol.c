@@ -80,14 +80,14 @@ int modbusSendQuery(unsigned char *data, unsigned char dataLen,
 /*   } */
 /*   printf("\n\r"); */
   
-  clock_delay(2000);
+  // clock_delay(2000);
 
   /* reset input buffer before transmit */
   rs485_input_reset();
   sendStatus = rs485_transmit(data, dataLen);
 
   /* wait some time for reception... */
-  clock_delay(5000);
+  // clock_delay(5000);
 
   return sendStatus;
 }
@@ -99,7 +99,7 @@ int modbusReadResponse(unsigned char *data, unsigned char hasCRC)
   int numberOfDataBytes;
 
   if((len = rs485_input_len()) <= 0) {
-      printf("RX Error...length <= 0\n\r"); 
+      printf("RX Error...length <= 0\n"); 
     return -1;
   }
 
@@ -207,19 +207,21 @@ int modbusReadCoilStatus(st_modbusQuery *modbusQuery,
     return -1;
 
   clock_delay(0xFFFF);
+  clock_delay(0x3000);
+
 
   /* read the response */
   byteCount = modbusReadResponse(responsePacket, hasCrc);
   
   /* printf("byteCount: %d\n\r", byteCount); */
   if (byteCount <= 0) {
-    printf("Error during reading: no data?\n\r");
+    printf("Error during reading: no data?\n");
     return byteCount;
   }
   
   /* Error Check */
   hasError = modbusRespErrorsVerify(responsePacket, byteCount, exceptionCode, hasCrc);
-  printf("CRC error %d \n\r", hasError);
+  printf("CRC error %d \n", hasError);
   
   if(!hasError) {
     coilStatus->function = responsePacket[1];

@@ -302,10 +302,7 @@ collect_common_net_init(void)
 
   memset(&distance_buff, 0, sizeof(uint16_t)*BUFFSIZE);
   memset(&sub_state_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&total_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&temperature_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&total_a_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&temperature_a_buff, 0, sizeof(uint16_t)*BUFFSIZE);
+
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -426,11 +423,6 @@ void reset_values()
 
   memset(&distance_buff, 0, sizeof(uint16_t)*BUFFSIZE);
   memset(&sub_state_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&total_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&temperature_v_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&total_a_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-  memset(&temperature_a_buff, 0, sizeof(uint16_t)*BUFFSIZE);
-
   counter++;
 
 }
@@ -446,10 +438,6 @@ void change_state_send(uint16_t state)
     uint16_t amount_counter;
     uint16_t sub_state[BUFFSIZE];
     uint16_t distance[BUFFSIZE];
-    uint16_t total_v[BUFFSIZE];
-    uint16_t temp_v [BUFFSIZE];
-    uint16_t total_a[BUFFSIZE];
-    uint16_t temp_a [BUFFSIZE];
   };
   static uint16_t seqno;
   struct data data;
@@ -471,14 +459,10 @@ void change_state_send(uint16_t state)
   {
     data.sub_state[i] = sub_state_buff[i];
     data.distance[i] = distance_buff[i];
-    data.total_v[i] = total_v_buff[i];
-    data.temp_v[i] = temperature_v_buff[i];
-    data.total_a[i] = total_a_buff[i];
-    data.temp_a[i] = temperature_a_buff[i];
   }
   buff_counter=0;
-  // printf("change_state_send packet\n");
-  // printf("state %d counter %d \n",data.change_state, data.counter);
+  printf("change_state_send packet\n");
+  printf("state %d counter %d \n",data.change_state, data.counter);
   // printf("sub_state %u distance %u total_v %u temp_v %u \n", data.sub_state[0], data.distance[0], data.total_v[0], data.temp_v[0]);
   uip_udp_packet_sendto(client_conn, &data, sizeof(data),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
@@ -545,10 +529,10 @@ void check_distance_value()
   uint8_t rv = modbus_read_register(1, MODBUS_RD_HOLD_REG, 0x0082, 1);
   if(rv == 0) {
     current_distance = modbus_get_int(0);
-    printf("Success state after sending modbus packet\n\r");
-    printf("Value read form %d: 0x%x = %d \n\r", 1, 0x0082, current_distance);
+    // printf("Success state after sending modbus packet\n\r");
+    // printf("Value read form %d: 0x%x = %d \n\r", 1, 0x0082, current_distance);
   } else {
-    printf("Error state after sending modbus packet: %d\n\r", rv);
+    // printf("Error state after sending modbus packet: %d\n", rv);
     current_distance=1000;
   }
 
@@ -630,7 +614,6 @@ check_photoelectric_sensors()
       printf("up, out \n");
       sensor_upper_time=0;
       sensor_downer_time=0;
-      // reset_values();
     }
   }
   // }
@@ -639,8 +622,8 @@ check_photoelectric_sensors()
 void 
 check_value(){
   check_distance_value();
-  check_v_value();
-  check_a_value();
+  // check_v_value();
+  // check_a_value();
   buff_counter++;
 }
 /*---------------------------------------------------------------------------*/
@@ -655,7 +638,6 @@ change_state(uint16_t state)
   switch(state)
   {
     case SOL_STATE:
-      reset_values();
       if(current_state == DEFAULT_STATE)
       {
         current_state=SOL_STATE;
@@ -678,7 +660,6 @@ change_state(uint16_t state)
     case EOL_STATE:
       if (current_state == MP_STATE)
       {
-        current_state = EOL_STATE;
         printf("reset\n");
         reset_values();
       }
@@ -744,9 +725,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
           // change_state_send(send_state);
           change_state_send(send_state);
           if(send_state == EOL_STATE)
-          {
             reset_values();
-          }
         }
       }else if(data == &ack_timer && ack_flag)
         {
@@ -780,12 +759,12 @@ PROCESS_THREAD(udp_client_process, ev, data)
       }
     }else if(ev == sensors_event){
       if(data == &sensor_num1) {
-        printf("PC5\n"); //inner
+        printf("PC6\n"); //inner
         sensor_upper_time = rtimer_arch_now();
         printf("{sensor_upper_time-%u} ", sensor_upper_time);
         check_photoelectric_sensors();
       }if(data == &sensor_num2) {
-        printf("Pc6\n"); //outer
+        printf("Pc7\n"); //outer
         sensor_downer_time = rtimer_arch_now();
         printf("{sensor_downer_time-%u} ", sensor_downer_time);
         check_photoelectric_sensors();

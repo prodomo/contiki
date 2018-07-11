@@ -144,18 +144,18 @@ collect_setting_send(char* data)
   msg.commandType = CMD_TYPE_SET;
   msg.commandId = (uint16_t)atoi(temp[3]);
   msg.sensorNum = sensor_num;
-  printf("msg.commandType %d\n", msg.commandType);
-  printf("msg.commandId %d\n", msg.commandId);
-  printf("sensor_num%d\n", sensor_num);
+  // printf("msg.commandType %d\n", msg.commandType);
+  // printf("msg.commandId %d\n", msg.commandId);
+  // printf("sensor_num%d\n", sensor_num);
 
   for(int i=0; i<sensor_num; i++)
   {
     msg.setmsg[i].setting_type = atoi(temp[5+i*3]);
     msg.setmsg[i].sensor_tittle = atoi(temp[6+i*3]);
     msg.setmsg[i].value = atoi(temp[7+i*3]);
-    printf("setting_type %d\n", msg.setmsg[i].setting_type);
-    printf("sensor_tittle %d\n", msg.setmsg[i].sensor_tittle);
-    printf("value %d\n", msg.setmsg[i].value);
+    // printf("setting_type %d\n", msg.setmsg[i].setting_type);
+    // printf("sensor_tittle %d\n", msg.setmsg[i].sensor_tittle);
+    // printf("value %d\n", msg.setmsg[i].value);
   }
 
   if(server_conn == NULL) {
@@ -163,7 +163,7 @@ collect_setting_send(char* data)
     return;
   }
 
-  printf("sizeof(msg):%d\n", sizeof(msg));
+  // printf("sizeof(msg):%d\n", sizeof(msg));
   // send_packet(&msg, temp[2], sizeof(msg));
   leds_toggle(LEDS_RED);
 
@@ -174,7 +174,7 @@ collect_setting_send(char* data)
     //broadcast command
     // printf("broadcast\n");
     uip_create_linklocal_rplnodes_mcast(&addr);
-    printf("sizeof(msg) %d\n", sizeof(msg));
+    // printf("sizeof(msg) %d\n", sizeof(msg));
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                         &addr, UIP_HTONS(UDP_CLIENT_PORT));
   }
@@ -189,7 +189,7 @@ collect_setting_send(char* data)
     dst_u8[1] = ascii_to_uint(temp[2][2])<<4;
     dst_u8[1] += ascii_to_uint(temp[2][3]);
       
-    printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
+    // printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
 
      
     // /* destnation ipv6 address */
@@ -208,7 +208,7 @@ collect_setting_send(char* data)
     // printf("client_ipaddr2:");
     // PRINT6ADDR(&client_ipaddr);
     // printf("\n-----------------------\n");
-    printf("sizeof(msg) %d\n", sizeof(msg));
+    // printf("sizeof(msg) %d\n", sizeof(msg));
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                           &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
 
@@ -233,8 +233,8 @@ collect_ask_send(char* mac, char* commandId)
 
   msg.commandType = CMD_TYPE_CONF;
   msg.commandId = (uint16_t)atoi(commandId);
-  printf("msg.commandType %d\n", msg.commandType);
-  printf("msg.commandId %d\n", msg.commandId);
+  // printf("msg.commandType %d\n", msg.commandType);
+  // printf("msg.commandId %d\n", msg.commandId);
 
   if(server_conn == NULL) {
     /* Not setup yet */
@@ -250,7 +250,7 @@ collect_ask_send(char* mac, char* commandId)
     //broadcast command
     // printf("broadcast\n");
     uip_create_linklocal_rplnodes_mcast(&addr);
-    printf("sizeof(msg) %d\n", sizeof(msg));
+    // printf("sizeof(msg) %d\n", sizeof(msg));
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                         &addr, UIP_HTONS(UDP_CLIENT_PORT));
   }
@@ -265,7 +265,7 @@ collect_ask_send(char* mac, char* commandId)
     dst_u8[1] = ascii_to_uint(mac[2])<<4;
     dst_u8[1] += ascii_to_uint(mac[3]);
       
-    printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
+    // printf("%02x%02x\n", dst_u8[0], dst_u8[1]);
 
      
     // /* destnation ipv6 address */
@@ -284,7 +284,7 @@ collect_ask_send(char* mac, char* commandId)
     // printf("client_ipaddr2:");
     // PRINT6ADDR(&client_ipaddr);
     // printf("\n-----------------------\n");
-    printf("sizeof(msg) %d\n", sizeof(msg));
+    // printf("sizeof(msg) %d\n", sizeof(msg));
     uip_udp_packet_sendto(server_conn, &msg, sizeof(msg),
                           &client_ipaddr, UIP_HTONS(UDP_CLIENT_PORT));
 
@@ -321,7 +321,7 @@ tcpip_handler(void)
     sender.u8[1] = UIP_IP_BUF->srcipaddr.u8[14];
     seqno = *appdata;
     hops = uip_ds6_if.cur_hop_limit - UIP_IP_BUF->ttl + 1;
-    printf("receive packet length %d\r\n", uip_datalen());
+    // printf("receive packet length %d\r\n", uip_datalen());
     // if(uip_datalen()>40)
     // {
     //   collect_common_recv(&sender, seqno, hops,
@@ -417,14 +417,14 @@ collect_command_parse(char* data)
   {
     case CMD_TYPE_CONF:
     {
-      printf("collect_ask_send\n");
+      // printf("collect_ask_send\n");
       collect_ask_send(temp[2], temp[3]);
       break;
     }
     case CMD_TYPE_SET:
     {
-      printf("collect_setting_send\n");
-      printf("copy %s\n", copy);
+      // printf("collect_setting_send\n");
+      // printf("copy %s\n", copy);
       collect_setting_send(copy);
       free(copy);
       break;
@@ -535,26 +535,28 @@ PROCESS_THREAD(udp_server_process, ev, data)
       char *line;
       line = (char *)data;
       printf("--------------rev command------------:%s\n", line);
-      printf("strlen(line) %d\n", strlen(line));
+      // printf("strlen(line) %d\n", strlen(line));
       if(strncmp(line, STARTWORD, 2)==0 && strncmp(line+strlen(line)-3, ENDWORD, 2)==0)
       {
         send_command=1;
         recv_counter++;
         command_data = malloc(strlen(line) + 1);
         strcpy(command_data, line);
-        printf("recv_counter: %d\n", recv_counter);
-        printf("command_data: %s\n", command_data);
-        printf("-----------recv send command-----------\n");
-      } else {
-        printf("unhandled command: %s\n", line);
+        // printf("recv_counter: %d\n", recv_counter);
+        // printf("command_data: %s\n", command_data);
+        // printf("-----------recv send command-----------\n");
       }
+       // else {
+
+      //   printf("unhandled command: %s\n", line);
+      // }
     }
     else if(ev == PROCESS_EVENT_TIMER) {
       if(data == &command_timer){
         // printf("command_timer timeup\n");
         etimer_reset(&command_timer);
         if(send_command==1){
-            printf("send_command = 1 \n");
+            // printf("send_command = 1 \n");
             collect_command_parse(command_data); //sink special send
             free(command_data);
             send_command = 0;
