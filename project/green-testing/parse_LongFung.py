@@ -16,11 +16,11 @@ command_count=0
 node_arr=[]
 BROADCAST = "FFFF"
 current_state = 0
-order_num = "21521"
-start_time= datetime(2018, 7, 03, 14, 14, 5)
-pvt_time = datetime(2018, 7, 03, 14, 15, 5)
-mp_time = datetime(2018, 7, 03, 14, 51, 25)
-end_time = datetime(2018, 7, 03, 15, 14, 5)
+order_num = "fakeNumber"
+machineNum = 18
+start_time = None
+mp_time = None
+end_time = None
 temp_amount = 5
 
 
@@ -32,20 +32,41 @@ current_table_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_
   'SUB_STATE1':7, 'SUB_STATE2':8, 'SUB_STATE3':9, 'SUB_STATE4':10, 'SUB_STATE5':11,
   'DISTANCE1':12, 'DISTANCE2':13, 'DISTANCE3':14, 'DISTANCE4':15, 'DISTANCE5':16,
   'TOTAL_V1':17 , 'TOTAL_V2':18, 'TOTAL_V3':19, 'TOTAL_V4':20, 'TOTAL_V5':21,
-  'TEMP_V1':22, 'TEMP_V2':23, 'TEMP_V3':24, 'TEMP_V4':25, 'TEMP_V5':26})
+  'TEMP_V1':22, 'TEMP_V2':23, 'TEMP_V3':24, 'TEMP_V4':25, 'TEMP_V5':26,
+  'TOTAL_A1':27 , 'TOTAL_A2':28, 'TOTAL_A3':29, 'TOTAL_A4':30, 'TOTAL_A5':31,
+  'TEMP_A1':32, 'TEMP_A2':33, 'TEMP_A3':34, 'TEMP_A4':35, 'TEMP_A5':36})
+
+current_distance_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE':3, 'CURRENT_STATE':4, 'COUNTER':5, 'AMOUNT_COUNTER':6,
+  'SUB_STATE1':7, 'SUB_STATE2':8, 'SUB_STATE3':9, 'SUB_STATE4':10, 'SUB_STATE5':11,
+  'DISTANCE1':12, 'DISTANCE2':13, 'DISTANCE3':14, 'DISTANCE4':15, 'DISTANCE5':16})
+
+current_v_a_map=OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE':3,
+  'TOTAL_V1':4 , 'TOTAL_V2':5, 'TOTAL_V3':6, 'TOTAL_V4':7, 'TOTAL_V5':8,
+  'TEMP_V1':9, 'TEMP_V2':10, 'TEMP_V3':11, 'TEMP_V4':12, 'TEMP_V5':13,
+  'TOTAL_A1':14, 'TOTAL_A2':15, 'TOTAL_A3':16, 'TOTAL_A4':17, 'TOTAL_A5':18,
+  'TEMP_A1':19, 'TEMP_A2':20, 'TEMP_A3':21, 'TEMP_A4':22, 'TEMP_A5':23})
+
 
 ack_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'COMMAND_ID':2 ,'COMMAND_TYPE':3, 'IS_RECEIVED':4})
 
 ask_command_map = OrderedDict({'SW':0, 'COMMAND_TYPE':1, 'MAC':2 ,'COMMAND_ID':3, 'EW':4})
 
 
-def update_history_state(amount):
+def update_history_state_to_DB(amount):
+
+    print "update_history_state"
+
+    global start_time
+    global pvt_time
+    global mp_time
+    global end_time
+    global temp_amount
 
     db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
     cursor = db.cursor()
 
-    state_history_sql = "INSERT INTO itri_history_state(orderNum, SOL_STATE, PVT_STATE, MP_STATE, EOL_STATE, PVT_amount, Total_amount)\
-     VALUES('%s', '%s', '%s', '%s', '%s', '%d', '%d')" %(order_num, start_time, pvt_time, mp_time, end_time, temp_amount, amount)
+    state_history_sql = "INSERT INTO itri_history_state(machineNum, SOL_STATE, PVT_STATE, MP_STATE, EOL_STATE, PVT_amount, Total_amount)\
+     VALUES('%s', '%s', '%s', '%s', '%s', '%d', '%d')" %(machineNum, start_time, pvt_time, mp_time, end_time, temp_amount, amount)
 
     try:
         print "try update"
@@ -55,25 +76,60 @@ def update_history_state(amount):
         print "update history_state table fail"
     db.close()
 
-def update_state():
+def update_state_to_DB(state):
+
+    global start_time
+
+    print "update_state"
 
     db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
     cursor = db.cursor()
 
-    state_update_sql = "INSERT INTO itri_current_state(SOL_STATE, PVT_STATE, MP_STATE, EOL_STATE, orderNum, ID) VALUES('%s', '%s', '%s', '%s', '%s', '%d') \
-    ON DUPLICATE KEY UPDATE SOL_STATE='%s', PVT_STATE='%s', MP_STATE='%s', EOL_STATE='%s', orderNum='%s'" \
-    %(start_time, pvt_time, mp_time, end_time, order_num, 1, start_time, pvt_time, mp_time, end_time, order_num) 
+    current_time = datetime.now()
+
+    check_table_sql = "SELECT COUNT(*) FROM `itri_current_state` WHERE 1"
+
+    state_insert_sql = "INSERT INTO itri_current_state(SOL_STATE, machineNum, ID) VALUES('%s', '%s', '%d')" %(start_time, machineNum, 1)
+    
+    state_update_sql = "UPDATE itri_current_state SET %s='%s' WHERE ID=1" %(state_map[state], current_time)
+
+    t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s')" %("state", state_map[state], current_time)
+    try:
+        print "check"
+        cursor.execute(check_table_sql)
+        num = cursor.fetchone()
+        print num[0]
+
+        # add new row in table
+        if num[0]==0:  
+          cursor.execute(state_insert_sql)
+
+        # update exists row
+        else:
+          cursor.execute(state_update_sql)
+          cursor.execute(t3_update_sql)
+        db.commit()
+    except:
+        print "update current_state table fail"
+    db.close()
+
+def reset_DB_current_table():
+
+    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
+    cursor = db.cursor()
+
+    state_reset_sql ="UPDATE itri_current_state set SOL_STATE=NULL, PVT_STATE=NULL, MP_STATE=NULL, EOL_STATE=NULL where ID=1"
 
     try:
-        print "try update"
-        cursor.execute(state_update_sql)
+        print "try reset"
+        cursor.execute(state_reset_sql)
         db.commit()
     except:
         print "update current_state table fail"
     db.close()
 
 
-def upload_to_DB(data):
+def upload_data_to_DB(data):
 
     db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
     cursor = db.cursor()
@@ -81,16 +137,17 @@ def upload_to_DB(data):
     current_time = datetime.now()
     print data
 
-   
-    data_sql = "INSERT INTO log(orderNum, seqno, current_state, amount, sub_state1, sub_state2, sub_state3, sub_state4, sub_state5, \
-    distance1, distance2, distance3, distance4, distance5, temp_v1, temp_v2, temp_v3, temp_v4, temp_v5, total_v1, total_v2, total_v3, total_v4, total_v5, datetime)\
-     VALUES ('%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d','%s')" \
-    %(order_num, int(data[current_table_map['SEQNO']]), state_map[current_state], int(data[current_table_map['AMOUNT_COUNTER']]),\
+    data_sql = "INSERT INTO log(machineNum, seqno, current_state, amount, sub_state1, sub_state2, sub_state3, sub_state4, sub_state5, \
+    distance1, distance2, distance3, distance4, distance5, temp_v1, temp_v2, temp_v3, temp_v4, temp_v5, total_v1, total_v2, total_v3, total_v4, total_v5,\
+    temp_a1, temp_a2, temp_a3, temp_a4, temp_a5, total_a1, total_a2, total_a3, total_a4, total_a5, datetime)\
+     VALUES ('%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s','%s', '%s', '%s', '%s', '%s','%s')" \
+    %(machineNum, int(data[current_table_map['SEQNO']]), state_map[int(data[current_table_map['CURRENT_STATE']])], int(data[current_table_map['AMOUNT_COUNTER']]),\
     state_map[int(data[current_table_map['SUB_STATE1']])], state_map[int(data[current_table_map['SUB_STATE2']])], state_map[int(data[current_table_map['SUB_STATE3']])], state_map[int(data[current_table_map['SUB_STATE4']])], state_map[int(data[current_table_map['SUB_STATE5']])], \
-    int(data[current_table_map['DISTANCE1']]), int(data[current_table_map['DISTANCE2']]), int(data[current_table_map['DISTANCE3']]), int(data[current_table_map['DISTANCE4']]), int(data[current_table_map['DISTANCE5']]), \
-    int(data[current_table_map['TEMP_V1']]), int(data[current_table_map['TEMP_V2']]), int(data[current_table_map['TEMP_V3']]), int(data[current_table_map['TEMP_V4']]), int(data[current_table_map['TEMP_V5']]),\
-    int(data[current_table_map['TOTAL_V1']]), int(data[current_table_map['TOTAL_V2']]), int(data[current_table_map['TOTAL_V3']]), int(data[current_table_map['TOTAL_V4']]), int(data[current_table_map['TOTAL_V5']]),\
-    current_time)
+    data[current_table_map['DISTANCE1']], data[current_table_map['DISTANCE2']], data[current_table_map['DISTANCE3']], data[current_table_map['DISTANCE4']], data[current_table_map['DISTANCE5']], \
+    data[current_table_map['TEMP_V1']], data[current_table_map['TEMP_V2']], data[current_table_map['TEMP_V3']], data[current_table_map['TEMP_V4']], data[current_table_map['TEMP_V5']],\
+    data[current_table_map['TOTAL_V1']], data[current_table_map['TOTAL_V2']], data[current_table_map['TOTAL_V3']], data[current_table_map['TOTAL_V4']], data[current_table_map['TOTAL_V5']],\
+    data[current_table_map['TEMP_A1']], data[current_table_map['TEMP_A2']], data[current_table_map['TEMP_A3']], data[current_table_map['TEMP_A4']], data[current_table_map['TEMP_A5']],\
+    data[current_table_map['TOTAL_A1']], data[current_table_map['TOTAL_A2']], data[current_table_map['TOTAL_A3']], data[current_table_map['TOTAL_A4']], data[current_table_map['TOTAL_A5']],current_time)
 
     try:
         cursor.execute(data_sql)
@@ -102,25 +159,122 @@ def upload_to_DB(data):
 
     db.close()
 
+
+def upload_distance_to_DB(data):
+
+    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
+    cursor = db.cursor()
+
+    current_time = datetime.now()
+    print data
+
+    data_distance_sql = "INSERT INTO log(machineNum, seqno, current_state, amount, sub_state1, sub_state2, sub_state3, sub_state4, sub_state5, \
+    distance1, distance2, distance3, distance4, distance5, datetime)\
+     VALUES ('%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s', '%s')" \
+    %(machineNum, int(data[current_distance_map['SEQNO']]), state_map[current_state], int(data[current_distance_map['AMOUNT_COUNTER']]),\
+    state_map[int(data[current_distance_map['SUB_STATE1']])], state_map[int(data[current_distance_map['SUB_STATE2']])], state_map[int(data[current_distance_map['SUB_STATE3']])], state_map[int(data[current_distance_map['SUB_STATE4']])], state_map[int(data[current_distance_map['SUB_STATE5']])], \
+    data[current_distance_map['DISTANCE1']], data[current_distance_map['DISTANCE2']], data[current_distance_map['DISTANCE3']], data[current_distance_map['DISTANCE4']], data[current_distance_map['DISTANCE5']], \
+    current_time)
+    
+
+    try:
+        cursor.execute(data_distance_sql)
+        db.commit()
+        print "success"
+    except:
+        #db.rollback()
+        print 'data insert db fail !!'
+
+    db.close()
+
+def upload_v_a_to_DB(data):
+
+    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
+    cursor = db.cursor()
+
+    current_time = datetime.now()
+    print data
+
+   
+    data_v_sql = "INSERT INTO log(machineNum, seqno, current_state, temp_v1, temp_v2, temp_v3, temp_v4, temp_v5, total_v1, total_v2, total_v3, total_v4, total_v5,\
+     temp_a1, temp_a2, temp_a3, temp_a4, temp_a5, total_a1, total_a2, total_a3, total_a4, total_a5, datetime)\
+     VALUES ('%s', '%d', '%s',  '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s','%s')" \
+    %(machineNum, int(data[current_v_a_map['SEQNO']]), state_map[current_state], \
+    data[current_v_a_map['TEMP_V1']], data[current_v_a_map['TEMP_V2']], data[current_v_a_map['TEMP_V3']], data[current_v_a_map['TEMP_V4']], data[current_v_a_map['TEMP_V5']],\
+    data[current_v_a_map['TOTAL_V1']], data[current_v_a_map['TOTAL_V2']], data[current_v_a_map['TOTAL_V3']], data[current_v_a_map['TOTAL_V4']], data[current_v_a_map['TOTAL_V5']],\
+    data[current_v_a_map['TEMP_A1']], data[current_v_a_map['TEMP_A2']], data[current_v_a_map['TEMP_A3']], data[current_v_a_map['TEMP_A4']], data[current_v_a_map['TEMP_A5']],\
+    data[current_v_a_map['TOTAL_A1']], data[current_v_a_map['TOTAL_A2']], data[current_v_a_map['TOTAL_A3']], data[current_v_a_map['TOTAL_A4']], data[current_v_a_map['TOTAL_A5']],current_time)
+
+    try:
+        cursor.execute(data_v_sql)
+        db.commit()
+        print "success"
+    except:
+        #db.rollback()
+        print 'data insert db fail !!'
+
+    db.close()
+
 def reset_value():
-    start_time = ''
-    pvt_time = ''
-    mp_time = ''
-    end_time = ''
+    global start_time
+    global pvt_time
+    global mp_time
+    global end_time
+    global temp_amount
+    global current_state
+      
+    print "reset value"
+    start_time = None
+    pvt_time = None
+    mp_time = None
+    end_time = None
     temp_amount=0
+    current_state = 0
+    reset_DB_current_table()
 
 
-def check_state(data, amount):
-    if current_state != data:
-      if data> current_state:
-        current_state = data
-        update_state()
-      elif data == 3 : #MP_STATE
-        temp_amount = amount
-      elif data==0:
-        current_state=data
-        update_history_state(amount)
-        reset_value()
+def update_time(state):
+    global start_time
+    global pvt_time
+    global mp_time
+    global end_time
+    global temp_amount
+
+    print "update time"
+
+    if state == 1:
+      start_time = datetime.now()
+      print start_time
+    elif state == 2:
+      pvt_time = datetime.now()
+      print pvt_time
+    elif state == 3:
+      mp_time = datetime.now()
+      print mp_time
+    elif state == 4:
+      end_time = datetime.now()
+      print end_time
+
+
+def check_state(state, amount):
+    global current_state
+    global temp_amount
+
+    if current_state == 0 and state ==4:
+      pass
+    
+    elif current_state != state:
+      update_time(state)
+
+      if state > current_state:
+        current_state = state
+        update_state_to_DB(state)
+        if state == 3 : #MP_STATE
+          temp_amount = amount
+        elif state==4:
+          update_history_state_to_DB(amount)
+          reset_value()
+
 
 def threadWork(client):
     global hasCommand
@@ -264,18 +418,26 @@ while True:
         split_data = data.split()
         print "len ",format(len(split_data))
 
-        if len(split_data)==27 and split_data[current_table_map['DATA_LEN']] == '50':
-            print "split_data "
-            checkIsNewNode(split_data[key_map['NODE_ID']])
-      #       # print 'split_data={0}, s0={1}, s3={2}'.format(split_data, split_data[key_map['DATA_LEN']], split_data[key_map['NODE_ID']])
-            upload_to_DB(split_data)
-            check_state(split_data[current_table_map['CURRENT_STATE']], split_data[current_table_map['AMOUNT_COUNTER']])
+        checkIsNewNode(split_data[current_table_map['NODE_ID']])
 
-      #   elif len(split_data)==5 and split_data[ack_map['DATA_LEN']] == '4':
-      #       print 'get ack'
-      #       revCommand(split_data[ack_map['NODE_ID']], split_data[ack_map['COMMAND_ID']])
-        # else:
-          # pass
+        if len(split_data)==17 and split_data[current_table_map['DATA_LEN']] == '30': #distance and substate
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]))
+
+            upload_distance_to_DB(split_data)
+            
+        elif len(split_data)==24 and split_data[current_table_map['DATA_LEN']] == '44':
+            upload_v_a_to_DB(split_data)
+        
+        elif len(split_data)==37 and split_data[current_table_map['DATA_LEN']] == '70':
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]))
+
+            upload_data_to_DB(split_data)
+
+        elif len(split_data)==4 and split_data[ack_map['DATA_LEN']] == '6':
+            print 'get ack'
+            revCommand(split_data[ack_map['NODE_ID']], split_data[ack_map['COMMAND_ID']])
+        else:
+          pass
       except:
         pass
 
