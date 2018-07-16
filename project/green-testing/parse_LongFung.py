@@ -51,6 +51,34 @@ ack_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'COMMAND_ID':2 ,'COMMAND_TYPE'
 
 ask_command_map = OrderedDict({'SW':0, 'COMMAND_TYPE':1, 'MAC':2 ,'COMMAND_ID':3, 'EW':4})
 
+def update_t3_table(machineNum, name, value):
+  
+    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
+    cursor = db.cursor()
+
+    current_time = datetime.now()
+
+    t3_table_qury = "SELECT COUNT(*) From T3_table WHERE name='%s' AND machine='%s' "%(name, machineNum)
+
+    t3_table_update = "UPDATE T3_table SET value='%s', datetime='%s' where name='%s' AND machine='%s'" %(value, current_time, name, machineNum)
+
+    t3_table_insert = "INSERT INTO T3_table(machine, name, value, datetime) VALUES('%s', '%s', '%s', '%s')" %(machineNum, name, value, current_time)
+    try:
+        print "try update_t3_table"
+        cursor.execute(t3_table_qury)
+        result = cursor.fetchone()
+
+        if result[0] == 0:
+          cursor.execute(t3_table_insert)
+          print "try t3_table_insert sql success"
+        else:
+          cursor.execute(t3_table_update)
+          print "try t3_table_update sql success"
+
+        db.commit()
+    except:
+        print "update_t3_table fail"
+    db.close()
 
 def update_history_state_to_DB(amount):
 
@@ -94,7 +122,7 @@ def update_state_to_DB(state):
     state_update_sql = "UPDATE itri_current_state SET %s='%s' WHERE ID=1" %(state_map[state], current_time)
 
     # t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s')" %("A18_status", state_map[state], current_time)
-    t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18_status", state_map[state], current_time, state_map[state], current_time)
+    # t3_update_sql = "INSERT INTO T3_table(machineNum ,name, value, datetime) VALUES('%s', %s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18", "status", state_map[state], current_time, state_map[state], current_time)
 
     try:
         print "check update_state_to_DB"
@@ -112,13 +140,13 @@ def update_state_to_DB(state):
           cursor.execute(state_update_sql)
           print "state_update_sql success!\n"
         
-
-        cursor.execute(t3_update_sql)
+        # cursor.execute(t3_update_sql)
         db.commit()
         print "t3_update_sql success update_state_to_DB!\n"
     except:
         print "update current_state table fail"
     db.close()
+    update_t3_table("A18", "Status", state)
 
 def reset_DB_current_table():
 
@@ -156,19 +184,20 @@ def upload_data_to_DB(data):
     data[current_table_map['TEMP_A1']], data[current_table_map['TEMP_A2']], data[current_table_map['TEMP_A3']], data[current_table_map['TEMP_A4']], data[current_table_map['TEMP_A5']],\
     data[current_table_map['TOTAL_A1']], data[current_table_map['TOTAL_A2']], data[current_table_map['TOTAL_A3']], data[current_table_map['TOTAL_A4']], data[current_table_map['TOTAL_A5']],current_time)
 
-    t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18_amount", data[current_table_map['AMOUNT_COUNTER']], current_time, data[current_table_map['AMOUNT_COUNTER']], current_time)
+    # t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18_amount", data[current_table_map['AMOUNT_COUNTER']], current_time, data[current_table_map['AMOUNT_COUNTER']], current_time)
 
     try:
         cursor.execute(data_sql)
         print "data_sql success"
-        cursor.execute(t3_update_sql)
-        print "t3_update_sql success"
+        # cursor.execute(t3_update_sql)
+        # print "t3_update_sql success"
         db.commit()
     except:
         #db.rollback()
         print 'data insert db fail !!'
 
     db.close()
+    update_t3_table("A18", "Product_Amount", data[current_table_map['AMOUNT_COUNTER']])
 
 
 def upload_distance_to_DB(data):
