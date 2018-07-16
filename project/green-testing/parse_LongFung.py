@@ -89,26 +89,33 @@ def update_state_to_DB(state):
 
     check_table_sql = "SELECT COUNT(*) FROM `itri_current_state` WHERE 1"
 
-    state_insert_sql = "INSERT INTO itri_current_state(SOL_STATE, machineNum, ID) VALUES('%s', '%s', '%d')" %(start_time, machineNum, 1)
+    state_insert_sql = "INSERT INTO itri_current_state(SOL_STATE, machineNum, ID) VALUES('%s', '%s', '%d')" %(current_time, machineNum, 1)
     
     state_update_sql = "UPDATE itri_current_state SET %s='%s' WHERE ID=1" %(state_map[state], current_time)
 
-    t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s')" %("state", state_map[state], current_time)
+    # t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s')" %("A18_status", state_map[state], current_time)
+    t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18_status", state_map[state], current_time, state_map[state], current_time)
+
     try:
-        print "check"
+        print "check update_state_to_DB"
         cursor.execute(check_table_sql)
         num = cursor.fetchone()
         print num[0]
 
         # add new row in table
-        if num[0]==0:  
+        if num[0]==0:
+          print "state_insert_sql!\n"  
           cursor.execute(state_insert_sql)
-
+          print "state_insert_sql success!\n"
         # update exists row
         else:
           cursor.execute(state_update_sql)
-          cursor.execute(t3_update_sql)
+          print "state_update_sql success!\n"
+        
+
+        cursor.execute(t3_update_sql)
         db.commit()
+        print "t3_update_sql success update_state_to_DB!\n"
     except:
         print "update current_state table fail"
     db.close()
@@ -149,10 +156,14 @@ def upload_data_to_DB(data):
     data[current_table_map['TEMP_A1']], data[current_table_map['TEMP_A2']], data[current_table_map['TEMP_A3']], data[current_table_map['TEMP_A4']], data[current_table_map['TEMP_A5']],\
     data[current_table_map['TOTAL_A1']], data[current_table_map['TOTAL_A2']], data[current_table_map['TOTAL_A3']], data[current_table_map['TOTAL_A4']], data[current_table_map['TOTAL_A5']],current_time)
 
+    t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18_amount", data[current_table_map['AMOUNT_COUNTER']], current_time, data[current_table_map['AMOUNT_COUNTER']], current_time)
+
     try:
         cursor.execute(data_sql)
+        print "data_sql success"
+        cursor.execute(t3_update_sql)
+        print "t3_update_sql success"
         db.commit()
-        print "success"
     except:
         #db.rollback()
         print 'data insert db fail !!'

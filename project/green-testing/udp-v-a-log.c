@@ -80,12 +80,14 @@ static int ack_flag = 0;
 static char* command_data;
 
 #define ACK_PERIOD 1
-#define PERIOD 2
+#define PERIOD 1
 #define BUFFSIZE 5
 
 #define DEFAULT_DISTANCE 1000
-#define DISTANCE_THRESHOLD 650
+#define ERROR_DISTANCE  3333
+#define DISTANCE_THRESHOLD 30
 #define DISTANCE_ERROR 5
+#define DEFAULT_v_a 1000
 
 static int send_period = PERIOD;
 
@@ -414,6 +416,7 @@ void reset_values()
   buff_counter = 0;
 
   last_distance = DEFAULT_DISTANCE;
+  minimun_distance = DEFAULT_DISTANCE;
 
   // collect_common_set_send_active(0);
   TSCH_ASN_INIT(start_time, 0, 0);
@@ -486,8 +489,8 @@ void change_state_send(uint16_t state)
 /*---------------------------------------------------------------------------*/
 void check_v_value()
 {
-  uint16_t current_total_v =500;
-  uint16_t current_tempature_v = 250;
+  uint16_t current_total_v =DEFAULT_v_a;
+  uint16_t current_tempature_v = DEFAULT_v_a;
 
   uint8_t rv = modbus_read_register(2, MODBUS_RD_HOLD_REG, 0x0135, 1);
   if(rv == 0) {
@@ -495,47 +498,47 @@ void check_v_value()
     // printf("Success state after sending modbus packet\n\r");
     // printf("Value read form %d: 0x%x = %d \n\r", 2, 0x0135, current_total_v);
   } else {
-    printf("Error state after sending modbus packet: %d\n\r", rv);
+    printf("Error state after sending modbus packet: %d\n", rv);
   }
 
-  rv = modbus_read_register(2, MODBUS_RD_HOLD_REG, 0x013D, 1);
+  rv = modbus_read_register(3, MODBUS_RD_HOLD_REG, 0x0135, 1);
   if(rv == 0) {
     current_tempature_v = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n\r");
-    // printf("Value read form %d: 0x%x = %d \n\r", 2, 0x013D, current_tempature_v);
+    // printf("Value read form %d: 0x%x = %d \n\r", 3, 0x0135, current_tempature_v);
   } else {
-    printf("Error state after sending modbus packet: %d\n\r", rv);
+    printf("Error state after sending modbus packet: %d\n", rv);
   }
 
-  temperature_v_buff[buff_counter]=current_tempature_v+buff_counter;
-  total_v_buff[buff_counter]=current_total_v+buff_counter;
+  temperature_v_buff[buff_counter]=current_tempature_v;
+  total_v_buff[buff_counter]=current_total_v;
 }
 /*---------------------------------------------------------------------------*/
 void check_a_value()
 {
-  uint16_t current_total_a =500;
-  uint16_t current_tempature_a = 250;
+  uint16_t current_total_a =DEFAULT_v_a;
+  uint16_t current_tempature_a = DEFAULT_v_a;
 
-  uint8_t rv = modbus_read_register(2, MODBUS_RD_HOLD_REG, 0x0135, 1);
+  uint8_t rv = modbus_read_register(2, MODBUS_RD_HOLD_REG, 0x013D, 1);
   if(rv == 0) {
     current_total_a = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n\r");
-    // printf("Value read form %d: 0x%x = %d \n\r", 2, 0x0135, current_total_a);
+    // printf("Value read form %d: 0x%x = %d \n\r", 2, 0x013D, current_total_a);
   } else {
     printf("Error state after sending modbus packet: %d\n", rv);
   }
 
-  rv = modbus_read_register(2, MODBUS_RD_HOLD_REG, 0x013D, 1);
+  rv = modbus_read_register(3, MODBUS_RD_HOLD_REG, 0x013D, 1);
   if(rv == 0) {
     current_tempature_a = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n");
-    // printf("Value read form %d: 0x%x = %d \n\r", 2, 0x013D, current_tempature_a);
+    // printf("Value read form %d: 0x%x = %d \n\r", 3, 0x013D, current_tempature_a);
   } else {
     printf("Error state after sending modbus packet: %d\n", rv);
   }
 
-  temperature_a_buff[buff_counter]=current_tempature_a+buff_counter;
-  total_a_buff[buff_counter]=current_total_a+buff_counter;
+  temperature_a_buff[buff_counter]=current_tempature_a;
+  total_a_buff[buff_counter]=current_total_a;
 }
 /*---------------------------------------------------------------------------*/
 void check_distance_value()
@@ -545,14 +548,14 @@ void check_distance_value()
   uint8_t rv = modbus_read_register(1, MODBUS_RD_HOLD_REG, 0x0082, 1);
   if(rv == 0) {
     current_distance = modbus_get_int(0);
-    // printf("Success state after sending modbus packet\n\r");
-    // printf("Value read form %d: 0x%x = %d \n\r", 1, 0x0082, current_distance);
+    // printf("Success state after sending modbus packet\n");
+    printf("Value read form %d: 0x%x = %d \n", 1, 0x0082, current_distance);
   } else {
-    printf("Error state after sending modbus packet: %d\n\r", rv);
-    current_distance=1000;
+    printf("Error state after sending modbus packet: %d\n", rv);
+    current_distance=ERROR_DISTANCE;
   }
 
-  if((last_distance-current_distance)>DISTANCE_ERROR) //current < last
+  if((last_distance-current_distance)>DISTANCE_THRESHOLD) //current < last
   {
     sub_state = START_CLOSE;
     if(current_distance< minimun_distance)
@@ -565,12 +568,12 @@ void check_distance_value()
     printf("last_distance == current_distance\n");
     sub_state=CLOSE;
     close_time=get_timesynch_time();
-    if(current_state==SOL_STATE)
-    {
-      send_state =  PVT_STATE;
-      printf("send_state change to PVT_STATE\n");
-    }
-  }else if((current_distance-last_distance)>DISTANCE_ERROR && sub_state == CLOSE )
+    // if(current_state==SOL_STATE)
+    // {
+    send_state =  PVT_STATE;
+    printf("send_state change to PVT_STATE\n");
+    // }
+  }else if((current_distance-minimun_distance)>DISTANCE_THRESHOLD && sub_state == CLOSE )
   {
     open_time=get_timesynch_time();
     sub_state=START_OPEN;
@@ -593,10 +596,12 @@ void check_distance_value()
     }
     last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
   }
-  last_distance = current_distance;
+  if(rv ==0){
+    last_distance = current_distance;
+  }
   sub_state_buff[buff_counter] = sub_state;
   distance_buff[buff_counter] = current_distance;
-  printf("sub_state %u distance_buff %u \n", sub_state, current_distance);
+  // printf("sub_state %u distance_buff %u \n", sub_state, current_distance);
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -630,7 +635,7 @@ check_photoelectric_sensors()
       printf("up, out \n");
       sensor_upper_time=0;
       sensor_downer_time=0;
-      reset_values();
+      // reset_values();
     }
   }
   // }
