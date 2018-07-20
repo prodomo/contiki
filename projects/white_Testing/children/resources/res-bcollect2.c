@@ -78,37 +78,54 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
    */
 
 
-  struct 
-  {
-    uint8_t flag[2];
-    uint32_t start_asn;
-    // padding 2 uint16_t
-    uint32_t end_asn;
-    uint32_t event_counter;
-    uint8_t event_threshold;
-    // padding 3
-    uint32_t event_threshold_last_change;
-    uint32_t packet_counter;
-    unsigned char parent_address[2];
-    uint16_t rank;
-    uint16_t parnet_link_etx;
-    int16_t parent_link_rssi;
-    uint8_t end_flag[2];
-  } message;
+    struct 
+      {
+        // 32bits to 1 block
+        uint8_t flag[2];  // 0 1
+        uint8_t priority; // 2
+        int8_t gasAlarm; // 3
+        // Done padding int8_t // null
+        uint32_t start_asn; // 4 5 6 7
+        uint32_t end_asn; // 8 9 10 11
+        uint32_t event_counter; // 12 13 14 15
+        uint8_t event_threshold; // 16
+        // padding 3 int8_t and int16_t // 17, 18, 19
+        uint32_t event_threshold_last_change; // 20, 21, 22, 23
+        uint32_t packet_counter; // 24, 25, 26, 27
+        unsigned char parent_address[2]; // uint8[0] , uint8[1] 28,29
+        uint16_t rank; // 30, 31
+        uint16_t parnet_link_etx; //32, 33
+        int16_t parent_link_rssi; // 34, 35
+        int16_t gasValue; // 36, 37
+        //int8_t gasAlarm; // X
+        int16_t temperature; // 38, 39
+        int16_t humidity; // 40, 41
+        uint8_t end_flag[2]; // 42, 43
+        // Done padding int16_t //X null
+        // total size = 44
+      } message;
+      memset(&message, 0, sizeof(message));
 
-  memset(&message, 0, sizeof(message));
+      message.flag[0] = 0x54;
+      message.flag[1] = 0x66;
+      message.end_flag[0] = 0xf0;
+      message.end_flag[1] = 0xff;
 
-  message.flag[0] = 0x54;
-  message.flag[1] = 0x66;
-  message.end_flag[0] = 0xf0;
-  message.end_flag[1] = 0xff;
+      message.event_counter = event_counter;
+      message.event_threshold = event_threshold;
+      message.event_threshold_last_change = event_threshold_last_change;
+      message.packet_counter = packet_counter;
 
-  message.event_counter = event_counter;
-  message.event_threshold = event_threshold;
-  message.event_threshold_last_change = event_threshold_last_change;
-  message.packet_counter = packet_counter;
+      message.start_asn = tsch_current_asn.ls4b;
 
-  message.start_asn = tsch_current_asn.ls4b;
+      // for CPS enviorment Data.
+      message.gasValue = 20;
+      message.gasAlarm =  0;
+      message.temperature = 3885;
+      message.humidity = 5566;
+
+      // for priority
+      message.priority = packet_priority;
 
   uint8_t packet_length = 0;
   rpl_dag_t *dag;
