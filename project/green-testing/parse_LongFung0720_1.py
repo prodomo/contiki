@@ -55,10 +55,7 @@ ack_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'COMMAND_ID':2 ,'COMMAND_TYPE'
 
 ask_command_map = OrderedDict({'SW':0, 'COMMAND_TYPE':1, 'MAC':2 ,'COMMAND_ID':3, 'EW':4})
 
-def update_gpio_log(data):
-
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
+def update_gpio_log(data, db, cursor):
 
     current_time = datetime.now()
 
@@ -73,10 +70,7 @@ def update_gpio_log(data):
         print "update_gpio_log fail"
     db.close()
 
-def update_t3_table(machineNum, name, value):
-  
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
+def update_t3_table(machineNum, name, value, db, cursor):
 
     current_time = datetime.now()
 
@@ -103,7 +97,7 @@ def update_t3_table(machineNum, name, value):
         print "update_t3_table fail"
     db.close()
 
-def update_history_state_to_DB(amount):
+def update_history_state_to_DB(amount, db, cursor):
 
     print "update_history_state"
 
@@ -112,9 +106,6 @@ def update_history_state_to_DB(amount):
     global mp_time
     global end_time
     global temp_amount
-
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
 
     state_history_sql = "INSERT INTO itri_history_state(machineNum, SOL_STATE, PVT_STATE, MP_STATE, EOL_STATE, PVT_amount, Total_amount)\
      VALUES('%s', '%s', '%s', '%s', '%s', '%d', '%d')" %(machineNum, start_time, pvt_time, mp_time, end_time, temp_amount, amount)
@@ -127,14 +118,12 @@ def update_history_state_to_DB(amount):
         print "update history_state table fail"
     db.close()
 
-def update_state_to_DB(state):
+def update_state_to_DB(state, db, cursor):
 
     global start_time
 
     print "update_state"
-
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
+    
 
     current_time = datetime.now()
 
@@ -168,13 +157,10 @@ def update_state_to_DB(state):
         print "t3_update_sql success update_state_to_DB!\n"
     except:
         print "update current_state table fail"
-    db.close()
-    update_t3_table("A18", "Status", state)
+    # db.close()
+    update_t3_table("A18", "Status", state, db, cursor)
 
-def reset_DB_current_table():
-
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
+def reset_DB_current_table(db, cursor):
 
     state_reset_sql ="UPDATE itri_current_state set SOL_STATE=NULL, PVT_STATE=NULL, MP_STATE=NULL, EOL_STATE=NULL where ID=1"
 
@@ -187,10 +173,7 @@ def reset_DB_current_table():
     db.close()
 
 
-def upload_data_to_DB(data):
-
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
+def upload_data_to_DB(data, db, cursor):
 
     current_time = datetime.now()
     print data
@@ -219,14 +202,11 @@ def upload_data_to_DB(data):
         #db.rollback()
         print 'data insert db fail !!'
 
-    db.close()
-    update_t3_table("A18", "Product_Amount", data[current_table_map['AMOUNT_COUNTER']])
+    # db.close()
+    update_t3_table("A18", "Product_Amount", data[current_table_map['AMOUNT_COUNTER']], db, cursor)
 
 
-def upload_distance_to_DB(data):
-
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
+def upload_distance_to_DB(data, db, cursor):
 
     current_time = datetime.now()
     print data
@@ -250,14 +230,10 @@ def upload_distance_to_DB(data):
 
     db.close()
 
-def upload_v_a_to_DB(data):
-
-    db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
-    cursor = db.cursor()
+def upload_v_a_to_DB(data, db, cursor):
 
     current_time = datetime.now()
     print data
-
    
     data_v_sql = "INSERT INTO log(machineNum, seqno, current_state, temp_v1, temp_v2, temp_v3, temp_v4, temp_v5, total_v1, total_v2, total_v3, total_v4, total_v5,\
      temp_a1, temp_a2, temp_a3, temp_a4, temp_a5, total_a1, total_a2, total_a3, total_a4, total_a5, datetime)\
@@ -278,7 +254,7 @@ def upload_v_a_to_DB(data):
 
     db.close()
 
-def reset_value():
+def reset_value(db, cursor):
     global start_time
     global pvt_time
     global mp_time
@@ -293,7 +269,7 @@ def reset_value():
     end_time = None
     temp_amount=0
     current_state = 0
-    reset_DB_current_table()
+    reset_DB_current_table(db, cursor)
 
 
 def update_time(state):
@@ -319,7 +295,7 @@ def update_time(state):
       print end_time
 
 
-def check_state(state, amount):
+def check_state(state, amount, db, cursor):
     global current_state
     global temp_amount
 
@@ -331,12 +307,12 @@ def check_state(state, amount):
 
       if state > current_state:
         current_state = state
-        update_state_to_DB(state)
+        update_state_to_DB(state, db, cursor)
         if state == 3 : #MP_STATE
           temp_amount = amount
         elif state==4:
-          update_history_state_to_DB(amount)
-          reset_value()
+          update_history_state_to_DB(amount, db, cursor)
+          reset_value(db, cursor)
 
 
 def threadWork(client):
@@ -484,18 +460,29 @@ while True:
 
         checkIsNewNode(split_data[current_table_map['NODE_ID']])
 
-        if len(split_data)==17 and split_data[current_table_map['DATA_LEN']] == '30': #distance and substate
-            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]))
+        try:
+          db = MySQLdb.connect("192.168.2.18","root","sakimaru","ITRI_LongFung", connect_timeout=2)
+          cursor = db.cursor()
+          print "connect to 192.168.2.18"
+        except:
+          db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
+          cursor = db.cursor()
+          print "connect to 127.0.0.1"
 
-            upload_distance_to_DB(split_data)
+
+
+        if len(split_data)==17 and split_data[current_table_map['DATA_LEN']] == '30': #distance and substate
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]), db, cursor)
+
+            upload_distance_to_DB(split_data, db, cursor)
             
         elif len(split_data)==24 and split_data[current_table_map['DATA_LEN']] == '44':
-            upload_v_a_to_DB(split_data)
+            upload_v_a_to_DB(split_data, db, cursor)
         
         elif len(split_data)==37 and split_data[current_table_map['DATA_LEN']] == '70':
-            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]))
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]), db, cursor)
 
-            upload_data_to_DB(split_data)
+            upload_data_to_DB(split_data, db, cursor)
 
         elif len(split_data)==4 and split_data[ack_map['DATA_LEN']] == '6':
             print 'get ack'
@@ -503,9 +490,11 @@ while True:
         
         elif len(split_data)==14:
             print 'gpio log'
-            update_gpio_log(split_data)
+            update_gpio_log(split_data, db, cursor)
         else:
           pass
+
+        db.close()
       except:
         pass
 

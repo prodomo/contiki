@@ -1,0 +1,6 @@
+IF (SELECT * From T3_talbe WHERE name='status' AND machineNum='A18') THEN
+	BEGIN;
+	UPDATE T3_table SET value='11' where name='status' AND machineNum='A18';
+    END;
+ELSE
+	BEGIN;

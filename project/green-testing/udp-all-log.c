@@ -84,19 +84,20 @@ static char* command_data;
 #define BUFFSIZE 5
 
 #define DEFAULT_DISTANCE 1000
-#define ERROR_DISTANCE  3333
-#define DISTANCE_THRESHOLD 30
-#define DISTANCE_ERROR 5
+#define MODBUS_NOTREAD  9999
+#define DISTANCE_THRESHOLD 5
+#define DISTANCE_ERROR 3
 
-#define DEFAULT_v_a 1000
 
 static int send_period = PERIOD;
+static int distance_threshold = DISTANCE_THRESHOLD;
 
 struct tsch_asn_t start_time, end_time, open_time, close_time;
 rtimer_clock_t sensor_upper_time=0, sensor_downer_time =0;
 
 static uint16_t last_distance = DEFAULT_DISTANCE;
 static uint16_t minimun_distance = DEFAULT_DISTANCE;
+static uint16_t maximun_distance = 0;
 static uint16_t command_id=0;
 static int conf_flag=0;
 
@@ -107,6 +108,7 @@ static uint16_t counter = 0;                  //Order counter
 static int32_t last_asn_diff;
 static int same_counter = 0;                  //asn_diff same counter
 static int buff_counter=0;
+static int gpio_counter=0;
 
 static uint16_t distance_buff[BUFFSIZE];
 static uint16_t sub_state_buff[BUFFSIZE];
@@ -114,6 +116,8 @@ static uint16_t temperature_v_buff[BUFFSIZE];
 static uint16_t total_v_buff[BUFFSIZE];
 static uint16_t temperature_a_buff[BUFFSIZE];
 static uint16_t total_a_buff[BUFFSIZE];
+static struct gpio_log gpio_buff[BUFFSIZE];
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -367,6 +371,11 @@ set_send_rate(uint8_t value)
 {
   send_period = value;
 }
+
+void set_distance_threshold(uint8_t value)
+{
+  distance_threshold = value;
+}
 /*---------------------------------------------------------------------------*/
 void setting_value(struct setting_msg msg)
 {
@@ -392,6 +401,10 @@ void setting_value(struct setting_msg msg)
       
       case SNR_TLE_ROTAT_SPEED:
         printf("changing rotation speed threshold\n");
+        break;
+      case SNR_TLE_DISTANCE:
+        set_distance_threshold(msg.value);
+        printf("changing distance threshold\n");
         break;
       }
   }
@@ -488,18 +501,59 @@ void change_state_send(uint16_t state)
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 }
 /*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
+void
+gpio_log_send()
+{
+  // printf("generate ack packet\n");
+  struct data
+  {
+    uint16_t command_id;
+    uint16_t command_type;
+    struct gpio_log gpio_send[BUFFSIZE];
+  };
+
+  static uint16_t seqno;
+  struct data data;
+
+  if(client_conn == NULL) {
+    /* Not setup yet */
+    return;
+  }
+  memset(&data, 0, sizeof(data));
+  
+  seqno++;
+  data.command_type= CMD_TYPE_DATA;  //0
+  data.command_id = seqno;
+  for(int i=0; i<BUFFSIZE; i++)
+  {
+    data.gpio_send[i].state=gpio_buff[i].state;
+    data.gpio_send[i].gpio=gpio_buff[i].gpio;
+  }
+
+  // printf("sizeof(ack) %d\n", sizeof(ack));
+  // printf("data: %u %u %u\n", ack.command_type, ack.command_id, ack.is_received);
+
+  uip_udp_packet_sendto(client_conn, &data, sizeof(data),
+                        &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
+
+
+}
+/*---------------------------------------------------------------------------*/
+
+
 void check_v_value()
 {
-  uint16_t current_total_v = DEFAULT_v_a;
-  uint16_t current_tempature_v = DEFAULT_v_a;
+  uint16_t current_total_v = MODBUS_NOTREAD;
+  uint16_t current_tempature_v = MODBUS_NOTREAD;
 
   uint8_t rv = modbus_read_register(2, MODBUS_RD_HOLD_REG, 0x0135, 1);
   if(rv == 0) {
     current_total_v = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n\r");
     printf("Value read form %d: 0x%x = %d \n", 2, 0x0135, current_total_v);
-  } else {
-    printf("Error state after sending modbus packet: %d\n", rv);
+  // } else {
+    // printf("Error state after sending modbus packet: %d\n", rv);
   }
 
   rv = modbus_read_register(3, MODBUS_RD_HOLD_REG, 0x0135, 1);
@@ -507,8 +561,8 @@ void check_v_value()
     current_tempature_v = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n\r");
     printf("Value read form %d: 0x%x = %d \n", 3, 0x0135, current_tempature_v);
-  } else {
-    printf("Error state after sending modbus packet: %d\n", rv);
+  // } else {
+    // printf("Error state after sending modbus packet: %d\n", rv);
   }
 
   total_v_buff[buff_counter]=current_total_v;
@@ -517,16 +571,16 @@ void check_v_value()
 /*---------------------------------------------------------------------------*/
 void check_a_value()
 {
-  uint16_t current_total_a = DEFAULT_v_a;
-  uint16_t current_tempature_a = DEFAULT_v_a;
+  uint16_t current_total_a = MODBUS_NOTREAD;
+  uint16_t current_tempature_a = MODBUS_NOTREAD;
 
   uint8_t rv = modbus_read_register(2, MODBUS_RD_HOLD_REG, 0x013D, 1);
   if(rv == 0) {
     current_total_a = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n\r");
     printf("Value read form %d: 0x%x = %d \n", 2, 0x013D, current_total_a);
-  } else {
-    printf("Error state after sending modbus packet: %d\n", rv);
+  // } else {
+    // printf("Error state after sending modbus packet: %d\n", rv);
   }
 
   rv = modbus_read_register(3, MODBUS_RD_HOLD_REG, 0x013D, 1);
@@ -534,8 +588,8 @@ void check_a_value()
     current_tempature_a = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n\r");
     printf("Value read form %d: 0x%x = %d \n", 3, 0x013D, current_tempature_a);
-  } else {
-    printf("Error state after sending modbus packet: %d\n", rv);
+  // } else {
+    // printf("Error state after sending modbus packet: %d\n", rv);
   }
 
   total_a_buff[buff_counter]=current_total_a;
@@ -551,55 +605,58 @@ void check_distance_value()
     current_distance = modbus_get_int(0);
     // printf("Success state after sending modbus packet\n");
     printf("Value read form %d: 0x%x = %d \n", 1, 0x0082, current_distance);
+    
+    if(last_distance != DEFAULT_DISTANCE)
+    {
+      if((last_distance-current_distance)>=distance_threshold) //current < last
+      {
+        sub_state = START_CLOSE;
+        send_state =  PVT_STATE;
+        printf("send_state change to PVT_STATE\n");
+        close_time=get_timesynch_time();
+        if(current_distance< minimun_distance)
+        {
+          minimun_distance = current_distance;
+        }
+      }
+      else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_CLOSE)
+      {
+        printf("last_distance == current_distance\n");
+        sub_state=CLOSE;
+        close_time=get_timesynch_time();
+      }
+      else if((current_distance-minimun_distance)>=distance_threshold && sub_state<START_OPEN)
+      {
+        open_time=get_timesynch_time();
+        sub_state=START_OPEN;
+        if(last_asn_diff == TSCH_ASN_DIFF(open_time,close_time))
+        {
+          same_counter++;
+        }
+        else
+        {
+          same_counter=0;
+        }
+        amount_counter++;
+        last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
+      }
+      else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_OPEN )
+      {
+        sub_state=OPEN;
+        if(same_counter>2)
+        {
+          send_state = MP_STATE;
+        }
+        maximun_distance = current_distance;
+      }
+    }
+    last_distance = current_distance;
+
   } else {
-    printf("Error state after sending modbus packet: %d\n", rv);
-    current_distance=ERROR_DISTANCE;
+    // printf("Error state after sending modbus packet: %d\n", rv);
+    current_distance=MODBUS_NOTREAD;
   }
 
-  if((last_distance-current_distance)>DISTANCE_THRESHOLD) //current < last
-  {
-    sub_state = START_CLOSE;
-    if(current_distance< minimun_distance)
-    {
-      minimun_distance = current_distance;
-    }
-  }
-  else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_CLOSE)
-  {
-    printf("last_distance == current_distance\n");
-    sub_state=CLOSE;
-    close_time=get_timesynch_time();
-    // if(current_state==SOL_STATE)
-    // {
-    send_state =  PVT_STATE;
-    printf("send_state change to PVT_STATE\n");
-    // }
-  }else if((current_distance-minimun_distance)>DISTANCE_THRESHOLD && sub_state == CLOSE )
-  {
-    open_time=get_timesynch_time();
-    sub_state=START_OPEN;
-    if(last_asn_diff == TSCH_ASN_DIFF(open_time,close_time))
-    {
-      same_counter++;
-    }
-    else
-    {
-      same_counter=0;
-    }
-    amount_counter++;
-  }
-  else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_OPEN )
-  {
-    sub_state=OPEN;
-    if(same_counter>2)
-    {
-      send_state = MP_STATE;
-    }
-    last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
-  }
-  if(rv ==0){
-    last_distance = current_distance;
-  }
   sub_state_buff[buff_counter] = sub_state;
   distance_buff[buff_counter] = current_distance;
   // printf("sub_state %u distance_buff %u \n", sub_state, current_distance);
@@ -611,17 +668,21 @@ check_photoelectric_sensors()
   // send_state = SOL_STATE;
   printf("check sensor\n");
 
-  if(current_state == SOL_STATE || current_state == PVT_STATE)
+  if(current_state == SOL_STATE)
   {
     sensor_upper_time=0;
     sensor_downer_time=0;
   }
 
-  if(sensor_upper_time && sensor_downer_time)
+  printf("sensor_upper_time %u\n", sensor_upper_time);
+  printf("sensor_downer_time %u\n", sensor_downer_time);
+
+  if(sensor_upper_time!=0 && sensor_downer_time!=0)
   {
     if((int)(sensor_downer_time-sensor_upper_time)>0 && current_state==DEFAULT_STATE)
     {
       send_state = SOL_STATE;
+      printf("change send_state to SOL_STATE\n");
       // collect_common_set_send_active(1);
       start_time = get_timesynch_time();
       printf("down, in \n");
@@ -631,6 +692,7 @@ check_photoelectric_sensors()
     else if((int)(sensor_downer_time-sensor_upper_time)<0 && current_state==MP_STATE)
     {
       send_state = EOL_STATE;
+      printf("change send_state to EOL_STATE\n");
       // collect_common_set_send_active(1);
       end_time = get_timesynch_time();
       printf("up, out \n");
@@ -754,6 +816,12 @@ PROCESS_THREAD(udp_client_process, ev, data)
             reset_values();
           }
         }
+        if(gpio_counter >2)
+        {
+          gpio_log_send();
+          gpio_counter=0;
+          memset(&gpio_buff, 0, sizeof(struct gpio_log)*BUFFSIZE);
+        }
       }else if(data == &ack_timer && ack_flag)
         {
           printf("ack_timer timeup\n");
@@ -787,14 +855,25 @@ PROCESS_THREAD(udp_client_process, ev, data)
     }else if(ev == sensors_event){
       if(data == &sensor_num1) {
         printf("PC6\n"); //inner
+        printf("{sensor_upper_time-%u before} ", sensor_upper_time);
         sensor_upper_time = rtimer_arch_now();
         printf("{sensor_upper_time-%u} ", sensor_upper_time);
+
+        gpio_buff[gpio_counter].gpio=1;
         check_photoelectric_sensors();
+        gpio_buff[gpio_counter].state=send_state;
+        gpio_counter++;
+
       }if(data == &sensor_num2) {
         printf("Pc7\n"); //outer
+        printf("{sensor_downer_time-%u before} ", sensor_downer_time);
         sensor_downer_time = rtimer_arch_now();
         printf("{sensor_downer_time-%u} ", sensor_downer_time);
+
+        gpio_buff[gpio_counter].gpio=2;
         check_photoelectric_sensors();
+        gpio_buff[gpio_counter].state=send_state;
+        gpio_counter++;
       }
     }
   }

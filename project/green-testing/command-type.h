@@ -17,6 +17,7 @@
 #define SNR_TLE_TEMPERATURE 0x01
 #define SNR_TLE_ELE_CURRENT 0x02
 #define SNR_TLE_ROTAT_SPEED 0x03
+#define SNR_TLE_DISTANCE    0x04
 
 #define SNR_TLE_MODBUS_ADDR 0x11
 #define SNR_TLE_MODBUS_REG  0x12
@@ -47,6 +48,13 @@ struct setting_msg {
 	uint16_t setting_type;
 	uint16_t sensor_tittle;
 	uint16_t value;
+};
+
+struct  gpio_log
+{
+	uint16_t	gpio;
+	uint16_t	state;
+	
 };
 
 #endif
