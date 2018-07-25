@@ -19,6 +19,7 @@ current_state = 0
 order_num = "fakeNumber"
 machineNum = 18
 start_time = None
+pvt_time = None
 mp_time = None
 end_time = None
 temp_amount = 5
@@ -468,7 +469,6 @@ while True:
           db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
           cursor = db.cursor()
           print "connect to 127.0.0.1"
-
 
 
         if len(split_data)==17 and split_data[current_table_map['DATA_LEN']] == '30': #distance and substate

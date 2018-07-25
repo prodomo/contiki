@@ -683,7 +683,7 @@ check_photoelectric_sensors()
   // send_state = SOL_STATE;
   // printf("check sensor\n");
 
-  if(current_state == SOL_STATE)
+  if(send_state == SOL_STATE)
   {
     sensor_upper_time=0;
     sensor_downer_time=0;
@@ -694,7 +694,7 @@ check_photoelectric_sensors()
 
   if(sensor_upper_time!=0 && sensor_downer_time!=0)
   {
-    if((int)(sensor_downer_time-sensor_upper_time)>0 && current_state==DEFAULT_STATE)
+    if((int)(sensor_downer_time-sensor_upper_time)>0 && send_state==DEFAULT_STATE)
     {
       send_state = SOL_STATE;
       // printf("change send_state to SOL_STATE\n");
@@ -704,7 +704,7 @@ check_photoelectric_sensors()
       sensor_upper_time=0;
       sensor_downer_time=0;
     }
-    else if((int)(sensor_downer_time-sensor_upper_time)<0 && current_state==MP_STATE)
+    else if((int)(sensor_downer_time-sensor_upper_time)<0 && send_state==MP_STATE)
     {
       send_state = EOL_STATE;
       // printf("change send_state to EOL_STATE\n");
@@ -869,7 +869,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
       }
     }else if(ev == sensors_event){
       if(data == &sensor_num1) {
-        printf("PC6\n"); //inner
+        printf("PC6\n"); //upper inner
         sensor_upper_time = rtimer_arch_now();
 
         gpio_buff[gpio_counter].gpio=1;
@@ -878,7 +878,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
         gpio_counter++;
 
       }else if(data == &sensor_num2) {
-        printf("Pc7\n"); //outer
+        printf("Pc7\n"); //downer outer
         sensor_downer_time = rtimer_arch_now();
 
         gpio_buff[gpio_counter].gpio=2;
