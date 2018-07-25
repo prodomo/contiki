@@ -67,6 +67,7 @@
 #include "cfs-coffee-arch.h"
 #include "modbus-api.h"
 #include "dev/sensor-gpio.h"
+#include "dev/sensor-gpio2.h"
 // #include "dev/button-sensor.h"
 
 static struct uip_udp_conn *client_conn;

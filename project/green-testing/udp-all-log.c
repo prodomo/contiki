@@ -67,6 +67,7 @@
 #include "cfs-coffee-arch.h"
 #include "modbus-api.h"
 #include "dev/sensor-gpio.h"
+#include "dev/sensor-gpio2.h"
 // #include "dev/button-sensor.h"
 
 static struct uip_udp_conn *client_conn;
@@ -85,7 +86,7 @@ static char* command_data;
 
 #define DEFAULT_DISTANCE 1000
 #define MODBUS_NOTREAD  9999
-#define DISTANCE_THRESHOLD 5
+#define DISTANCE_THRESHOLD 10
 #define DISTANCE_ERROR 3
 
 
@@ -606,26 +607,33 @@ void check_distance_value()
     // printf("Success state after sending modbus packet\n");
     printf("Value read form %d: 0x%x = %d \n", 1, 0x0082, current_distance);
     
-    if(last_distance != DEFAULT_DISTANCE)
+    if(last_distance != DEFAULT_DISTANCE && current_distance!=0)
     {
-      if((last_distance-current_distance)>=distance_threshold) //current < last
+      // printf("last_distance-current_distance %d\n", last_distance-current_distance);
+      if((last_distance-current_distance) >= distance_threshold) //current < last
       {
         sub_state = START_CLOSE;
-        send_state =  PVT_STATE;
-        printf("send_state change to PVT_STATE\n");
+        
         close_time=get_timesynch_time();
+        
         if(current_distance< minimun_distance)
         {
           minimun_distance = current_distance;
         }
+        
+        if(send_state <= SOL_STATE)
+        {
+          send_state = PVT_STATE;
+          // printf("send_state change to PVT_STATE\n");
+        }
       }
       else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_CLOSE)
       {
-        printf("last_distance == current_distance\n");
+        // printf("last_distance == current_distance\n");
         sub_state=CLOSE;
         close_time=get_timesynch_time();
       }
-      else if((current_distance-minimun_distance)>=distance_threshold && sub_state<START_OPEN)
+      else if((current_distance-minimun_distance)>=distance_threshold && sub_state == CLOSE)
       {
         open_time=get_timesynch_time();
         sub_state=START_OPEN;
@@ -647,11 +655,18 @@ void check_distance_value()
         {
           send_state = MP_STATE;
         }
-        maximun_distance = current_distance;
+        minimun_distance = DEFAULT_DISTANCE;
+        
+        if(current_distance > maximun_distance)
+        {
+          maximun_distance = current_distance;
+        }
       }
     }
-    last_distance = current_distance;
-
+    if(current_distance != 0)
+    {
+      last_distance = current_distance;
+    }
   } else {
     // printf("Error state after sending modbus packet: %d\n", rv);
     current_distance=MODBUS_NOTREAD;
@@ -666,7 +681,7 @@ void
 check_photoelectric_sensors()
 {
   // send_state = SOL_STATE;
-  printf("check sensor\n");
+  // printf("check sensor\n");
 
   if(current_state == SOL_STATE)
   {
@@ -674,15 +689,15 @@ check_photoelectric_sensors()
     sensor_downer_time=0;
   }
 
-  printf("sensor_upper_time %u\n", sensor_upper_time);
-  printf("sensor_downer_time %u\n", sensor_downer_time);
+  // printf("sensor_upper_time %u\n", sensor_upper_time);
+  // printf("sensor_downer_time %u\n", sensor_downer_time);
 
   if(sensor_upper_time!=0 && sensor_downer_time!=0)
   {
     if((int)(sensor_downer_time-sensor_upper_time)>0 && current_state==DEFAULT_STATE)
     {
       send_state = SOL_STATE;
-      printf("change send_state to SOL_STATE\n");
+      // printf("change send_state to SOL_STATE\n");
       // collect_common_set_send_active(1);
       start_time = get_timesynch_time();
       printf("down, in \n");
@@ -692,7 +707,7 @@ check_photoelectric_sensors()
     else if((int)(sensor_downer_time-sensor_upper_time)<0 && current_state==MP_STATE)
     {
       send_state = EOL_STATE;
-      printf("change send_state to EOL_STATE\n");
+      // printf("change send_state to EOL_STATE\n");
       // collect_common_set_send_active(1);
       end_time = get_timesynch_time();
       printf("up, out \n");
@@ -855,20 +870,16 @@ PROCESS_THREAD(udp_client_process, ev, data)
     }else if(ev == sensors_event){
       if(data == &sensor_num1) {
         printf("PC6\n"); //inner
-        printf("{sensor_upper_time-%u before} ", sensor_upper_time);
         sensor_upper_time = rtimer_arch_now();
-        printf("{sensor_upper_time-%u} ", sensor_upper_time);
 
         gpio_buff[gpio_counter].gpio=1;
         check_photoelectric_sensors();
         gpio_buff[gpio_counter].state=send_state;
         gpio_counter++;
 
-      }if(data == &sensor_num2) {
+      }else if(data == &sensor_num2) {
         printf("Pc7\n"); //outer
-        printf("{sensor_downer_time-%u before} ", sensor_downer_time);
         sensor_downer_time = rtimer_arch_now();
-        printf("{sensor_downer_time-%u} ", sensor_downer_time);
 
         gpio_buff[gpio_counter].gpio=2;
         check_photoelectric_sensors();

@@ -2,14 +2,14 @@
 #include "dev/nvic.h"
 #include "dev/ioc.h"
 #include "dev/gpio.h"
-#include "dev/sensor-gpio.h"
+#include "dev/sensor-gpio2.h"
 #include "sys/timer.h"
 
 #include <stdint.h>
 #include <string.h>
 
-#define SENSOR_NUM1_PORT_BASE  GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT)
-#define SENSOR_NUM1_PIN_MASK   GPIO_PIN_MASK(SENSOR_NUM1_PIN)
+#define SENSOR_NUM2_PORT_BASE    GPIO_PORT_TO_BASE(SENSOR_NUM2_PORT)
+#define SENSOR_NUM2_PIN_MASK     GPIO_PIN_MASK(SENSOR_NUM2_PIN)
 
 /*---------------------------------------------------------------------------*/
 static struct timer debouncetimer;
@@ -58,33 +58,31 @@ static struct timer debouncetimer;
 
   timer_set(&debouncetimer, CLOCK_SECOND / 8);
 
-  if((port == SENSOR_NUM1_PORT) && (pin == SENSOR_NUM1_PIN)) {
-    // printf("sensor_num1 change\n");
-    sensors_changed(&sensor_num1);
-    
-  }
+  if((port == SENSOR_NUM2_PORT) && (pin == SENSOR_NUM2_PIN)) {
+    // printf("sensor_num2 change\n");
+    sensors_changed(&sensor_num2);
+  } 
 }
-
 /*---------------------------------------------------------------------------*/
 static int
-config_sensor_num1(int type, int value)
+config_sensor_num2(int type, int value)
 {
-  // printf("config_sensor_num1\n");
-  config(SENSOR_NUM1_PORT_BASE, SENSOR_NUM1_PIN_MASK);
+  // printf("config_sensor_num2\n");
+  config(SENSOR_NUM2_PORT_BASE, SENSOR_NUM2_PIN_MASK);
 
-  ioc_set_over(SENSOR_NUM1_PORT, SENSOR_NUM1_PIN, IOC_OVERRIDE_PUE);
+  ioc_set_over(SENSOR_NUM2_PORT, SENSOR_NUM2_PIN, IOC_OVERRIDE_PUE);
 
-  NVIC_EnableIRQ(SENSOR_NUM1_VECTOR);
+  NVIC_EnableIRQ(SENSOR_NUM2_VECTOR);
 
-  gpio_register_callback(sensor_callback, SENSOR_NUM1_PORT, SENSOR_NUM1_PIN);
+  gpio_register_callback(sensor_callback, SENSOR_NUM2_PORT, SENSOR_NUM2_PIN);
   return 1;
 }
 /*---------------------------------------------------------------------------*/
 
 void
-sensor_gpio_init()
+sensor_gpio2_init()
 {
   timer_set(&debouncetimer, 0);
 }
 /*---------------------------------------------------------------------------*/
-SENSORS_SENSOR(sensor_num1, SENSOR_GPIO, NULL, config_sensor_num1, NULL);
+SENSORS_SENSOR(sensor_num2, SENSOR_GPIO2, NULL, config_sensor_num2, NULL);

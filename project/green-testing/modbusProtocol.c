@@ -103,11 +103,11 @@ int modbusReadResponse(unsigned char *data, unsigned char hasCRC)
     return -1;
   }
 
-  printf("Read data (%d):", len);
-  for(i = 0; i < len; i++) {
-    printf("%02x", rs485_buffer[i]);
-  }
-  printf("\n\r");
+  // printf("Read data (%d):", len);
+  // for(i = 0; i < len; i++) {
+    // printf("%02x", rs485_buffer[i]);
+  // }
+  // printf("\n\r");
 
 
   /* Address of Modbus device */
@@ -221,7 +221,7 @@ int modbusReadCoilStatus(st_modbusQuery *modbusQuery,
   
   /* Error Check */
   hasError = modbusRespErrorsVerify(responsePacket, byteCount, exceptionCode, hasCrc);
-  printf("CRC error %d \n", hasError);
+  // printf("CRC error %d \n", hasError);
   
   if(!hasError) {
     coilStatus->function = responsePacket[1];

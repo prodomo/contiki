@@ -45,6 +45,7 @@
 #include "dev/als-sensor.h"
 #include "dev/cc2538-sensors.h"
 #include "dev/sensor-gpio.h"
+#include "dev/sensor-gpio2.h"
 
 #include <string.h>
 

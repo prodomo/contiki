@@ -166,24 +166,24 @@
 #define BUTTON_SELECT_VECTOR    GPIO_A_IRQn
 
 /** BUTTON_LEFT -> PC4 */
-#define BUTTON_LEFT_PORT        GPIO_C_NUM
-#define BUTTON_LEFT_PIN         4
-#define BUTTON_LEFT_VECTOR      GPIO_C_IRQn
+#define BUTTON_LEFT_PORT        GPIO_A_NUM
+#define BUTTON_LEFT_PIN         3
+#define BUTTON_LEFT_VECTOR      GPIO_A_IRQn
 
 /** BUTTON_RIGHT -> PC5 */
-#define BUTTON_RIGHT_PORT       GPIO_C_NUM
-#define BUTTON_RIGHT_PIN        4
-#define BUTTON_RIGHT_VECTOR     GPIO_C_IRQn
+#define BUTTON_RIGHT_PORT       GPIO_A_NUM
+#define BUTTON_RIGHT_PIN        3
+#define BUTTON_RIGHT_VECTOR     GPIO_A_IRQn
 
 /** BUTTON_UP -> PC6 */
-#define BUTTON_UP_PORT          GPIO_C_NUM
-#define BUTTON_UP_PIN           4
-#define BUTTON_UP_VECTOR        GPIO_C_IRQn
+#define BUTTON_UP_PORT          GPIO_A_NUM
+#define BUTTON_UP_PIN           3
+#define BUTTON_UP_VECTOR        GPIO_A_IRQn
 
 /** BUTTON_DOWN -> PC7 */
-#define BUTTON_DOWN_PORT        GPIO_C_NUM
-#define BUTTON_DOWN_PIN         4
-#define BUTTON_DOWN_VECTOR      GPIO_C_IRQn
+#define BUTTON_DOWN_PORT        GPIO_A_NUM
+#define BUTTON_DOWN_PIN         3
+#define BUTTON_DOWN_VECTOR      GPIO_A_IRQn
 
 
 #define SENSOR_NUM1_PORT		GPIO_C_NUM
