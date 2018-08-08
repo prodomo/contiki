@@ -637,7 +637,9 @@ void check_distance_value()
       {
         open_time=get_timesynch_time();
         sub_state=START_OPEN;
-        if(last_asn_diff == TSCH_ASN_DIFF(open_time,close_time))
+        printf("last_asn_diff %u\n", last_asn_diff);
+        printf("this_asn_diff %u\n", TSCH_ASN_DIFF(open_time,close_time));
+        if(abs(last_asn_diff-TSCH_ASN_DIFF(open_time,close_time))<=101)
         {
           same_counter++;
         }
@@ -646,12 +648,21 @@ void check_distance_value()
           same_counter=0;
         }
         amount_counter++;
+        printf("same_counter %d\n", same_counter);
         last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
       }
       else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_OPEN )
       {
         sub_state=OPEN;
-        if(same_counter>2)
+      }
+      else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == OPEN)
+      {
+        if(same_counter>2 && send_state<MP_STATE)
+        {
+          send_state = MP_STATE;
+          same_counter = 0;
+        }
+        else if(amount_counter >20 && send_state<MP_STATE)
         {
           send_state = MP_STATE;
         }
@@ -687,6 +698,7 @@ check_photoelectric_sensors()
   {
     sensor_upper_time=0;
     sensor_downer_time=0;
+    return;
   }
 
   // printf("sensor_upper_time %u\n", sensor_upper_time);

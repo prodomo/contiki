@@ -16,13 +16,15 @@ command_count=0
 node_arr=[]
 BROADCAST = "FFFF"
 current_state = 0
-order_num = "fakeNumber"
+order_num = None
 machineNum = 18
 start_time = None
 pvt_time = None
 mp_time = None
 end_time = None
 temp_amount = 5
+start_amount = 0
+current_amount = 0
 
 
 ser = serial.Serial('/dev/ttyUSB0', 115200)
@@ -106,11 +108,35 @@ def update_history_state_to_DB(amount, db, cursor):
     global end_time
     global temp_amount
 
+    if start_time ==None:
+      flag=0
+    elif pvt_time == None:
+      flag=0
+    elif mp_time == None:
+      flag=0
+    elif end_time == None:
+      flag=0
+    else:
+      flag=1
+
+    get_current_sql = "SELECT * From itri_current_state where ID=1"
+    
+    try:
+      if flag==0:
+        cursor.execute(get_current_sql)
+        result = cursor.fetchone()
+
+        start_time=result[0]
+        pvt_time = result[1]
+        mp_time = result[2]
+        end_time = result[3]
+    except:
+        print "get current state fail"
+
     state_history_sql = "INSERT INTO itri_history_state(machineNum, SOL_STATE, PVT_STATE, MP_STATE, EOL_STATE, PVT_amount, Total_amount)\
      VALUES('%s', '%s', '%s', '%s', '%s', '%d', '%d')" %(machineNum, start_time, pvt_time, mp_time, end_time, temp_amount, amount)
 
     try:
-        print "try update"
         cursor.execute(state_history_sql)
         db.commit()
     except:
@@ -119,6 +145,7 @@ def update_history_state_to_DB(amount, db, cursor):
 def update_state_to_DB(state, db, cursor):
 
     global start_time
+    global current_state
 
     print "update_state"
     
@@ -151,10 +178,12 @@ def update_state_to_DB(state, db, cursor):
           print "state_update_sql success!\n"
         
         db.commit()
+        current_state = state
     except:
         print "update current_state table fail"
-
-    update_t3_table("A18", "Status", state, db, cursor)
+    
+    if state != 2:
+      update_t3_table("A18", "Status", state, db, cursor)
 
 def reset_DB_current_table(db, cursor):
 
@@ -169,6 +198,9 @@ def reset_DB_current_table(db, cursor):
 
 
 def upload_data_to_DB(data, db, cursor):
+
+    global start_amount
+    global order_num
 
     current_time = datetime.now()
     print data
@@ -195,7 +227,10 @@ def upload_data_to_DB(data, db, cursor):
         #db.rollback()
         print 'data insert db fail !!'
 
-    update_t3_table("A18", "Product_Amount", data[current_table_map['AMOUNT_COUNTER']], db, cursor)
+    if order_num != None:
+      update_t3_table("A18", "Product_Amount", int(data[current_table_map['AMOUNT_COUNTER']])-start_amount, db, cursor)
+    else:
+      update_t3_table("A18", "Product_Amount", 0, db, cursor)
 
 
 def upload_distance_to_DB(data, db, cursor):
@@ -250,6 +285,9 @@ def reset_value(db, cursor):
     global end_time
     global temp_amount
     global current_state
+    global start_amount
+    global current_amount
+    global order_num
       
     print "reset value"
     start_time = None
@@ -258,6 +296,9 @@ def reset_value(db, cursor):
     end_time = None
     temp_amount=0
     current_state = 0
+    start_amount = 0
+    current_amount = 0
+    order_num = None
     reset_DB_current_table(db, cursor)
 
 
@@ -276,34 +317,38 @@ def update_time(state):
 
     elif state == 2:
       pvt_time = datetime.now()
-      print "start_time{0}".format(pvt_time)
+      print "pvt_time{0}".format(pvt_time)
 
     elif state == 3:
       mp_time = datetime.now()
-      print "start_time{0}".format(mp_time)
+      print "mp_time{0}".format(mp_time)
 
     elif state == 4:
       end_time = datetime.now()
-      print "start_time{0}".format(end_time)
+      print "end_time{0}".format(end_time)
 
 
 def check_state(state, amount, db, cursor):
     global current_state
     global temp_amount
+    global start_amount
 
-    if current_state == 0 and state ==4:
+    if state == 0:
       pass
     
     elif current_state != state:
       update_time(state)
 
       if state > current_state:
-        current_state = state
+        if state==2 and current_state ==0:
+          update_state_to_DB(1, db, cursor)
+
         update_state_to_DB(state, db, cursor)
+        
         if state == 3 : #MP_STATE
-          temp_amount = amount
+          temp_amount = amount-start_amount
         elif state==4:
-          update_history_state_to_DB(amount, db, cursor)
+          update_history_state_to_DB(amount-start_amount, db, cursor)
           reset_value(db, cursor)
 
 
@@ -311,6 +356,10 @@ def threadWork(client):
     global hasCommand
     global share_queue
     global command_count
+    global current_amount
+    global start_amount
+    global order_num
+    global pvt_time
     while True:
         msg = client.recv(1024)
         if not msg:
@@ -318,10 +367,10 @@ def threadWork(client):
         else:
             print "Client send: " + msg 
             client.send("You say: " + msg + "\r\n")
-            command_count=command_count+1
 
             temp_command = msg.split()
             if(temp_command[0] == "SW" and temp_command[len(temp_command)-1] == "EW"):
+              command_count=command_count+1
               temp_command[2]= temp_command[2].upper()
               temp_command[3] = command_count
               print temp_command
@@ -330,7 +379,13 @@ def threadWork(client):
               share_queue.put(temp)
               print "share_queue size: ", share_queue.qsize()
               hasCommand = True
-            share_queue.task_done()
+              share_queue.task_done()
+            elif temp_command[0] == "UD":
+              order_num = temp_command[1]
+              pvt_time = temp_command[2]
+              start_amount = current_amount
+              print current_amount
+              print "start_amount: {0}~~~~~~~~~~".format(start_amount)
     client.close()
 
 def sendCommand(command):
@@ -471,10 +526,10 @@ while True:
             upload_v_a_to_DB(split_data, db, cursor)
         
         elif len(split_data)==37 and split_data[current_table_map['DATA_LEN']] == '70':
+            current_amount = int(split_data[current_table_map['AMOUNT_COUNTER']])
             check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]), db, cursor)
-
             upload_data_to_DB(split_data, db, cursor)
-
+            
         elif len(split_data)==4 and split_data[ack_map['DATA_LEN']] == '6':
             print 'get ack'
             revCommand(split_data[ack_map['NODE_ID']], split_data[ack_map['COMMAND_ID']])

@@ -22,7 +22,7 @@ start_time = None
 pvt_time = None
 mp_time = None
 end_time = None
-temp_amount = 5
+temp_amount = 0
 
 
 ser = serial.Serial('/dev/ttyUSB0', 115200)
@@ -69,6 +69,7 @@ def update_gpio_log(data, db, cursor):
         db.commit()
     except:
         print "update_gpio_log fail"
+    db.close()
 
 def update_t3_table(machineNum, name, value, db, cursor):
 
@@ -95,6 +96,7 @@ def update_t3_table(machineNum, name, value, db, cursor):
         db.commit()
     except:
         print "update_t3_table fail"
+    db.close()
 
 def update_history_state_to_DB(amount, db, cursor):
 
@@ -115,6 +117,7 @@ def update_history_state_to_DB(amount, db, cursor):
         db.commit()
     except:
         print "update history_state table fail"
+    db.close()
 
 def update_state_to_DB(state, db, cursor):
 
@@ -130,6 +133,7 @@ def update_state_to_DB(state, db, cursor):
     state_insert_sql = "INSERT INTO itri_current_state(SOL_STATE, machineNum, ID) VALUES('%s', '%s', '%d')" %(current_time, machineNum, 1)
     
     state_update_sql = "UPDATE itri_current_state SET %s='%s' WHERE ID=1" %(state_map[state], current_time)
+    start_update_sql = "UPDATE itri_current_state SET %s='%s' WHERE ID=1" %(state_map[1], current_time)
 
     # t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s')" %("A18_status", state_map[state], current_time)
     # t3_update_sql = "INSERT INTO T3_table(machineNum ,name, value, datetime) VALUES('%s', %s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18", "status", state_map[state], current_time, state_map[state], current_time)
@@ -146,14 +150,20 @@ def update_state_to_DB(state, db, cursor):
           cursor.execute(state_insert_sql)
           print "state_insert_sql success!\n"
         # update exists row
+        else if state==2 and start_time=None:
+          start_time = current_time
+          cursor.execute(start_update_sql)
+          cursor.execute(state_update_sql)
         else:
           cursor.execute(state_update_sql)
           print "state_update_sql success!\n"
         
+        # cursor.execute(t3_update_sql)
         db.commit()
+        print "t3_update_sql success update_state_to_DB!\n"
     except:
         print "update current_state table fail"
-
+    # db.close()
     update_t3_table("A18", "Status", state, db, cursor)
 
 def reset_DB_current_table(db, cursor):
@@ -166,6 +176,7 @@ def reset_DB_current_table(db, cursor):
         db.commit()
     except:
         print "update current_state table fail"
+    db.close()
 
 
 def upload_data_to_DB(data, db, cursor):
@@ -190,11 +201,14 @@ def upload_data_to_DB(data, db, cursor):
     try:
         cursor.execute(data_sql)
         print "data_sql success"
+        # cursor.execute(t3_update_sql)
+        # print "t3_update_sql success"
         db.commit()
     except:
         #db.rollback()
         print 'data insert db fail !!'
 
+    # db.close()
     update_t3_table("A18", "Product_Amount", data[current_table_map['AMOUNT_COUNTER']], db, cursor)
 
 
@@ -220,6 +234,7 @@ def upload_distance_to_DB(data, db, cursor):
         #db.rollback()
         print 'data insert db fail !!'
 
+    db.close()
 
 def upload_v_a_to_DB(data, db, cursor):
 
@@ -242,6 +257,8 @@ def upload_v_a_to_DB(data, db, cursor):
     except:
         #db.rollback()
         print 'data insert db fail !!'
+
+    db.close()
 
 def reset_value(db, cursor):
     global start_time
@@ -272,19 +289,16 @@ def update_time(state):
 
     if state == 1:
       start_time = datetime.now()
-      print "start_time{0}".format(start_time)
-
+      print start_time
     elif state == 2:
       pvt_time = datetime.now()
-      print "start_time{0}".format(pvt_time)
-
+      print pvt_time
     elif state == 3:
       mp_time = datetime.now()
-      print "start_time{0}".format(mp_time)
-
+      print mp_time
     elif state == 4:
       end_time = datetime.now()
-      print "start_time{0}".format(end_time)
+      print end_time
 
 
 def check_state(state, amount, db, cursor):

@@ -13,6 +13,6 @@ except socket.error, msg:
     exit(1)
 
 
-sock.send("SW 02 FFFF 01 01 03 00 01 EW\n")
+sock.send("Hello\n")
 print sock.recv(1024)
 sock.close()

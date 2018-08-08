@@ -69,5 +69,5 @@ def createSocketServer(id):
 
 start_new_thread(createSocketServer, (1, ))
 while True:
-    checkCommand()
-    time.sleep(0.01)
+    # checkCommand()
+    time.sleep(10)
