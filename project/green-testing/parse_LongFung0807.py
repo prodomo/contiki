@@ -22,14 +22,15 @@ start_time = None
 pvt_time = None
 mp_time = None
 end_time = None
-temp_amount = 5
+endMP_time = None
+mp_amount = 0
 start_amount = 0
 current_amount = 0
 
 
 ser = serial.Serial('/dev/ttyUSB0', 115200)
 
-state_map = ['Default', 'SOL_STATE', 'PVT_STATE', 'MP_STATE', 'EOL_STATE', 'START_CLOSE', 'CLOSE', 'START_OPEN', 'OPEN']
+state_map = ['Default', 'SOL_STATE', 'PVT_STATE', 'MP_STATE', 'EOMP_STATE', 'EOL_STATE', 'START_CLOSE', 'CLOSE', 'START_OPEN', 'OPEN']
 
 current_table_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE':3, 'CURRENT_STATE':4, 'COUNTER':5, 'AMOUNT_COUNTER':6,
   'SUB_STATE1':7, 'SUB_STATE2':8, 'SUB_STATE3':9, 'SUB_STATE4':10, 'SUB_STATE5':11,
@@ -57,6 +58,40 @@ gpio_log_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE'
 ack_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'COMMAND_ID':2 ,'COMMAND_TYPE':3, 'IS_RECEIVED':4})
 
 ask_command_map = OrderedDict({'SW':0, 'COMMAND_TYPE':1, 'MAC':2 ,'COMMAND_ID':3, 'EW':4})
+
+def check_start_end_time(db, cursor):
+
+    global mp_time
+    global endMP_time
+    global current_state
+    global start_amount
+    global current_amount
+    global mp_amount
+
+    query_time = "SELECT * FROM `itri_current_state` WHERE 1"
+
+    try:
+      cursor.execute(query_time)
+      result = cursor.fetchone()
+      print result
+      # print result[2]
+      # print result[3]
+
+      #MP_STATE=3
+      if result[2] != None and current_state<3:
+        mp_time = result[2]
+        current_state = 3
+        start_amount = current_amount
+        # print mp_time
+
+      #EOMP_STATE=4
+      if result[3] != None and current_state<4:
+        endMP_time = result[3]
+        current_state = 4
+        mp_amount = current_amount-start_amount
+        # print endMP_time
+    except:
+      print "check_start_end_time fail"
 
 def update_gpio_log(data, db, cursor):
 
@@ -98,7 +133,7 @@ def update_t3_table(machineNum, name, value, db, cursor):
     except:
         print "update_t3_table fail"
 
-def update_history_state_to_DB(amount, db, cursor):
+def update_history_state_to_DB(db, cursor):
 
     print "update_history_state"
 
@@ -106,13 +141,17 @@ def update_history_state_to_DB(amount, db, cursor):
     global pvt_time
     global mp_time
     global end_time
-    global temp_amount
+    global endMP_time
+    global mp_amount
+    global start_amount
 
     if start_time ==None:
       flag=0
     elif pvt_time == None:
       flag=0
     elif mp_time == None:
+      flag=0
+    elif endMP_time == None:
       flag=0
     elif end_time == None:
       flag=0
@@ -129,12 +168,13 @@ def update_history_state_to_DB(amount, db, cursor):
         start_time=result[0]
         pvt_time = result[1]
         mp_time = result[2]
-        end_time = result[3]
+        endMP_time = result[3]
+        end_time = result[4]
     except:
         print "get current state fail"
 
-    state_history_sql = "INSERT INTO itri_history_state(machineNum, SOL_STATE, PVT_STATE, MP_STATE, EOL_STATE, PVT_amount, Total_amount)\
-     VALUES('%s', '%s', '%s', '%s', '%s', '%d', '%d')" %(machineNum, start_time, pvt_time, mp_time, end_time, temp_amount, amount)
+    state_history_sql = "INSERT INTO itri_history_state(machineNum, SOL_STATE, PVT_STATE, MP_STATE, EOMP_STATE ,EOL_STATE, PVT_amount, Total_amount)\
+     VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d')" %(machineNum, start_time, pvt_time, mp_time, endMP_time, end_time, start_amount, mp_amount)
 
     try:
         cursor.execute(state_history_sql)
@@ -182,12 +222,14 @@ def update_state_to_DB(state, db, cursor):
     except:
         print "update current_state table fail"
     
-    if state != 2:
+    if state ==2 or state == 3:
+      pass
+    else:
       update_t3_table("A18", "Status", state, db, cursor)
 
 def reset_DB_current_table(db, cursor):
 
-    state_reset_sql ="UPDATE itri_current_state set SOL_STATE=NULL, PVT_STATE=NULL, MP_STATE=NULL, EOL_STATE=NULL where ID=1"
+    state_reset_sql ="UPDATE itri_current_state set SOL_STATE=NULL, PVT_STATE=NULL, MP_STATE=NULL, EOMP_STATE=NULL, EOL_STATE=NULL where ID=1"
 
     try:
         print "try reset"
@@ -227,10 +269,12 @@ def upload_data_to_DB(data, db, cursor):
         #db.rollback()
         print 'data insert db fail !!'
 
-    if order_num != None:
+    if current_state == 3:
       update_t3_table("A18", "Product_Amount", int(data[current_table_map['AMOUNT_COUNTER']])-start_amount, db, cursor)
-    else:
+    else if current_state ==5 or current_state==0:
       update_t3_table("A18", "Product_Amount", 0, db, cursor)
+    else:
+      pass
 
 
 def upload_distance_to_DB(data, db, cursor):
@@ -283,21 +327,23 @@ def reset_value(db, cursor):
     global pvt_time
     global mp_time
     global end_time
-    global temp_amount
+    global endMP_time
     global current_state
     global start_amount
     global current_amount
     global order_num
+    global mp_amount
       
     print "reset value"
     start_time = None
     pvt_time = None
     mp_time = None
+    endMP_time = None
     end_time = None
-    temp_amount=0
     current_state = 0
     start_amount = 0
     current_amount = 0
+    mp_amount = 0
     order_num = None
     reset_DB_current_table(db, cursor)
 
@@ -305,32 +351,38 @@ def reset_value(db, cursor):
 def update_time(state):
     global start_time
     global pvt_time
-    global mp_time
+    # global mp_time
     global end_time
-    global temp_amount
 
     print "update time"
 
-    if state == 1:
+    #SOL_STATE=1
+    if state == 1: 
       start_time = datetime.now()
       print "start_time{0}".format(start_time)
 
+    #PVT_STATE=2
     elif state == 2:
       pvt_time = datetime.now()
       print "pvt_time{0}".format(pvt_time)
 
-    elif state == 3:
-      mp_time = datetime.now()
-      print "mp_time{0}".format(mp_time)
+    #MP_STATE=3
 
-    elif state == 4:
+    # elif state == 3:
+      # mp_time = datetime.now()
+      # print "mp_time{0}".format(mp_time)
+
+    #EOMP_STATE=4
+
+    #EOL_STATE=5
+    elif state == 5:
       end_time = datetime.now()
       print "end_time{0}".format(end_time)
 
 
-def check_state(state, amount, db, cursor):
+def check_state(state, db, cursor):
     global current_state
-    global temp_amount
+    global mp_amount
     global start_amount
 
     if state == 0:
@@ -343,12 +395,11 @@ def check_state(state, amount, db, cursor):
         if state==2 and current_state ==0:
           update_state_to_DB(1, db, cursor)
 
-        update_state_to_DB(state, db, cursor)
+        if state <=2:
+          update_state_to_DB(state, db, cursor)
         
-        if state == 3 : #MP_STATE
-          temp_amount = amount-start_amount
-        elif state==4:
-          update_history_state_to_DB(amount-start_amount, db, cursor)
+        elif state==5:
+          update_history_state_to_DB(db, cursor)
           reset_value(db, cursor)
 
 
@@ -516,9 +567,10 @@ while True:
           cursor = db.cursor()
           print "connect to 127.0.0.1"
 
+        check_start_end_time(db,cursor)
 
         if len(split_data)==17 and split_data[current_table_map['DATA_LEN']] == '30': #distance and substate
-            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]), db, cursor)
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), db, cursor)
 
             upload_distance_to_DB(split_data, db, cursor)
             
@@ -527,7 +579,8 @@ while True:
         
         elif len(split_data)==37 and split_data[current_table_map['DATA_LEN']] == '70':
             current_amount = int(split_data[current_table_map['AMOUNT_COUNTER']])
-            check_state(int(split_data[current_table_map['CURRENT_STATE']]), int(split_data[current_table_map['AMOUNT_COUNTER']]), db, cursor)
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), db, cursor)
+            check_start_end_time(db,cursor)
             upload_data_to_DB(split_data, db, cursor)
             
         elif len(split_data)==4 and split_data[ack_map['DATA_LEN']] == '6':

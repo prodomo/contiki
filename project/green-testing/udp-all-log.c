@@ -93,8 +93,8 @@ static char* command_data;
 static int send_period = PERIOD;
 static int distance_threshold = DISTANCE_THRESHOLD;
 
-struct tsch_asn_t start_time, end_time, open_time, close_time;
-rtimer_clock_t sensor_upper_time=0, sensor_downer_time =0;
+struct tsch_asn_t start_time, end_time, open_time, close_time , sensor_upper_time, sensor_downer_time;
+// rtimer_clock_t sensor_upper_time=0, sensor_downer_time =0;
 
 static uint16_t last_distance = DEFAULT_DISTANCE;
 static uint16_t minimun_distance = DEFAULT_DISTANCE;
@@ -438,9 +438,11 @@ void reset_values()
   TSCH_ASN_INIT(end_time, 0, 0);
   TSCH_ASN_INIT(open_time, 0, 0);
   TSCH_ASN_INIT(close_time, 0, 0);
+  TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+  TSCH_ASN_INIT(sensor_downer_time, 0, 0);
 
-  sensor_upper_time=0;
-  sensor_downer_time =0;
+  // sensor_upper_time=0;
+  // sensor_downer_time =0;
 
   memset(&distance_buff, 0, sizeof(uint16_t)*BUFFSIZE);
   memset(&sub_state_buff, 0, sizeof(uint16_t)*BUFFSIZE);
@@ -614,7 +616,7 @@ void check_distance_value()
       {
         sub_state = START_CLOSE;
         
-        close_time=get_timesynch_time();
+        // close_time=get_timesynch_time();
         
         if(current_distance< minimun_distance)
         {
@@ -631,25 +633,25 @@ void check_distance_value()
       {
         // printf("last_distance == current_distance\n");
         sub_state=CLOSE;
-        close_time=get_timesynch_time();
+        // close_time=get_timesynch_time();
       }
       else if((current_distance-minimun_distance)>=distance_threshold && sub_state == CLOSE)
       {
-        open_time=get_timesynch_time();
+        // open_time=get_timesynch_time();
         sub_state=START_OPEN;
-        printf("last_asn_diff %u\n", last_asn_diff);
-        printf("this_asn_diff %u\n", TSCH_ASN_DIFF(open_time,close_time));
-        if(abs(last_asn_diff-TSCH_ASN_DIFF(open_time,close_time))<=101)
-        {
-          same_counter++;
-        }
-        else
-        {
-          same_counter=0;
-        }
+        // printf("last_asn_diff %u\n", last_asn_diff);
+        // printf("this_asn_diff %u\n", TSCH_ASN_DIFF(open_time,close_time));
+        // if(abs(last_asn_diff-TSCH_ASN_DIFF(open_time,close_time))<=101)
+        // {
+        //   same_counter++;
+        // }
+        // else
+        // {
+        //   same_counter=0;
+        // }
         amount_counter++;
-        printf("same_counter %d\n", same_counter);
-        last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
+        // printf("same_counter %d\n", same_counter);
+        // last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
       }
       else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_OPEN )
       {
@@ -657,15 +659,15 @@ void check_distance_value()
       }
       else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == OPEN)
       {
-        if(same_counter>2 && send_state<MP_STATE)
-        {
-          send_state = MP_STATE;
-          same_counter = 0;
-        }
-        else if(amount_counter >20 && send_state<MP_STATE)
-        {
-          send_state = MP_STATE;
-        }
+        // if(same_counter>2 && send_state<MP_STATE)
+        // {
+        //   send_state = MP_STATE;
+        //   same_counter = 0;
+        // }
+        // else if(amount_counter >20 && send_state<MP_STATE)
+        // {
+        //   send_state = MP_STATE;
+        // }
         minimun_distance = DEFAULT_DISTANCE;
         
         if(current_distance > maximun_distance)
@@ -696,39 +698,56 @@ check_photoelectric_sensors()
 
   if(send_state == SOL_STATE)
   {
-    sensor_upper_time=0;
-    sensor_downer_time=0;
+    // sensor_upper_time=0;
+    // sensor_downer_time=0;
+    TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+    TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+
+    return;
+  }
+
+  if(sensor_upper_time.ms1b==0 || sensor_downer_time.ms1b==0)
+  {
     return;
   }
 
   // printf("sensor_upper_time %u\n", sensor_upper_time);
   // printf("sensor_downer_time %u\n", sensor_downer_time);
 
-  if(sensor_upper_time!=0 && sensor_downer_time!=0)
+  if(abs((int)TSCH_ASN_DIFF(sensor_upper_time, sensor_downer_time))>=101)
   {
-    if((int)(sensor_downer_time-sensor_upper_time)>0 && send_state==DEFAULT_STATE)
+    if((int)(sensor_downer_time.ls4b-sensor_upper_time.ls4b)>0 && send_state==DEFAULT_STATE)
     {
       send_state = SOL_STATE;
       // printf("change send_state to SOL_STATE\n");
       // collect_common_set_send_active(1);
       start_time = get_timesynch_time();
       printf("down, in \n");
-      sensor_upper_time=0;
-      sensor_downer_time=0;
+      // sensor_upper_time=0;
+      // sensor_downer_time=0;
+      TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+      TSCH_ASN_INIT(sensor_downer_time, 0, 0);
     }
-    else if((int)(sensor_downer_time-sensor_upper_time)<0 && send_state==MP_STATE)
+    else if((int)(sensor_downer_time.ls4b-sensor_upper_time.ls4b)<0 && send_state==PVT_STATE)
     {
       send_state = EOL_STATE;
       // printf("change send_state to EOL_STATE\n");
       // collect_common_set_send_active(1);
       end_time = get_timesynch_time();
       printf("up, out \n");
-      sensor_upper_time=0;
-      sensor_downer_time=0;
+      // sensor_upper_time=0;
+      // sensor_downer_time=0;
+      TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+      TSCH_ASN_INIT(sensor_downer_time, 0, 0);
       // reset_values();
     }
   }
-  // }
+  else{
+    // sensor_upper_time=0;
+    // sensor_downer_time=0;
+    TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+    TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+  }
 }
 /*---------------------------------------------------------------------------*/
 void 
@@ -882,7 +901,8 @@ PROCESS_THREAD(udp_client_process, ev, data)
     }else if(ev == sensors_event){
       if(data == &sensor_num1) {
         printf("PC6\n"); //upper inner
-        sensor_upper_time = rtimer_arch_now();
+        // sensor_upper_time = rtimer_arch_now();
+        sensor_upper_time = get_timesynch_time();
 
         gpio_buff[gpio_counter].gpio=1;
         check_photoelectric_sensors();
@@ -891,7 +911,8 @@ PROCESS_THREAD(udp_client_process, ev, data)
 
       }else if(data == &sensor_num2) {
         printf("Pc7\n"); //downer outer
-        sensor_downer_time = rtimer_arch_now();
+        // sensor_downer_time = rtimer_arch_now();
+        sensor_downer_time = get_timesynch_time();
 
         gpio_buff[gpio_counter].gpio=2;
         check_photoelectric_sensors();

@@ -99,7 +99,7 @@ int modbusReadResponse(unsigned char *data, unsigned char hasCRC)
   int numberOfDataBytes;
 
   if((len = rs485_input_len()) <= 0) {
-      printf("RX Error...length <= 0\n"); 
+      // printf("RX Error...length <= 0\n"); 
     return -1;
   }
 
@@ -215,7 +215,7 @@ int modbusReadCoilStatus(st_modbusQuery *modbusQuery,
   
   /* printf("byteCount: %d\n\r", byteCount); */
   if (byteCount <= 0) {
-    printf("Error during reading: no data?\n");
+    // printf("Error during reading: no data?\n");
     return byteCount;
   }
   
