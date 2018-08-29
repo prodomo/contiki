@@ -1,0 +1,600 @@
+import serial
+from collections import OrderedDict
+import MySQLdb
+from datetime import datetime, timedelta
+import socket, sys 
+from thread import *
+import Queue
+import time
+
+share_queue = Queue.Queue()
+sendSuccess = True
+current_Command = ""
+hasCommand = False
+current_CommandID =0
+command_count=0
+node_arr=[]
+BROADCAST = "FFFF"
+current_state = 0
+order_num = None
+machineNum = 18
+start_time = None
+pvt_time = None
+mp_time = None
+end_time = None
+endMP_time = None
+mp_amount = 0
+start_amount = 0
+current_amount = 0
+
+
+ser = serial.Serial('/dev/ttyUSB0', 115200)
+
+state_map = ['Default', 'SOL_STATE', 'PVT_STATE', 'MP_STATE', 'EOMP_STATE', 'EOL_STATE', 'START_CLOSE', 'CLOSE', 'START_OPEN', 'OPEN']
+
+current_table_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE':3, 'CURRENT_STATE':4, 'COUNTER':5, 'AMOUNT_COUNTER':6,
+  'SUB_STATE1':7, 'SUB_STATE2':8, 'SUB_STATE3':9, 'SUB_STATE4':10, 'SUB_STATE5':11,
+  'DISTANCE1':12, 'DISTANCE2':13, 'DISTANCE3':14, 'DISTANCE4':15, 'DISTANCE5':16,
+  'TOTAL_V1':17 , 'TOTAL_V2':18, 'TOTAL_V3':19, 'TOTAL_V4':20, 'TOTAL_V5':21,
+  'TEMP_V1':22, 'TEMP_V2':23, 'TEMP_V3':24, 'TEMP_V4':25, 'TEMP_V5':26,
+  'TOTAL_A1':27 , 'TOTAL_A2':28, 'TOTAL_A3':29, 'TOTAL_A4':30, 'TOTAL_A5':31,
+  'TEMP_A1':32, 'TEMP_A2':33, 'TEMP_A3':34, 'TEMP_A4':35, 'TEMP_A5':36})
+
+current_distance_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE':3, 'CURRENT_STATE':4, 'COUNTER':5, 'AMOUNT_COUNTER':6,
+  'SUB_STATE1':7, 'SUB_STATE2':8, 'SUB_STATE3':9, 'SUB_STATE4':10, 'SUB_STATE5':11,
+  'DISTANCE1':12, 'DISTANCE2':13, 'DISTANCE3':14, 'DISTANCE4':15, 'DISTANCE5':16})
+
+current_v_a_map=OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE':3,
+  'TOTAL_V1':4 , 'TOTAL_V2':5, 'TOTAL_V3':6, 'TOTAL_V4':7, 'TOTAL_V5':8,
+  'TEMP_V1':9, 'TEMP_V2':10, 'TEMP_V3':11, 'TEMP_V4':12, 'TEMP_V5':13,
+  'TOTAL_A1':14, 'TOTAL_A2':15, 'TOTAL_A3':16, 'TOTAL_A4':17, 'TOTAL_A5':18,
+  'TEMP_A1':19, 'TEMP_A2':20, 'TEMP_A3':21, 'TEMP_A4':22, 'TEMP_A5':23})
+
+gpio_log_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'SEQNO':2 ,'COMMAND_TYPE':3,
+  'GPIO1':4, 'GPIO2':6, 'GPIO3':8, 'GPIO4':10, 'GPIO5':12,
+  'STATE1':5, 'STATE2':7, 'STATE3':9, 'STATE4':11, 'STATE5':13,})
+
+
+ack_map = OrderedDict({'DATA_LEN':0, 'NODE_ID':1, 'COMMAND_ID':2 ,'COMMAND_TYPE':3, 'IS_RECEIVED':4})
+
+ask_command_map = OrderedDict({'SW':0, 'COMMAND_TYPE':1, 'MAC':2 ,'COMMAND_ID':3, 'EW':4})
+
+def check_start_end_time(db, cursor):
+
+    global mp_time
+    global endMP_time
+    global current_state
+    global start_amount
+    global current_amount
+    global mp_amount
+
+    query_time = "SELECT * FROM `itri_current_state` WHERE 1"
+
+    try:
+      cursor.execute(query_time)
+      result = cursor.fetchone()
+      print result
+      # print result[2]
+      # print result[3]
+
+      #MP_STATE=3
+      if result[2] != None and current_state<3:
+        mp_time = result[2]
+        current_state = 3
+        start_amount = current_amount
+        # print mp_time
+
+      #EOMP_STATE=4
+      if result[3] != None and current_state<4:
+        endMP_time = result[3]
+        current_state = 4
+        mp_amount = current_amount-start_amount
+        # print endMP_time
+    except:
+      print "check_start_end_time fail"
+
+def update_gpio_log(data, db, cursor):
+
+    current_time = datetime.now()
+
+    update_gpio = "INSERT INTO gpio_log(seqno, gpio1, state1, gpio2, state2, gpio3, state3, gpio4, state4, gpio5, state5, datetime) VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s','%s', '%s')"\
+    %(data[gpio_log_map['SEQNO']], data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], current_time)
+
+    try:
+        print "try update_gpio_log"
+        cursor.execute(update_gpio)
+        db.commit()
+    except:
+        print "update_gpio_log fail"
+
+def update_t3_table(machineNum, name, value, db, cursor):
+
+    current_time = datetime.now()
+
+    t3_table_qury = "SELECT COUNT(*) From T3_table WHERE name='%s' AND machine='%s' "%(name, machineNum)
+
+    t3_table_update = "UPDATE T3_table SET value='%s', datetime='%s' where name='%s' AND machine='%s'" %(value, current_time, name, machineNum)
+
+    t3_table_insert = "INSERT INTO T3_table(machine, name, value, datetime) VALUES('%s', '%s', '%s', '%s')" %(machineNum, name, value, current_time)
+    
+    try:
+        print "try update_t3_table"
+        cursor.execute(t3_table_qury)
+        result = cursor.fetchone()
+
+        if result[0] == 0:
+          cursor.execute(t3_table_insert)
+          print "try t3_table_insert sql success"
+        else:
+          cursor.execute(t3_table_update)
+          print "try t3_table_update sql success"
+
+        db.commit()
+    except:
+        print "update_t3_table fail"
+
+def update_history_state_to_DB(db, cursor):
+
+    print "update_history_state"
+
+    global start_time
+    global pvt_time
+    global mp_time
+    global end_time
+    global endMP_time
+    global mp_amount
+    global start_amount
+
+    if start_time ==None:
+      flag=0
+    elif pvt_time == None:
+      flag=0
+    elif mp_time == None:
+      flag=0
+    elif endMP_time == None:
+      flag=0
+    elif end_time == None:
+      flag=0
+    else:
+      flag=1
+
+    get_current_sql = "SELECT * From itri_current_state where ID=1"
+    
+    try:
+      if flag==0:
+        cursor.execute(get_current_sql)
+        result = cursor.fetchone()
+
+        start_time=result[0]
+        pvt_time = result[1]
+        mp_time = result[2]
+        endMP_time = result[3]
+        end_time = result[4]
+    except:
+        print "get current state fail"
+
+    state_history_sql = "INSERT INTO itri_history_state(machineNum, SOL_STATE, PVT_STATE, MP_STATE, EOMP_STATE ,EOL_STATE, PVT_amount, Total_amount)\
+     VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d')" %(machineNum, start_time, pvt_time, mp_time, endMP_time, end_time, start_amount, mp_amount)
+
+    try:
+        cursor.execute(state_history_sql)
+        db.commit()
+    except:
+        print "update history_state table fail"
+
+def update_state_to_DB(state, db, cursor):
+
+    global start_time
+    global current_state
+
+    print "update_state"
+    
+
+    current_time = datetime.now()
+
+    check_table_sql = "SELECT COUNT(*) FROM `itri_current_state` WHERE 1"
+
+    state_insert_sql = "INSERT INTO itri_current_state(SOL_STATE, machineNum, ID) VALUES('%s', '%s', '%d')" %(current_time, machineNum, 1)
+    
+    state_update_sql = "UPDATE itri_current_state SET %s='%s' WHERE ID=1" %(state_map[state], current_time)
+
+    # t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s')" %("A18_status", state_map[state], current_time)
+    # t3_update_sql = "INSERT INTO T3_table(machineNum ,name, value, datetime) VALUES('%s', %s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18", "status", state_map[state], current_time, state_map[state], current_time)
+
+    try:
+        print "check update_state_to_DB"
+        cursor.execute(check_table_sql)
+        num = cursor.fetchone()
+        print num[0]
+
+        # add new row in table
+        if num[0]==0:
+          print "state_insert_sql!\n"  
+          cursor.execute(state_insert_sql)
+          print "state_insert_sql success!\n"
+        # update exists row
+        else:
+          cursor.execute(state_update_sql)
+          print "state_update_sql success!\n"
+        
+        db.commit()
+        current_state = state
+    except:
+        print "update current_state table fail"
+    
+    if state ==2 or state == 3:
+      pass
+    else:
+      update_t3_table("A18", "Status", state, db, cursor)
+
+def reset_DB_current_table(db, cursor):
+
+    state_reset_sql ="UPDATE itri_current_state set SOL_STATE=NULL, PVT_STATE=NULL, MP_STATE=NULL, EOMP_STATE=NULL, EOL_STATE=NULL where ID=1"
+
+    try:
+        print "try reset"
+        cursor.execute(state_reset_sql)
+        db.commit()
+    except:
+        print "update current_state table fail"
+
+
+def upload_data_to_DB(data, db, cursor):
+
+    global start_amount
+    global order_num
+
+    current_time = datetime.now()
+    print data
+
+    data_sql = "INSERT INTO log(machineNum, seqno, current_state, amount, sub_state1, sub_state2, sub_state3, sub_state4, sub_state5, \
+    distance1, distance2, distance3, distance4, distance5, temp_v1, temp_v2, temp_v3, temp_v4, temp_v5, total_v1, total_v2, total_v3, total_v4, total_v5,\
+    temp_a1, temp_a2, temp_a3, temp_a4, temp_a5, total_a1, total_a2, total_a3, total_a4, total_a5, datetime)\
+     VALUES ('%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s','%s', '%s', '%s', '%s', '%s','%s')" \
+    %(machineNum, int(data[current_table_map['SEQNO']]), state_map[int(data[current_table_map['CURRENT_STATE']])], int(data[current_table_map['AMOUNT_COUNTER']]),\
+    state_map[int(data[current_table_map['SUB_STATE1']])], state_map[int(data[current_table_map['SUB_STATE2']])], state_map[int(data[current_table_map['SUB_STATE3']])], state_map[int(data[current_table_map['SUB_STATE4']])], state_map[int(data[current_table_map['SUB_STATE5']])], \
+    data[current_table_map['DISTANCE1']], data[current_table_map['DISTANCE2']], data[current_table_map['DISTANCE3']], data[current_table_map['DISTANCE4']], data[current_table_map['DISTANCE5']], \
+    data[current_table_map['TEMP_V1']], data[current_table_map['TEMP_V2']], data[current_table_map['TEMP_V3']], data[current_table_map['TEMP_V4']], data[current_table_map['TEMP_V5']],\
+    data[current_table_map['TOTAL_V1']], data[current_table_map['TOTAL_V2']], data[current_table_map['TOTAL_V3']], data[current_table_map['TOTAL_V4']], data[current_table_map['TOTAL_V5']],\
+    data[current_table_map['TEMP_A1']], data[current_table_map['TEMP_A2']], data[current_table_map['TEMP_A3']], data[current_table_map['TEMP_A4']], data[current_table_map['TEMP_A5']],\
+    data[current_table_map['TOTAL_A1']], data[current_table_map['TOTAL_A2']], data[current_table_map['TOTAL_A3']], data[current_table_map['TOTAL_A4']], data[current_table_map['TOTAL_A5']],current_time)
+
+    # t3_update_sql = "INSERT INTO T3_table(name, value, datetime) VALUES('%s', '%s', '%s') ON DUPLICATE KEY UPDATE value='%s', datetime='%s' " %("A18_amount", data[current_table_map['AMOUNT_COUNTER']], current_time, data[current_table_map['AMOUNT_COUNTER']], current_time)
+
+    try:
+        cursor.execute(data_sql)
+        print "data_sql success"
+        db.commit()
+    except:
+        #db.rollback()
+        print 'data insert db fail !!'
+
+    if current_state == 3:
+      update_t3_table("A18", "Product_Amount", int(data[current_table_map['AMOUNT_COUNTER']])-start_amount, db, cursor)
+    else if current_state ==5 or current_state==0:
+      update_t3_table("A18", "Product_Amount", 0, db, cursor)
+    else:
+      pass
+
+
+def upload_distance_to_DB(data, db, cursor):
+
+    current_time = datetime.now()
+    print data
+
+    data_distance_sql = "INSERT INTO log(machineNum, seqno, current_state, amount, sub_state1, sub_state2, sub_state3, sub_state4, sub_state5, \
+    distance1, distance2, distance3, distance4, distance5, datetime)\
+     VALUES ('%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s', '%s')" \
+    %(machineNum, int(data[current_distance_map['SEQNO']]), state_map[current_state], int(data[current_distance_map['AMOUNT_COUNTER']]),\
+    state_map[int(data[current_distance_map['SUB_STATE1']])], state_map[int(data[current_distance_map['SUB_STATE2']])], state_map[int(data[current_distance_map['SUB_STATE3']])], state_map[int(data[current_distance_map['SUB_STATE4']])], state_map[int(data[current_distance_map['SUB_STATE5']])], \
+    data[current_distance_map['DISTANCE1']], data[current_distance_map['DISTANCE2']], data[current_distance_map['DISTANCE3']], data[current_distance_map['DISTANCE4']], data[current_distance_map['DISTANCE5']], \
+    current_time)
+    
+
+    try:
+        cursor.execute(data_distance_sql)
+        db.commit()
+        print "success"
+    except:
+        #db.rollback()
+        print 'data insert db fail !!'
+
+
+def upload_v_a_to_DB(data, db, cursor):
+
+    current_time = datetime.now()
+    print data
+   
+    data_v_sql = "INSERT INTO log(machineNum, seqno, current_state, temp_v1, temp_v2, temp_v3, temp_v4, temp_v5, total_v1, total_v2, total_v3, total_v4, total_v5,\
+     temp_a1, temp_a2, temp_a3, temp_a4, temp_a5, total_a1, total_a2, total_a3, total_a4, total_a5, datetime)\
+     VALUES ('%s', '%d', '%s',  '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s',  '%s', '%s', '%s', '%s', '%s','%s')" \
+    %(machineNum, int(data[current_v_a_map['SEQNO']]), state_map[current_state], \
+    data[current_v_a_map['TEMP_V1']], data[current_v_a_map['TEMP_V2']], data[current_v_a_map['TEMP_V3']], data[current_v_a_map['TEMP_V4']], data[current_v_a_map['TEMP_V5']],\
+    data[current_v_a_map['TOTAL_V1']], data[current_v_a_map['TOTAL_V2']], data[current_v_a_map['TOTAL_V3']], data[current_v_a_map['TOTAL_V4']], data[current_v_a_map['TOTAL_V5']],\
+    data[current_v_a_map['TEMP_A1']], data[current_v_a_map['TEMP_A2']], data[current_v_a_map['TEMP_A3']], data[current_v_a_map['TEMP_A4']], data[current_v_a_map['TEMP_A5']],\
+    data[current_v_a_map['TOTAL_A1']], data[current_v_a_map['TOTAL_A2']], data[current_v_a_map['TOTAL_A3']], data[current_v_a_map['TOTAL_A4']], data[current_v_a_map['TOTAL_A5']],current_time)
+
+    try:
+        cursor.execute(data_v_sql)
+        db.commit()
+        print "success"
+    except:
+        #db.rollback()
+        print 'data insert db fail !!'
+
+def reset_value(db, cursor):
+    global start_time
+    global pvt_time
+    global mp_time
+    global end_time
+    global endMP_time
+    global current_state
+    global start_amount
+    global current_amount
+    global order_num
+    global mp_amount
+      
+    print "reset value"
+    start_time = None
+    pvt_time = None
+    mp_time = None
+    endMP_time = None
+    end_time = None
+    current_state = 0
+    start_amount = 0
+    current_amount = 0
+    mp_amount = 0
+    order_num = None
+    reset_DB_current_table(db, cursor)
+
+
+def update_time(state):
+    global start_time
+    global pvt_time
+    # global mp_time
+    global end_time
+
+    print "update time"
+
+    #SOL_STATE=1
+    if state == 1: 
+      start_time = datetime.now()
+      print "start_time{0}".format(start_time)
+
+    #PVT_STATE=2
+    elif state == 2:
+      pvt_time = datetime.now()
+      print "pvt_time{0}".format(pvt_time)
+
+    #MP_STATE=3
+
+    # elif state == 3:
+      # mp_time = datetime.now()
+      # print "mp_time{0}".format(mp_time)
+
+    #EOMP_STATE=4
+
+    #EOL_STATE=5
+    elif state == 5:
+      end_time = datetime.now()
+      print "end_time{0}".format(end_time)
+
+
+def check_state(state, db, cursor):
+    global current_state
+    global mp_amount
+    global start_amount
+
+    if state == 0:
+      pass
+    
+    elif current_state != state:
+      update_time(state)
+
+      if state > current_state:
+        if state==2 and current_state ==0:
+          update_state_to_DB(1, db, cursor)
+
+        if state <=2:
+          update_state_to_DB(state, db, cursor)
+        
+        elif state==5:
+          update_state_to_DB(state, db, cursor)
+          update_history_state_to_DB(db, cursor)
+          reset_value(db, cursor)
+
+
+def threadWork(client):
+    global hasCommand
+    global share_queue
+    global command_count
+    global current_amount
+    global start_amount
+    global order_num
+    global pvt_time
+    while True:
+        msg = client.recv(1024)
+        if not msg:
+            pass
+        else:
+            print "Client send: " + msg 
+            client.send("You say: " + msg + "\r\n")
+
+            temp_command = msg.split()
+            if(temp_command[0] == "SW" and temp_command[len(temp_command)-1] == "EW"):
+              command_count=command_count+1
+              temp_command[2]= temp_command[2].upper()
+              temp_command[3] = command_count
+              print temp_command
+              temp = " ".join(str(x) for x in temp_command)+"\n"
+              print temp
+              share_queue.put(temp)
+              print "share_queue size: ", share_queue.qsize()
+              hasCommand = True
+              share_queue.task_done()
+            elif temp_command[0] == "UD":
+              order_num = temp_command[1]
+              pvt_time = temp_command[2]
+              start_amount = current_amount
+              print current_amount
+              print "start_amount: {0}~~~~~~~~~~".format(start_amount)
+    client.close()
+
+def sendCommand(command):
+    # print "send command ->", command
+    if command != "None":
+      ser = serial.Serial('/dev/ttyUSB0', 115200)
+      ser.write(command)
+
+def checkIsContinueSend(nodeId):
+    global node_arr
+    global current_Command
+    is_allSend = True
+
+    print "in check ContinueSend"
+    split_command = current_Command.split()
+    mac = split_command[ask_command_map['MAC']].lower()
+
+    if mac == BROADCAST or mac == BROADCAST.lower():
+      for i in range(len(node_arr)):
+        if(node_arr[i][0].lower() == nodeId.lower()):
+          node_arr[i][1]=1
+        if(node_arr[i][1] == 0):
+          is_allSend = False
+    elif mac.lower() != nodeId.lower(): 
+      is_allSend = False
+
+    return is_allSend
+
+def checkIsNewNode(nodeId):
+    global node_arr
+
+    for i in range(len(node_arr)):
+      if(node_arr[i][0] == nodeId):
+        return
+    new_node= [nodeId, 0]
+    node_arr.append(new_node)
+    print node_arr
+
+
+def revCommand(nodeId, commandId):
+    global sendSuccess
+    global current_Command
+    global hasCommand
+    global current_CommandID
+    # print "hope command to get :", recword
+    print "current_CommandID = {0}, command={1}".format(current_CommandID, commandId)
+
+    if int(current_CommandID) ==  int(commandId):
+      print "get the same command"
+      if checkIsContinueSend(nodeId) == True:
+        sendSuccess = True
+        for i in range(len(node_arr)):
+          node_arr[i][1]=0
+        if share_queue.empty():
+          print "no command to send"
+          hasCommand = False
+          current_Command=""
+
+
+def checkCommand(id):
+    print "in thread ", id
+    global sendSuccess
+    global current_Command
+    global hasCommand
+    global share_queue
+    global current_CommandID
+    print "in checkCommand !\n"
+    while  True:
+      if sendSuccess == True:
+        time.sleep(10)
+        if share_queue.empty() == False :
+          print "to get new command to send"
+          current_Command = share_queue.get()
+          sendSuccess = False
+          split_Command = current_Command.split()
+          current_CommandID = split_Command[ask_command_map['COMMAND_ID']]
+          print "current_CommandID={0}\n".format(current_CommandID)
+          sendCommand(current_Command)
+        else:
+          # print "queue == null!\n"
+          hasCommand = False
+          current_Command=""
+          # time.sleep(10)
+      else :
+        # for i in range (0,10):
+        sendCommand(current_Command)
+        time.sleep(1)
+
+def createSocketServer(id):
+    print "in thread ", id
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    except socket.error, msg:
+        sys.stderr.write("[ERROR] %s\n" % msg[1])
+        sys.exit(1)
+
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(('127.0.0.1', 54321))
+    sock.listen(5)
+
+    while True:
+        (csock, adr) = sock.accept()
+        print "Client Info: ", csock, adr 
+        start_new_thread(threadWork, (csock,))
+
+    sock.close()
+
+start_new_thread(createSocketServer, (1, ))
+start_new_thread(checkCommand, (2, ))
+while True:
+    print "listen serial"
+    data = ser.readline()
+    if data:
+      print data
+      try:
+        split_data = data.split()
+        print "len ",format(len(split_data))
+
+
+        checkIsNewNode(split_data[current_table_map['NODE_ID']])
+
+        try:
+          db = MySQLdb.connect("192.168.2.18","root","sakimaru","ITRI_LongFung", connect_timeout=2)
+          cursor = db.cursor()
+          print "connect to 192.168.2.18"
+        except:
+          db = MySQLdb.connect("127.0.0.1","root","sakimaru","ITRI_LongFung" )
+          cursor = db.cursor()
+          print "connect to 127.0.0.1"
+
+        check_start_end_time(db,cursor)
+
+        if len(split_data)==17 and split_data[current_table_map['DATA_LEN']] == '30': #distance and substate
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), db, cursor)
+
+            upload_distance_to_DB(split_data, db, cursor)
+            
+        elif len(split_data)==24 and split_data[current_table_map['DATA_LEN']] == '44':
+            upload_v_a_to_DB(split_data, db, cursor)
+        
+        elif len(split_data)==37 and split_data[current_table_map['DATA_LEN']] == '70':
+            current_amount = int(split_data[current_table_map['AMOUNT_COUNTER']])
+            check_state(int(split_data[current_table_map['CURRENT_STATE']]), db, cursor)
+            check_start_end_time(db,cursor)
+            upload_data_to_DB(split_data, db, cursor)
+            
+        elif len(split_data)==4 and split_data[ack_map['DATA_LEN']] == '6':
+            print 'get ack'
+            revCommand(split_data[ack_map['NODE_ID']], split_data[ack_map['COMMAND_ID']])
+        
+        elif len(split_data)==14:
+            print 'gpio log'
+            update_gpio_log(split_data, db, cursor)
+        else:
+          pass
+
+        db.close()
+      except:
+        pass
+

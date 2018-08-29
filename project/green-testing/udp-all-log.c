@@ -711,12 +711,13 @@ check_photoelectric_sensors()
     return;
   }
 
+
   // printf("sensor_upper_time %u\n", sensor_upper_time);
   // printf("sensor_downer_time %u\n", sensor_downer_time);
 
   if(abs((int)TSCH_ASN_DIFF(sensor_upper_time, sensor_downer_time))>=101)
   {
-    if((int)(sensor_downer_time.ls4b-sensor_upper_time.ls4b)>0 && send_state==DEFAULT_STATE)
+    if((int)(sensor_downer_time-sensor_upper_time)>(RTIMER_ARCH_SECOND/2) && send_state==DEFAULT_STATE)
     {
       send_state = SOL_STATE;
       // printf("change send_state to SOL_STATE\n");
@@ -728,7 +729,7 @@ check_photoelectric_sensors()
       TSCH_ASN_INIT(sensor_upper_time, 0, 0);
       TSCH_ASN_INIT(sensor_downer_time, 0, 0);
     }
-    else if((int)(sensor_downer_time.ls4b-sensor_upper_time.ls4b)<0 && send_state==PVT_STATE)
+    else if((int)(sensor_upper_time-sensor_downer_time)>(RTIMER_ARCH_SECOND/2) && send_state>=PVT_STATE && send_state<=MP_STATE)
     {
       send_state = EOL_STATE;
       // printf("change send_state to EOL_STATE\n");
@@ -901,21 +902,32 @@ PROCESS_THREAD(udp_client_process, ev, data)
     }else if(ev == sensors_event){
       if(data == &sensor_num1) {
         printf("PC6\n"); //upper inner
-        // sensor_upper_time = rtimer_arch_now();
-        sensor_upper_time = get_timesynch_time();
-
+        sensor_upper_time = rtimer_arch_now();
+        if(sensor_upper_time-sensor_downer_time>RTIMER_ARCH_SECOND*5)
+        {
+          sensor_downer_time=0;
+        }
+        else
+        {
+          check_photoelectric_sensors();
+        }
         gpio_buff[gpio_counter].gpio=1;
-        check_photoelectric_sensors();
         gpio_buff[gpio_counter].state=send_state;
         gpio_counter++;
 
       }else if(data == &sensor_num2) {
         printf("Pc7\n"); //downer outer
-        // sensor_downer_time = rtimer_arch_now();
-        sensor_downer_time = get_timesynch_time();
 
+        sensor_downer_time = rtimer_arch_now();
+        if(sensor_downer_time-sensor_upper_time>RTIMER_ARCH_SECOND*5)
+        {
+          sensor_upper_time=0;
+        }
+        else
+        {
+          check_photoelectric_sensors();
+        }
         gpio_buff[gpio_counter].gpio=2;
-        check_photoelectric_sensors();
         gpio_buff[gpio_counter].state=send_state;
         gpio_counter++;
       }
