@@ -31,6 +31,7 @@ static struct timer debouncetimer;
 
    /* Enable edge detection */
    GPIO_DETECT_EDGE(port_base, pin_mask);
+   // GPIO_DETECT_LEVEL(port_base, pin_mask);
 
    /* Single edge */
    GPIO_TRIGGER_SINGLE_EDGE(port_base, pin_mask);

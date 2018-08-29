@@ -93,8 +93,8 @@ static char* command_data;
 static int send_period = PERIOD;
 static int distance_threshold = DISTANCE_THRESHOLD;
 
-struct tsch_asn_t start_time, end_time, open_time, close_time , sensor_upper_time, sensor_downer_time;
-// rtimer_clock_t sensor_upper_time=0, sensor_downer_time =0;
+struct tsch_asn_t start_time, end_time, open_time, close_time;
+rtimer_clock_t sensor_upper_time=0, sensor_downer_time =0;
 
 static uint16_t last_distance = DEFAULT_DISTANCE;
 static uint16_t minimun_distance = DEFAULT_DISTANCE;
@@ -438,11 +438,11 @@ void reset_values()
   TSCH_ASN_INIT(end_time, 0, 0);
   TSCH_ASN_INIT(open_time, 0, 0);
   TSCH_ASN_INIT(close_time, 0, 0);
-  TSCH_ASN_INIT(sensor_upper_time, 0, 0);
-  TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+  // TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+  // TSCH_ASN_INIT(sensor_downer_time, 0, 0);
 
-  // sensor_upper_time=0;
-  // sensor_downer_time =0;
+  sensor_upper_time=0;
+  sensor_downer_time =0;
 
   memset(&distance_buff, 0, sizeof(uint16_t)*BUFFSIZE);
   memset(&sub_state_buff, 0, sizeof(uint16_t)*BUFFSIZE);
@@ -497,6 +497,8 @@ void change_state_send(uint16_t state)
     data.temp_a[i] = temperature_a_buff[i];
   }
   buff_counter=0;
+
+  printf("%lu, \n", rtimer_arch_now());
   // printf("change_state_send packet\n");
   // printf("state %d counter %d \n",data.change_state, data.counter);
   // printf("sub_state %u distance %u total_v %u temp_v %u \n", data.sub_state[0], data.distance[0], data.total_v[0], data.temp_v[0]);
@@ -698,24 +700,24 @@ check_photoelectric_sensors()
 
   if(send_state == SOL_STATE)
   {
-    // sensor_upper_time=0;
-    // sensor_downer_time=0;
-    TSCH_ASN_INIT(sensor_upper_time, 0, 0);
-    TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+    sensor_upper_time=0;
+    sensor_downer_time=0;
+    // TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+    // TSCH_ASN_INIT(sensor_downer_time, 0, 0);
 
     return;
   }
 
-  if(sensor_upper_time.ms1b==0 || sensor_downer_time.ms1b==0)
-  {
-    return;
-  }
+  // if(sensor_upper_time ==0 || sensor_downer_time==0)
+  // {
+  //   return;
+  // }
 
 
   // printf("sensor_upper_time %u\n", sensor_upper_time);
   // printf("sensor_downer_time %u\n", sensor_downer_time);
 
-  if(abs((int)TSCH_ASN_DIFF(sensor_upper_time, sensor_downer_time))>=101)
+  if(sensor_upper_time!=0 && sensor_downer_time!=0)
   {
     if((int)(sensor_downer_time-sensor_upper_time)>(RTIMER_ARCH_SECOND/2) && send_state==DEFAULT_STATE)
     {
@@ -724,10 +726,10 @@ check_photoelectric_sensors()
       // collect_common_set_send_active(1);
       start_time = get_timesynch_time();
       printf("down, in \n");
-      // sensor_upper_time=0;
-      // sensor_downer_time=0;
-      TSCH_ASN_INIT(sensor_upper_time, 0, 0);
-      TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+      sensor_upper_time=0;
+      sensor_downer_time=0;
+      // TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+      // TSCH_ASN_INIT(sensor_downer_time, 0, 0);
     }
     else if((int)(sensor_upper_time-sensor_downer_time)>(RTIMER_ARCH_SECOND/2) && send_state>=PVT_STATE && send_state<=MP_STATE)
     {
@@ -736,18 +738,18 @@ check_photoelectric_sensors()
       // collect_common_set_send_active(1);
       end_time = get_timesynch_time();
       printf("up, out \n");
-      // sensor_upper_time=0;
-      // sensor_downer_time=0;
-      TSCH_ASN_INIT(sensor_upper_time, 0, 0);
-      TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+      sensor_upper_time=0;
+      sensor_downer_time=0;
+      // TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+      // TSCH_ASN_INIT(sensor_downer_time, 0, 0);
       // reset_values();
     }
   }
   else{
-    // sensor_upper_time=0;
-    // sensor_downer_time=0;
-    TSCH_ASN_INIT(sensor_upper_time, 0, 0);
-    TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+    sensor_upper_time=0;
+    sensor_downer_time=0;
+    // TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+    // TSCH_ASN_INIT(sensor_downer_time, 0, 0);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -856,7 +858,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
         // if(send_active)
         if(buff_counter==BUFFSIZE)
         {
-          // change_state_send(send_state);
           change_state_send(send_state);
           if(send_state == EOL_STATE)
           {
