@@ -36,7 +36,8 @@
 #define SOL_STATE 	  0x01  //Start of Life
 #define PVT_STATE     0x02  //Production Validation Test 
 #define MP_STATE      0x03  //Mass Production
-#define EOL_STATE     0x04  //End of Life
+#define EOMP_STATE    0x04  //End of Life
+#define EOL_STATE     0x05  //End of Life
 
 #define START_CLOSE   0x05
 #define CLOSE         0x06
