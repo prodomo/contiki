@@ -68,6 +68,8 @@
 #include "modbus-api.h"
 #include "dev/sensor-gpio.h"
 #include "dev/sensor-gpio2.h"
+// #include "dev/sensor-gpior.h"
+// #include "dev/sensor-gpio2r.h"
 // #include "dev/button-sensor.h"
 
 static struct uip_udp_conn *client_conn;
@@ -95,6 +97,9 @@ static int distance_threshold = DISTANCE_THRESHOLD;
 
 struct tsch_asn_t start_time, end_time, open_time, close_time;
 rtimer_clock_t sensor_upper_time=0, sensor_downer_time =0;
+rtimer_clock_t sensor_upper_rasing_time=0;
+rtimer_clock_t sensor_downer_rasing_time=0;
+
 
 static uint16_t last_distance = DEFAULT_DISTANCE;
 static uint16_t minimun_distance = DEFAULT_DISTANCE;
@@ -498,7 +503,7 @@ void change_state_send(uint16_t state)
   }
   buff_counter=0;
 
-  printf("%lu, \n", rtimer_arch_now());
+  // printf("%lu, \n", rtimer_arch_now());
   // printf("change_state_send packet\n");
   // printf("state %d counter %d \n",data.change_state, data.counter);
   // printf("sub_state %u distance %u total_v %u temp_v %u \n", data.sub_state[0], data.distance[0], data.total_v[0], data.temp_v[0]);
@@ -807,7 +812,7 @@ change_state(uint16_t state)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
-  static struct etimer period_timer, wait_timer, ack_timer, conf_timer;
+  static struct etimer period_timer, wait_timer, ack_timer, conf_timer, gpio_upper_timer, gpio_downer_timer;
 
   PROCESS_BEGIN();
 
@@ -870,18 +875,47 @@ PROCESS_THREAD(udp_client_process, ev, data)
           gpio_counter=0;
           memset(&gpio_buff, 0, sizeof(struct gpio_log)*BUFFSIZE);
         }
-      }else if(data == &ack_timer && ack_flag)
+      }
+      else if(data == &ack_timer && ack_flag)
+      {
+        printf("ack_timer timeup\n");
+        ack_flag=0;
+        collect_ack_send(command_id);
+      }
+      else if(data == &conf_timer && conf_flag)
+      {
+        printf("conf_timer timeup\n");
+        conf_flag=0;
+        printf("send config\n");
+      }
+      else if(data == &gpio_upper_timer)
+      {
+        uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
+        printf("read_pin %x", read_pin);
+        if(read_pin >= 0x30)
         {
-          printf("ack_timer timeup\n");
-          ack_flag=0;
-          collect_ack_send(command_id);
+          sensor_upper_time = sensor_upper_rasing_time;
+          check_photoelectric_sensors();
         }
-        else if(data == &conf_timer && conf_flag)
+        else
         {
-          printf("conf_timer timeup\n");
-          conf_flag=0;
-          printf("send config\n");
+          sensor_upper_rasing_time=0;
         }
+      }
+      else if(data == &gpio_downer_timer)
+      {
+        uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
+        printf("read_pin %x", read_pin);
+        if(read_pin >= 0x30)
+        {
+          sensor_downer_time = sensor_downer_rasing_time;
+          check_photoelectric_sensors();
+        }
+        else
+        {
+          sensor_downer_rasing_time=0;
+        }
+      }
     }
     else if(ev == serial_line_event_message) {
       char *line;
@@ -902,32 +936,49 @@ PROCESS_THREAD(udp_client_process, ev, data)
       }
     }else if(ev == sensors_event){
       if(data == &sensor_num1) {
-        printf("PC6\n"); //upper inner
-        sensor_upper_time = rtimer_arch_now();
+        printf("PC6 \n"); //upper inner
+        uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
+        rtimer_clock_t now = rtimer_arch_now();
+        printf("rtimer_arch_now() %lu \n", now);
+        printf("read_pin %x", read_pin);
+         
+        if(read_pin >= 0x30) //init 40
+        {
+          sensor_upper_rasing_time = now;
+          printf("sensor_upper_rasing_time %lu\n", sensor_upper_rasing_time);
+          etimer_set(&gpio_downer_timer, CLOCK_SECOND);
+        }
+
+
         if(sensor_upper_time-sensor_downer_time>RTIMER_ARCH_SECOND*5)
         {
           sensor_downer_time=0;
         }
-        else
-        {
-          check_photoelectric_sensors();
-        }
+
         gpio_buff[gpio_counter].gpio=1;
         gpio_buff[gpio_counter].state=send_state;
         gpio_counter++;
 
-      }else if(data == &sensor_num2) {
+      }
+      else if(data == &sensor_num2) {
         printf("Pc7\n"); //downer outer
+        uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
+        rtimer_clock_t now = rtimer_arch_now();
+        printf("rtimer_arch_now() %lu \n", now);
+        printf("read_pin %x", read_pin);
+         
+        if(read_pin >= 0x30)
+        {
+          sensor_downer_rasing_time = now;
+          printf("sensor_downer_rasing_time %lu\n", sensor_downer_rasing_time);
+          etimer_set(&gpio_downer_timer, CLOCK_SECOND);
+        }
 
-        sensor_downer_time = rtimer_arch_now();
         if(sensor_downer_time-sensor_upper_time>RTIMER_ARCH_SECOND*5)
         {
           sensor_upper_time=0;
         }
-        else
-        {
-          check_photoelectric_sensors();
-        }
+
         gpio_buff[gpio_counter].gpio=2;
         gpio_buff[gpio_counter].state=send_state;
         gpio_counter++;
