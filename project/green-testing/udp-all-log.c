@@ -68,8 +68,6 @@
 #include "modbus-api.h"
 #include "dev/sensor-gpio.h"
 #include "dev/sensor-gpio2.h"
-// #include "dev/sensor-gpior.h"
-// #include "dev/sensor-gpio2r.h"
 // #include "dev/button-sensor.h"
 
 static struct uip_udp_conn *client_conn;
