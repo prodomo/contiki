@@ -43,7 +43,7 @@
 #define CLOSE         0x07
 #define START_OPEN	  0x08
 #define OPEN          0x09
-
+#define READY_OPEN    0x10
 
 struct setting_msg {
 	uint16_t setting_type;
