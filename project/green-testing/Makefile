@@ -1,6 +1,6 @@
 # CONTIKI_PROJECT = udp-sink
 # CONTIKI_PROJECT = udp-displacement udp-sink udp-distance udp-all
-CONTIKI_PROJECT = udp-sink udp-all-log udp-v-a-log udp-interrupter-distance
+CONTIKI_PROJECT = udp-sink udp-all-log 
 
 all: $(CONTIKI_PROJECT)
 
