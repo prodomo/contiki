@@ -86,9 +86,9 @@ static char* command_data;
 
 #define DEFAULT_DISTANCE 1000
 #define MODBUS_NOTREAD  9999
-#define DISTANCE_THRESHOLD 10
+#define DISTANCE_THRESHOLD 7
 #define DISTANCE_ERROR 3
-#define DISTANCE_ERROR_THRESHOLD 20
+// #define DISTANCE_ERROR_THRESHOLD 20
 
 
 static int send_period = PERIOD;
@@ -615,25 +615,20 @@ void check_distance_value()
     // printf("Success state after sending modbus packet\n");
     printf("Value read form %d: 0x%x = %d \n", 1, 0x0082, current_distance);
     
-    if(last_distance != DEFAULT_DISTANCE && current_distance!=0 && abs(last_distance-current_distance)<=DISTANCE_ERROR_THRESHOLD)
+    if(last_distance != DEFAULT_DISTANCE && current_distance!=0)
     {
       // printf("last_distance-current_distance %d\n", last_distance-current_distance);
-      if((last_distance-current_distance) >= distance_threshold ) //current < last
+      if((last_distance-current_distance) >= distance_threshold  || ((maximun_distance-current_distance) >= distance_threshold && sub_state==OPEN)) //current < last
       {
         sub_state = START_CLOSE;
         
         // close_time=get_timesynch_time();
         
-        // if(current_distance< minimun_distance)
-        // {
-          // minimun_distance = current_distance;
-        // }
-        
-        if(send_state <= SOL_STATE)
+        if(current_distance< minimun_distance)
         {
-          send_state = PVT_STATE;
-          // printf("send_state change to PVT_STATE\n");
+          minimun_distance = current_distance;
         }
+        
       }
       else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_CLOSE)
       {
@@ -666,12 +661,18 @@ void check_distance_value()
         // }
         amount_counter++;
         printf("amount_counter %d\n", amount_counter);
+        if(send_state <= SOL_STATE)
+        {
+          send_state = PVT_STATE;
+          // printf("send_state change to PVT_STATE\n");
+        }
         // printf("same_counter %d\n", same_counter);
         // last_asn_diff = TSCH_ASN_DIFF(open_time,close_time);
       }
       else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == START_OPEN )
       {
         sub_state=OPEN;
+        maximun_distance = current_distance;
       }
       else if(abs(last_distance-current_distance) <= DISTANCE_ERROR && sub_state == OPEN)
       {
@@ -692,6 +693,7 @@ void check_distance_value()
         }
       }
     }
+
     if(current_distance != 0)
     {
       last_distance = current_distance;
@@ -761,12 +763,13 @@ check_photoelectric_sensors()
       // reset_values();
       // }
     }
-  }
-  else{
-    sensor_upper_time=0;
-    sensor_downer_time=0;
-    // TSCH_ASN_INIT(sensor_upper_time, 0, 0);
-    // TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+    else
+    {
+      sensor_upper_time=0;
+      sensor_downer_time=0;
+      // TSCH_ASN_INIT(sensor_upper_time, 0, 0);
+      // TSCH_ASN_INIT(sensor_downer_time, 0, 0);
+    }
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -824,7 +827,7 @@ change_state(uint16_t state)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
-  static struct etimer period_timer, wait_timer, ack_timer, conf_timer, gpio_upper_timer, gpio_downer_timer;
+  static struct etimer period_timer, wait_timer, ack_timer, conf_timer;
 
   PROCESS_BEGIN();
 
@@ -896,38 +899,10 @@ PROCESS_THREAD(udp_client_process, ev, data)
       }
       else if(data == &conf_timer && conf_flag)
       {
-        printf("conf_timer timeup\n");
+        // printf("conf_timer timeup\n");
         conf_flag=0;
         printf("send config\n");
       }
-      // else if(data == &gpio_upper_timer)
-      // {
-      //   uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
-      //   printf("read_pin %x", read_pin);
-      //   if(read_pin >= 0x30)
-      //   {
-      //     sensor_upper_time = sensor_upper_rasing_time;
-      //     check_photoelectric_sensors();
-      //   }
-      //   else
-      //   {
-      //     sensor_upper_rasing_time=0;
-      //   }
-      // }
-      // else if(data == &gpio_downer_timer)
-      // {
-      //   uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
-      //   printf("read_pin %x", read_pin);
-      //   if(read_pin >= 0x30)
-      //   {
-      //     sensor_downer_time = sensor_downer_rasing_time;
-      //     check_photoelectric_sensors();
-      //   }
-      //   else
-      //   {
-      //     sensor_downer_rasing_time=0;
-      //   }
-      // }
     }
     else if(ev == serial_line_event_message) {
       char *line;
@@ -951,7 +926,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
         printf("PC6 \n"); //upper inner
         uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
         rtimer_clock_t now = rtimer_arch_now();
-        printf("rtimer_arch_now() %lu \n", now);
         printf("read_pin %x", read_pin);
          
         if(read_pin == 0x40) //init 40
@@ -959,9 +933,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
           // sensor_upper_rasing_time = now;
           sensor_upper_time=now;
           printf("sensor_upper_time %lu\n", sensor_upper_time);
-          // etimer_set(&gpio_downer_timer, CLOCK_SECOND);
-       
-
 
          if(sensor_upper_time-sensor_downer_time>RTIMER_ARCH_SECOND*5)
           {
@@ -971,19 +942,17 @@ PROCESS_THREAD(udp_client_process, ev, data)
             printf("real\n");
             check_photoelectric_sensors();
             // printf("real\n");
+            gpio_buff[gpio_counter].gpio=1;
+            gpio_buff[gpio_counter].state=send_state;
+            gpio_counter++;
           }
         } 
-
-        gpio_buff[gpio_counter].gpio=1;
-        gpio_buff[gpio_counter].state=send_state;
-        gpio_counter++;
 
       }
       else if(data == &sensor_num2) {
         printf("Pc7\n"); //downer outer
         uint16_t read_pin = (uint16_t)GPIO_READ_PIN(GPIO_PORT_TO_BASE(SENSOR_NUM1_PORT), GPIO_PIN_MASK(SENSOR_NUM1_PIN));
         rtimer_clock_t now = rtimer_arch_now();
-        printf("rtimer_arch_now() %lu \n", now);
         printf("read_pin %x", read_pin);
          
         if(read_pin >= 0x40)
@@ -991,8 +960,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
           // sensor_downer_rasing_time = now;
           sensor_downer_time = now;
           printf("sensor_downer_time %lu\n", sensor_downer_time);
-          // etimer_set(&gpio_downer_timer, CLOCK_SECOND);
-        
 
           if(sensor_downer_time-sensor_upper_time>RTIMER_ARCH_SECOND*5)
           {
@@ -1003,12 +970,11 @@ PROCESS_THREAD(udp_client_process, ev, data)
             printf("real\n");
             check_photoelectric_sensors();
             // printf("real\n");
+            gpio_buff[gpio_counter].gpio=2;
+            gpio_buff[gpio_counter].state=send_state;
+            gpio_counter++;
           }
         }
-
-        gpio_buff[gpio_counter].gpio=2;
-        gpio_buff[gpio_counter].state=send_state;
-        gpio_counter++;
       }
     }
   }
