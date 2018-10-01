@@ -71,33 +71,7 @@ extern struct tsch_asn_t tsch_current_asn;
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  const char *threshold_c = NULL;
-  const char *priority_c = NULL;
-  int threshold = -1;
-  int priority = -1;
-
-  if(REST.get_query_variable(request, "thd", &threshold_c)) {
-    threshold = (uint8_t)atoi(threshold_c);
-  }
-
-  if(REST.get_query_variable(request, "pp", &priority_c)) {
-    priority = (uint8_t)atoi(priority_c);
-  }
-
-  if(threshold < 1 && (priority<0||priority>2)) {
-    /* Threashold is too smaill ignore it! */
-    REST.set_response_status(response, REST.status.BAD_REQUEST);
-  } else {
-    if(threshold>=1){
-      /* Update to new threshold */
-      event_threshold = threshold;
-      event_threshold_last_change = event_counter;
-    }
-    if(priority>=0 && priority<= 2)
-    {
-      packet_priority = priority;
-    }
-  }
+  
   /*
    * For minimal complexity, request query and options should be ignored for GET on observable resources.
    * Otherwise the requests must be stored with the observer list and passed by REST.notify_subscribers().
@@ -206,7 +180,33 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 static void
 res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
+  const char *threshold_c = NULL;
+  const char *priority_c = NULL;
+  int threshold = -1;
+  int priority = -1;
 
+  if(REST.get_query_variable(request, "thd", &threshold_c)) {
+    threshold = (uint8_t)atoi(threshold_c);
+  }
+
+  if(REST.get_query_variable(request, "pp", &priority_c)) {
+    priority = (uint8_t)atoi(priority_c);
+  }
+
+  if(threshold < 1 && (priority<0||priority>2)) {
+    /* Threashold is too smaill ignore it! */
+    REST.set_response_status(response, REST.status.BAD_REQUEST);
+  } else {
+    if(threshold>=1){
+      /* Update to new threshold */
+      event_threshold = threshold;
+      event_threshold_last_change = event_counter;
+    }
+    if(priority>=0 && priority<= 2)
+    {
+      packet_priority = priority;
+    }
+  }
 }
 
 /*
