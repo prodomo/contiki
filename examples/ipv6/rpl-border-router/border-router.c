@@ -343,7 +343,6 @@ PT_THREAD(generate_routes(struct httpd_state *s))
 httpd_simple_script_t
 httpd_simple_get_script(const char *name)
 {
-
   return generate_routes;
 }
 
@@ -434,7 +433,11 @@ PROCESS_THREAD(border_router_process, ev, data)
   /* Now turn the radio on, but disable radio duty cycling.
    * Since we are the DAG root, reception delays would constrain mesh throughbut.
    */
-  NETSTACK_MAC.off(1);
+  /* NETSTACK_MAC.off(1); */
+  NETSTACK_MAC.on();
+#if WITH_ORCHESTRA
+  orchestra_init();
+#endif
 
 #if DEBUG || 1
   print_local_addresses();

@@ -90,6 +90,7 @@
 #endif /* UIP_ND6_SEND_NS */
 
 #include <string.h>
+#include <stdio.h>
 
 /*---------------------------------------------------------------------------*/
 /* For Debug, logging, statistics                                            */
@@ -2303,9 +2304,20 @@ uip_process(uint8_t flag)
 #if UIP_UDP
   ip_send_nolen:
 #endif
+
+#if UIP_UDP
   UIP_IP_BUF->vtc = 0x60;
-  UIP_IP_BUF->tcflow = 0x00;
+  //UIP_IP_BUF->tcflow = 0x00;
   UIP_IP_BUF->flow = 0x00;
+#else
+  UIP_IP_BUF->vtc = 0x60;
+      /*debug*/
+  srand(time(NULL));
+  int rndTc;
+  rndTc=(rand()%3);
+  UIP_IP_BUF->tcflow = rndTc;
+  UIP_IP_BUF->flow = rndTc;
+#endif
   send:
   PRINTF("Sending packet with length %d (%d)\n", uip_len,
       (UIP_IP_BUF->len[0] << 8) | UIP_IP_BUF->len[1]);

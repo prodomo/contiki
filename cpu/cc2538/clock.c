@@ -77,6 +77,14 @@
 #define SYSTICK_PERIOD          (SYS_CTRL_SYS_CLOCK / CLOCK_SECOND)
 
 static volatile uint64_t rt_ticks_startup = 0, rt_ticks_epoch = 0;
+
+static volatile uint64_t update_counter = 0;
+
+static volatile uint32_t high_phy_rtimer = 0;
+static volatile uint64_t high_sof_rtimer = 0;
+static volatile uint64_t last_update_done_rtimer = 0;
+static volatile uint64_t high_last_update_done_rtimer = 0;
+static volatile uint32_t strange_happen_counter = 0;
 /*---------------------------------------------------------------------------*/
 /**
  * \brief Arch-specific implementation of clock_init for the cc2538
@@ -119,6 +127,7 @@ clock_time(void)
 {
   return rt_ticks_startup / RTIMER_CLOCK_TICK_RATIO;
 }
+
 /*---------------------------------------------------------------------------*/
 void
 clock_set_seconds(unsigned long sec)
@@ -190,15 +199,31 @@ update_ticks(void)
   uint64_t prev_rt_ticks_startup, cur_rt_ticks_startup;
   uint32_t cur_rt_ticks_startup_hi;
 
+  update_counter++;
+
   now = RTIMER_NOW();
   prev_rt_ticks_startup = rt_ticks_startup;
 
   cur_rt_ticks_startup_hi = prev_rt_ticks_startup >> 32;
   if(now < (rtimer_clock_t)prev_rt_ticks_startup) {
-    cur_rt_ticks_startup_hi++;
+    // prevent now going backward
+    if((rtimer_clock_t)prev_rt_ticks_startup - now > 1) {
+      high_last_update_done_rtimer = last_update_done_rtimer;
+      cur_rt_ticks_startup_hi++;
+    
+      
+      high_sof_rtimer = prev_rt_ticks_startup;
+      high_phy_rtimer = now;
+    }else {
+      strange_happen_counter++;
+    }
   }
+
+  last_update_done_rtimer = rt_ticks_startup;
+
   cur_rt_ticks_startup = (uint64_t)cur_rt_ticks_startup_hi << 32 | now;
   rt_ticks_startup = cur_rt_ticks_startup;
+
 
   rt_ticks_epoch += cur_rt_ticks_startup - prev_rt_ticks_startup;
 
@@ -248,6 +273,58 @@ clock_isr(void)
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
 }
 /*---------------------------------------------------------------------------*/
+
+
+
+
+uint64_t
+get_clock_epoch(void)
+{
+  return rt_ticks_epoch;
+}
+
+uint64_t
+get_clock_update_counter(void)
+{
+  return update_counter;
+}
+
+uint64_t
+get_software_rtimer_ticks(void)
+{
+  return rt_ticks_startup;
+}
+
+uint32_t
+get_high_phy_rtimer(void)
+{
+  return high_phy_rtimer;
+}
+
+uint64_t
+get_high_sof_rtimer(void)
+{
+  return high_sof_rtimer;
+}
+
+uint64_t
+get_last_update_done_rtimer(void)
+{
+  return last_update_done_rtimer;
+}
+
+uint64_t
+get_high_last_update_done_rtimer(void)
+{
+  return high_last_update_done_rtimer;
+}
+
+uint32_t
+get_strange_happen_counter(void)
+{
+  return strange_happen_counter;
+}
+
 
 /**
  * @}

@@ -260,4 +260,7 @@ int coap_set_header_size1(void *packet, uint32_t size);
 int coap_get_payload(void *packet, const uint8_t **payload);
 int coap_set_payload(void *packet, const void *payload, size_t length);
 
+//Add function to set packet priority by setting traffic class
+void coap_set_uip_traffic_class(uint8_t priority);
+
 #endif /* ER_COAP_H_ */

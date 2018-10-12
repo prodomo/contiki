@@ -263,39 +263,39 @@ public abstract class AbstractCompileDialog extends JDialog {
       }
     };
     Action compileAction = new AbstractAction("Compile") {
-    	private static final long serialVersionUID = 1L;
-    	public void actionPerformed(ActionEvent e) {
-    		if (!compileButton.isEnabled()) {
-    			return;
-    		}
-    		try {
-    			setDialogState(DialogState.AWAITING_COMPILATION);
-    			compileContiki();
-    		} catch (Exception e1) {
-    			logger.fatal("Error while compiling Contiki: " + e1.getMessage());
-    		}
-    	}
+      private static final long serialVersionUID = 1L;
+      public void actionPerformed(ActionEvent e) {
+        if (!compileButton.isEnabled()) {
+          return;
+        }
+        try {
+          setDialogState(DialogState.AWAITING_COMPILATION);
+          compileContiki();
+        } catch (Exception e1) {
+          logger.fatal("Error while compiling Contiki: " + e1.getMessage());
+        }
+      }
     };
     cleanButton = new JButton("Clean");
     cleanButton.setToolTipText("make clean TARGET=" + getTargetName());
     cleanButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				try {
-					currentCompilationProcess = CompileContiki.compile(
-							"make clean TARGET=" + getTargetName(),
-							compilationEnvironment,
-							null /* Do not observe output firmware file */,
-							new File(contikiField.getText()).getParentFile(),
-							null,
-							null,
-							null,
-							true
-					);
-				} catch (Exception e1) {
-					logger.fatal("Clean failed: " + e1.getMessage(), e1);
-				}
-			}
-		});
+      public void actionPerformed(ActionEvent e) {
+        try {
+          currentCompilationProcess = CompileContiki.compile(
+              "make clean TARGET=" + getTargetName(),
+              compilationEnvironment,
+              null /* Do not observe output firmware file */,
+              new File(contikiField.getText()).getParentFile(),
+              null,
+              null,
+              null,
+              true
+          );
+        } catch (Exception e1) {
+          logger.fatal("Clean failed: " + e1.getMessage(), e1);
+        }
+      }
+    });
 
     compileButton = new JButton(compileAction);
     getRootPane().setDefaultButton(compileButton);
@@ -304,17 +304,17 @@ public abstract class AbstractCompileDialog extends JDialog {
     createButton = new JButton("Create");
     createButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-      	/* Write mote type settings (generic) */
-      	moteType.setDescription(descriptionField.getText());
-      	moteType.setContikiSourceFile(contikiSource);
-      	moteType.setContikiFirmwareFile(contikiFirmware);
-      	moteType.setMoteInterfaceClasses(getSelectedMoteInterfaceClasses());
-      	moteType.setCompileCommands(getCompileCommands());
+        /* Write mote type settings (generic) */
+        moteType.setDescription(descriptionField.getText());
+        moteType.setContikiSourceFile(contikiSource);
+        moteType.setContikiFirmwareFile(contikiFirmware);
+        moteType.setMoteInterfaceClasses(getSelectedMoteInterfaceClasses());
+        moteType.setCompileCommands(getCompileCommands());
 
-      	/* Write mote type settings (mote type specific) */
-      	writeSettingsToMoteType();
+        /* Write mote type settings (mote type specific) */
+        writeSettingsToMoteType();
 
-      	AbstractCompileDialog.this.dispose();
+        AbstractCompileDialog.this.dispose();
       }
     });
 
@@ -377,12 +377,16 @@ public abstract class AbstractCompileDialog extends JDialog {
 
     pack();
     setLocationRelativeTo(parent);
-    
+   
+   tryRestoreMoteType();
+ 
+/*
     new Thread() {
       public void run() {
         tryRestoreMoteType();
       };
     }.start();
+*/
   }
 
   private void tryRestoreMoteType() { 
@@ -511,8 +515,8 @@ public abstract class AbstractCompileDialog extends JDialog {
 
     /* Called when last command has finished (success only) */
     final Action compilationSuccessAction = new AbstractAction() {
-			private static final long serialVersionUID = -3815068126197234346L;
-			public void actionPerformed(ActionEvent e) {
+      private static final long serialVersionUID = -3815068126197234346L;
+      public void actionPerformed(ActionEvent e) {
         abortMenuItem.setEnabled(false);
 
         /* Make sure firmware exists */
@@ -527,8 +531,8 @@ public abstract class AbstractCompileDialog extends JDialog {
 
     /* Called immediately if any command fails */
     final Action compilationFailureAction = new AbstractAction() {
-			private static final long serialVersionUID = -800799353242963993L;
-			public void actionPerformed(ActionEvent e) {
+      private static final long serialVersionUID = -800799353242963993L;
+      public void actionPerformed(ActionEvent e) {
         abortMenuItem.setEnabled(false);
         setDialogState(DialogState.AWAITING_COMPILATION);
       }
@@ -536,8 +540,8 @@ public abstract class AbstractCompileDialog extends JDialog {
 
     /* Called once per command */
     final Action nextCommandAction = new AbstractAction() {
-			private static final long serialVersionUID = -4525372566302330762L;
-			public void actionPerformed(ActionEvent e) {
+      private static final long serialVersionUID = -4525372566302330762L;
+      public void actionPerformed(ActionEvent e) {
         Action nextSuccessAction;
         if (commands.size() == 1) {
           nextSuccessAction = compilationSuccessAction;
@@ -605,10 +609,10 @@ public abstract class AbstractCompileDialog extends JDialog {
 
     switch (dialogState) {
     case NO_SELECTION:
-    	cleanButton.setEnabled(false);
-    	compileButton.setEnabled(false);
-    	createButton.setEnabled(false);
-    	commandsArea.setEnabled(false);
+      cleanButton.setEnabled(false);
+      compileButton.setEnabled(false);
+      createButton.setEnabled(false);
+      commandsArea.setEnabled(false);
       break;
 
     case SELECTED_SOURCE:
@@ -622,10 +626,10 @@ public abstract class AbstractCompileDialog extends JDialog {
         return;
       }
 
-    	cleanButton.setEnabled(true);
-    	compileButton.setEnabled(true);
-    	createButton.setEnabled(false);
-    	commandsArea.setEnabled(true);
+      cleanButton.setEnabled(true);
+      compileButton.setEnabled(true);
+      createButton.setEnabled(false);
+      commandsArea.setEnabled(true);
       setCompileCommands(getDefaultCompileCommands(sourceFile));
       contikiFirmware = getExpectedFirmwareFile(sourceFile);
       contikiSource = sourceFile;
@@ -650,18 +654,18 @@ public abstract class AbstractCompileDialog extends JDialog {
       break;
 
     case IS_COMPILING:
-    	cleanButton.setEnabled(false);
-    	compileButton.setEnabled(false);
-    	compileButton.setText("Compiling");
-    	createButton.setEnabled(false);
-    	commandsArea.setEnabled(false);
+      cleanButton.setEnabled(false);
+      compileButton.setEnabled(false);
+      compileButton.setText("Compiling");
+      createButton.setEnabled(false);
+      commandsArea.setEnabled(false);
       break;
 
     case COMPILED_FIRMWARE:
-    	cleanButton.setEnabled(true);
-    	compileButton.setEnabled(true);
-    	createButton.setEnabled(true);
-    	commandsArea.setEnabled(true);
+      cleanButton.setEnabled(true);
+      compileButton.setEnabled(true);
+      createButton.setEnabled(true);
+      commandsArea.setEnabled(true);
       getRootPane().setDefaultButton(createButton);
       break;
 
@@ -677,11 +681,11 @@ public abstract class AbstractCompileDialog extends JDialog {
         return;
       }
 
-    	cleanButton.setEnabled(true);
-    	compileButton.setEnabled(false);
-    	createButton.setEnabled(true);
-    	commandsArea.setEnabled(false);
-    	setCompileCommands("");
+      cleanButton.setEnabled(true);
+      compileButton.setEnabled(false);
+      createButton.setEnabled(true);
+      commandsArea.setEnabled(false);
+      setCompileCommands("");
       getRootPane().setDefaultButton(createButton);
       break;
 

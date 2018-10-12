@@ -69,6 +69,16 @@
 #endif
 #endif
 
+#if ENABLE_QOS_WHITE
+#define TSCH_ENABLE_QOS 1
+#else
+#define TSCH_ENABLE_QOS 0
+#endif
+
+#define WHITE_DEBUG 1
+
+
+
 /* The number of neighbor queues. There are two queues allocated at all times:
  * one for EBs, one for broadcasts. Other queues are for unicast to neighbors */
 #ifdef TSCH_QUEUE_CONF_MAX_NEIGHBOR_QUEUES
@@ -190,5 +200,18 @@ void tsch_queue_backoff_inc(struct tsch_neighbor *n);
 void tsch_queue_update_all_backoff_windows(const linkaddr_t *dest_addr);
 /* Initialize TSCH queue module */
 void tsch_queue_init(void);
+
+
+/* White resorting ringbuf by priority. */
+/*
+void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p);
+void pkt_priority_largerthan(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp);
+void pkt_priority_same(struct tsch_neighbor *n,struct tsch_packet *p, int16_t *index_temp);
+*/
+
+/* White resorting ringbuf method 2, using swap packet in ringbuf */
+
+void tsch_queue_resorting_ringbuf_priority(struct tsch_neighbor *n,struct tsch_packet *p);
+void pkt_priority_sorting(struct tsch_neighbor *n,struct tsch_packet *p);
 
 #endif /* __TSCH_QUEUE_H__ */
