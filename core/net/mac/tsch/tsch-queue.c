@@ -257,7 +257,7 @@ tsch_queue_remove_nbr(struct tsch_neighbor *n)
 /*---------------------------------------------------------------------------*/
 /* Add packet to neighbor queue. Use same lockfree implementation as ringbuf.c (put is atomic) */
 struct tsch_packet *
-tsch_queue_add_packet(const linkaddr_t *addr, uint8_t max_transmissions,
+tsch_queue_add_packet(const linkaddr_t *addr,
                       mac_callback_t sent, void *ptr)
 {
   struct tsch_neighbor *n = NULL;
@@ -280,7 +280,6 @@ tsch_queue_add_packet(const linkaddr_t *addr, uint8_t max_transmissions,
             p->ptr = ptr;
             p->ret = MAC_TX_DEFERRED;
             p->transmissions = 0;
-            p->max_transmissions = max_transmissions;
             /* show queuebuf information. */
             uint8_t i;
             uint8_t dataLen = queuebuf_datalen(p->qb);
@@ -317,7 +316,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, uint8_t max_transmissions,
       }
     }
   }
-  LOG_ERR("! add packet failed: %u %p %d %p %p\n", tsch_is_locked(), n, put_index, p, p ? p->qb : NULL);
+  PRINTF("! add packet failed: %u %p %d %p %p\n", tsch_is_locked(), n, put_index, p, p ? p->qb : NULL);
   return 0;
 }
 /*---------------------------------------------------------------------------*/
