@@ -257,38 +257,30 @@ tsch_queue_remove_nbr(struct tsch_neighbor *n)
 /*---------------------------------------------------------------------------*/
 /* Add packet to neighbor queue. Use same lockfree implementation as ringbuf.c (put is atomic) */
 struct tsch_packet *
-tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
+tsch_queue_add_packet(const linkaddr_t *addr, uint8_t max_transmissions,
+                      mac_callback_t sent, void *ptr)
 {
   struct tsch_neighbor *n = NULL;
   int16_t put_index = -1;
   struct tsch_packet *p = NULL;
-
-  data_tcflow = -1; //by default.
-
-  if (!tsch_is_locked())
-  {
+  if(!tsch_is_locked()) {
     n = tsch_queue_add_nbr(addr);
-    if (n != NULL)
-    {
+    if(n != NULL) {
       put_index = ringbufindex_peek_put(&n->tx_ringbuf);
-      if (put_index != -1)
-      {
+      if(put_index != -1) {
         p = memb_alloc(&packet_memb);
-        if (p != NULL)
-        {
-        /* Enqueue packet */
+        if(p != NULL) {
+          /* Enqueue packet */
 #ifdef TSCH_CALLBACK_PACKET_READY
           TSCH_CALLBACK_PACKET_READY();
 #endif
-
           p->qb = queuebuf_new_from_packetbuf();
-          if (p->qb != NULL)
-          {
+          if(p->qb != NULL) {
             p->sent = sent;
             p->ptr = ptr;
             p->ret = MAC_TX_DEFERRED;
             p->transmissions = 0;
-
+            p->max_transmissions = max_transmissions;
             /* show queuebuf information. */
             uint8_t i;
             uint8_t dataLen = queuebuf_datalen(p->qb);
@@ -304,29 +296,28 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen - 4] == 0xf0 &&
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen - 3] == 0xff )
             {
-              data_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow location in queuebuf.
-              PRINTF("Traffic classes In TSCH queue : %02x\n", data_tcflow);
+              /*Get tcflow frome attribute*/
+              data_tcflow = (uint8_t)queuebuf_attr(p->qb,PACKETBUF_ATTR_TCFLOW); 
+              PRINTF("Traffic classes In TSCH queue frome attr : %02x\n" ,data_tcflow);
             }
 
-#if ENABLE_QOS_WHITE
+#if ENABLE_QOS
             tsch_queue_resorting_ringbuf_priority(n, p);
 #else
             /* Add to ringbuf (actual add committed through atomic operation) */
             n->tx_array[put_index] = p;       //
             ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
             PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
-#endif /* ENABLE_QOS_WHITE */
+#endif /* ENABLE_QOS */
             return p;
-          }
-          else
-          {
+          } else {
             memb_free(&packet_memb, p);
           }
         }
       }
     }
   }
-  PRINTF("TSCH-queue:! add packet failed: %u %p %d %p %p\n", tsch_is_locked(), n, put_index, p, p ? p->qb : NULL);
+  LOG_ERR("! add packet failed: %u %p %d %p %p\n", tsch_is_locked(), n, put_index, p, p ? p->qb : NULL);
   return 0;
 }
 /*---------------------------------------------------------------------------*/

@@ -52,8 +52,8 @@
 #define QUEUEBUF_CONF_NUM          4
 #endif
 
-#ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE           0
+#ifndef ENABLE_QOS
+#define ENABLE_QOS           0
 #endif
 
 // #ifndef MAX_LOG_LENGTH
