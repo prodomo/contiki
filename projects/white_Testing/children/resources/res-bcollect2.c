@@ -57,18 +57,6 @@ static uint32_t packet_counter = 0;
 
 static uint8_t packet_priority = 0;
 
-<<<<<<< HEAD
-// #if CONTIKI_TARGET_COOJA
-// #include "node-id.h"
-// void set_bcollect2() {
-//   if(node_id == 2 || node_id == 8 || node_id == 9 || node_id == 10) {
-//     packet_priority = 1;
-//   }
-// }
-// #endif /* CONTIKI_TARGET_COOJA */
-
-=======
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
 
@@ -77,31 +65,13 @@ extern struct tsch_asn_t tsch_current_asn;
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-<<<<<<< HEAD
-  
-=======
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
+
   /*
    * For minimal complexity, request query and options should be ignored for GET on observable resources.
    * Otherwise the requests must be stored with the observer list and passed by REST.notify_subscribers().
    * This would be a TODO in the corresponding files in contiki/apps/erbium/!
    */
 
-<<<<<<< HEAD
-
-    struct 
-  {
-    uint8_t flag[2];
-    uint32_t start_asn;
-    // padding 2 uint16_t
-    uint32_t end_asn;
-    uint32_t event_counter;
-    uint8_t event_threshold;
-    // padding 3
-    uint32_t event_threshold_last_change;
-    uint32_t packet_counter;
-    unsigned char parent_address[2];
-=======
   struct 
   {
     // 32bits to 1 block
@@ -116,15 +86,11 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     uint32_t event_threshold_last_change; 
     uint32_t packet_counter;
     unsigned char parent_address[2]; // uint8[0] , uint8[1]
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
     uint16_t rank;
     uint16_t parnet_link_etx;
     int16_t parent_link_rssi;
     uint8_t end_flag[2];
-<<<<<<< HEAD
-=======
     // padding int16_t
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
   } message;
 
   memset(&message, 0, sizeof(message));
@@ -141,14 +107,9 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 
   message.start_asn = tsch_current_asn.ls4b;
 
-<<<<<<< HEAD
-=======
-
   // for priority
   message.priority = packet_priority;
 
-
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
   uint8_t packet_length = 0;
   rpl_dag_t *dag;
   rpl_parent_t *preferred_parent;
@@ -156,18 +117,10 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   linkaddr_copy(&parent, &linkaddr_null);
   struct link_stats *parent_link_stats;
 
-
-<<<<<<< HEAD
-  PRINTF("I am B_collect2 res_get hanlder!\n");
-  REST.set_header_content_type(response, REST.type.APPLICATION_OCTET_STREAM);
-  REST.set_header_max_age(response, res_bcollect2.periodic->period / CLOCK_SECOND);
-=======
   PRINTF("I am B_collect_2 res_get hanlder!\n");
   REST.set_header_content_type(response, REST.type.APPLICATION_OCTET_STREAM);
   REST.set_header_max_age(response,res_bcollect_2.periodic->period / CLOCK_SECOND);
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
 
-  
 
   // packet_counter
   // memcpy(buffer,&packet_counter, sizeof(packet_counter));
@@ -251,10 +204,6 @@ res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t prefer
       packet_priority = priority;
     }
   }
-<<<<<<< HEAD
-  
-=======
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
 }
 
 /*
@@ -273,10 +222,7 @@ res_periodic_handler()
     PRINTF("Generate a new packet! , %08x. \n",tsch_current_asn.ls4b);
         
     /* Notify the registered observers which will trigger the res_get_handler to create the response. */
-<<<<<<< HEAD
-    REST.notify_subscribers(&res_bcollect2);
-=======
     REST.notify_subscribers(&res_bcollect_2);
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
+
   }
 }
