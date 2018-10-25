@@ -234,6 +234,7 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
           notification->type = COAP_TYPE_CON;
         }
 
+
         PRINTF("           Observer ");
         PRINT6ADDR(&obs->addr);
         PRINTF(":%u\n", obs->port);
