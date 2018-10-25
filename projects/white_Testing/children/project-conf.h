@@ -50,13 +50,8 @@
 
 
 /* QoS function optional*/
-<<<<<<< HEAD
-#ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE            1
-=======
 #ifndef ENABLE_QOS
 #define ENABLE_QOS           1
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
 #endif
 
 // #ifndef QUEUEBUF_CONF_NUM

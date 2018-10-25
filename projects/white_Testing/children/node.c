@@ -72,13 +72,10 @@
 
 #include "dev/leds.h"
 
-<<<<<<< HEAD
-extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect, res_bcollect2;
-=======
-//#include "dev/max44009.h"  //light
 
+//#include "dev/max44009.h"  //light
 extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect,res_bcollect_2; // , res_temperature;
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
+
 
 /*---------------------------------------------------------------------------*/
 
@@ -119,12 +116,9 @@ PROCESS_THREAD(er_example_server, ev, data)
   rest_activate_resource(&res_toggle, "actuators/toggle");
   rest_activate_resource(&res_collect, "g/collect");
   rest_activate_resource(&res_bcollect, "g/bcollect");
-<<<<<<< HEAD
-  rest_activate_resource(&res_bcollect2, "g/bcollect2");
-=======
   rest_activate_resource(&res_bcollect_2, "g/bcollect_2");
   //rest_activate_resource(&res_temperature, "g/res_temperature");
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
+
 
 #if PLATFORM_HAS_LEDS
  
@@ -255,34 +249,6 @@ print_tempAndhumi_status(void)
 
 PROCESS_THREAD(node_process, ev, data)
 {
-<<<<<<< HEAD
-  //static struct etimer etaa;
-  PROCESS_BEGIN();
-
-//   #if CONTIKI_TARGET_COOJA
-//   extern void set_bcollect();
-//   extern void set_bcollect2();
-//   set_bcollect();
-//   set_bcollect2();
-//   #endif /* CONTIKI_TARGET_COOJA */
-
-// #if CONTIKI_TARGET_COOJA && 0
-// #include "node-id.h"
-//   extern uint8_t event_threshold;
-//   if((node_id == 11) || (node_id) == 3) {
-//     event_threshold = 1;
-//     printf("set event_threshold = %d\n", event_threshold);
-//   }
-// #endif /* CONTIKI_TARGET_COOJA */
-
-
-  // etimer_set(&etaa, CLOCK_SECOND * 60);
-  // while(1) {
-  //   PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
-  //   etimer_reset(&etaa);
-  //   print_network_status();
-  // }
-=======
   static struct etimer etaa;
   
 
@@ -298,7 +264,6 @@ PROCESS_THREAD(node_process, ev, data)
       print_tempAndhumi_status();
     #endif
   }
->>>>>>> 5398e098ad7b2cdf2452fb642343bc202b857f2e
 
   PROCESS_END();
 }
