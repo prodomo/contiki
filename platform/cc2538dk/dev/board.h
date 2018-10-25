@@ -58,6 +58,8 @@
 
 #include "dev/gpio.h"
 #include "dev/nvic.h"
+#include "dev/i2c.h" //added
+
 /*---------------------------------------------------------------------------*/
 /** \name SmartRF LED configuration
  *
@@ -227,6 +229,21 @@
  */
 #define BOARD_STRING "TI SmartRF06 + cc2538EM"
 /** @} */
+
+/*---------------------------------------------------------------------------*///temporaly used in temperature sensor
+ /**
+ * \name I2C configuration
+ *
+ * These values configure which CC2538 pins to use for the I2C lines.
+ * @{
+ */
+ #define I2C_SCL_PORT             GPIO_B_NUM
+ #define I2C_SCL_PIN              3
+ #define I2C_SDA_PORT             GPIO_B_NUM
+ #define I2C_SDA_PIN              4
+ /** @} */
+/*---------------------------------------------------------------------------*/
+ 
 
 #endif /* BOARD_H_ */
 

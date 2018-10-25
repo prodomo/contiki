@@ -87,6 +87,7 @@ extern resource_t res_push;
 extern resource_t res_toggle;
 extern resource_t res_collect;
 extern resource_t res_bcollect;
+extern resource_t res_bcollect_2;
 // #if PLATFORM_HAS_LIGHT
 // #include "dev/light-sensor.h"
 // extern resource_t res_light;
