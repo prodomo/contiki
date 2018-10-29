@@ -83,21 +83,21 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   {
     // 32bits to 1 block
     uint8_t flag[2];  // 0 1
-    uint8_t priority;
-    // padding int8_t
+    uint8_t priority; // 2
+    // padding int8_t // 3
     uint32_t start_asn; // 4 5 6 7
     uint32_t end_asn; // 8 9 10 11
     uint32_t event_counter; // 12 13 14 15
     uint8_t event_threshold; // 16
-    // padding 3 int8_t and int16_t
-    uint32_t event_threshold_last_change; 
-    uint32_t packet_counter;
-    unsigned char parent_address[2]; // uint8[0] , uint8[1]
-    uint16_t rank;
-    uint16_t parnet_link_etx;
-    int16_t parent_link_rssi;
-    uint8_t end_flag[2];
-    // padding int16_t
+    // padding 3 int8_t and int16_t // 17 , 18 19 
+    uint32_t event_threshold_last_change;  // 20 21 22 23
+    uint32_t packet_counter; // 24 25 26 27
+    unsigned char parent_address[2]; // uint8[0] , uint8[1] , 28 29
+    uint16_t rank; // 30 31
+    uint16_t parnet_link_etx; // 32 33
+    int16_t parent_link_rssi; // 34 35
+    uint8_t end_flag[2]; // 36 37
+    // padding int16_t // 38 39
   } message;
 
   memset(&message, 0, sizeof(message));
