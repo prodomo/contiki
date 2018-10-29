@@ -249,21 +249,21 @@ print_tempAndhumi_status(void)
 
 PROCESS_THREAD(node_process, ev, data)
 {
-  static struct etimer etaa;
+  //static struct etimer etaa;
   
 
   PROCESS_BEGIN();
   
-  //etimer_set(&etaa, CLOCK_SECOND * 60);
-  etimer_set(&etaa, CLOCK_SECOND * 5);
-  while(1) {
-    PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
-    etimer_reset(&etaa);
-    //print_network_status();
-    #if DEBUG
-      print_tempAndhumi_status();
-    #endif
-  }
+  // //etimer_set(&etaa, CLOCK_SECOND * 60);
+  // etimer_set(&etaa, CLOCK_SECOND * 5);
+  // while(1) {
+  //   PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
+  //   etimer_reset(&etaa);
+  //   //print_network_status();
+  //   #if DEBUG
+  //     print_tempAndhumi_status();
+  //   #endif
+  // }
 
   PROCESS_END();
 }
