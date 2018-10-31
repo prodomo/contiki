@@ -44,7 +44,8 @@
     "watchdog.h": "c",
     "rpl-private.h": "c",
     "sht21.h": "c",
-    "typeinfo": "cpp"
+    "typeinfo": "cpp",
+    "uip-debug.h": "c"
   },
   "C_Cpp.errorSquiggles": "Disabled",
   "C_Cpp.intelliSenseEngineFallback": "Enabled",
