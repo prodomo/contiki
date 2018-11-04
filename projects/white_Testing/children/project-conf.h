@@ -91,13 +91,13 @@
 
 /* Multiplies with chunk size, be aware of memory constraints. */
 #undef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     4
+#define COAP_MAX_OPEN_TRANSACTIONS     2
 
 /* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
 
-   #undef COAP_MAX_OBSERVERS
-   #define COAP_MAX_OBSERVERS             1
- 
+#undef COAP_MAX_OBSERVERS
+#define COAP_MAX_OBSERVERS   COAP_MAX_OPEN_TRANSACTIONS-1
+
 
 /* Filtering .well-known/core per query can be disabled to save space. */
 #undef COAP_LINK_FORMAT_FILTERING
