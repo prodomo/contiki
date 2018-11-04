@@ -63,6 +63,7 @@
 #define PRINTF(...) printf(__VA_ARGS__)
 #define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
 #define PRINTLLADDR(lladdr) PRINTF("[%02x:%02x:%02x:%02x:%02x:%02x]", (lladdr)->addr[0], (lladdr)->addr[1], (lladdr)->addr[2], (lladdr)->addr[3], (lladdr)->addr[4], (lladdr)->addr[5])
+#include "dev/sht21.h"  //temporaly
 #else
 #define PRINTF(...)
 #define PRINT6ADDR(addr)
@@ -71,7 +72,10 @@
 
 #include "dev/leds.h"
 
-extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect, res_bcollect2;
+
+//#include "dev/max44009.h"  //light
+extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect,res_bcollect_2; // , res_temperature;
+
 
 /*---------------------------------------------------------------------------*/
 
@@ -112,7 +116,9 @@ PROCESS_THREAD(er_example_server, ev, data)
   rest_activate_resource(&res_toggle, "actuators/toggle");
   rest_activate_resource(&res_collect, "g/collect");
   rest_activate_resource(&res_bcollect, "g/bcollect");
-  rest_activate_resource(&res_bcollect2, "g/bcollect2");
+  rest_activate_resource(&res_bcollect_2, "g/bcollect_2");
+  //rest_activate_resource(&res_temperature, "g/res_temperature");
+
 
 #if PLATFORM_HAS_LEDS
  
@@ -130,6 +136,8 @@ PROCESS_THREAD(er_example_server, ev, data)
 }
 
 /*---------------------------------------------------------------------------*/
+
+#if DEBUG
 
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
@@ -211,36 +219,50 @@ print_network_status(void)
 
   PRINTF("----------------------\n");
 }
+#endif
+
+#if DEBUG
+static void
+print_tempAndhumi_status(void) 
+{
+  static int16_t sht21_present; //,max44009_present;  //uint16 to int16----important
+  static int16_t temperature, humidity; //,light;
+
+  PRINTF("============================\n");
+  if(sht21.status(SENSORS_READY) == 1) {//sht21_present != SHT21_ERROR
+    temperature = sht21.value(SHT21_READ_TEMP);
+    PRINTF("Temperature Row Data: %d\n",temperature );
+    PRINTF("Temperature Row Data: %16x\n",temperature );
+    PRINTF("Temperature: %u.%uC\n", temperature / 100, temperature % 100);
+    humidity = sht21.value(SHT21_READ_RHUM);
+    PRINTF("Rel. humidity: %u.%u%%\n", humidity / 100, humidity % 100);
+    }
+    else {
+      PRINTF("%u\n",sht21.status(SENSORS_READY));
+      PRINTF("SHT21 doesn't open\n");
+    } 
+  PRINTF("============================\n");
+}
+#endif
 
 /*---------------------------------------------------------------------------*/
 
 PROCESS_THREAD(node_process, ev, data)
 {
   //static struct etimer etaa;
+  
+
   PROCESS_BEGIN();
-
-//   #if CONTIKI_TARGET_COOJA
-//   extern void set_bcollect();
-//   extern void set_bcollect2();
-//   set_bcollect();
-//   set_bcollect2();
-//   #endif /* CONTIKI_TARGET_COOJA */
-
-// #if CONTIKI_TARGET_COOJA && 0
-// #include "node-id.h"
-//   extern uint8_t event_threshold;
-//   if((node_id == 11) || (node_id) == 3) {
-//     event_threshold = 1;
-//     printf("set event_threshold = %d\n", event_threshold);
-//   }
-// #endif /* CONTIKI_TARGET_COOJA */
-
-
-  // etimer_set(&etaa, CLOCK_SECOND * 60);
+  
+  // //etimer_set(&etaa, CLOCK_SECOND * 60);
+  // etimer_set(&etaa, CLOCK_SECOND * 5);
   // while(1) {
   //   PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
   //   etimer_reset(&etaa);
-  //   print_network_status();
+  //   //print_network_status();
+  //   #if DEBUG
+  //     print_tempAndhumi_status();
+  //   #endif
   // }
 
   PROCESS_END();

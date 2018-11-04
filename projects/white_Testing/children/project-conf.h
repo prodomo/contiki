@@ -50,17 +50,17 @@
 
 
 /* QoS function optional*/
-#ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE            1
+#ifndef ENABLE_QOS
+#define ENABLE_QOS           1
 #endif
 
 // #ifndef QUEUEBUF_CONF_NUM
 // #define QUEUEBUF_CONF_NUM   16
 // #endif
 
-// #ifndef MAX_LOG_LENGTH
-// #define MAX_LOG_LENGTH 2048  //Log Length
-// #endif
+#ifndef MAX_LOG_LENGTH
+#define MAX_LOG_LENGTH 2048  //Log Length
+#endif
 
 /* IP buffer size must match all other hops, in particular the border router. */
 #undef UIP_CONF_BUFFER_SIZE
@@ -91,12 +91,12 @@
 
 /* Multiplies with chunk size, be aware of memory constraints. */
 #undef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     4
+#define COAP_MAX_OPEN_TRANSACTIONS    2
 
 /* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
 
-   #undef COAP_MAX_OBSERVERS
-   #define COAP_MAX_OBSERVERS             1
+#undef COAP_MAX_OBSERVERS
+#define COAP_MAX_OBSERVERS   COAP_MAX_OPEN_TRANSACTIONS-1
  
 
 /* Filtering .well-known/core per query can be disabled to save space. */
