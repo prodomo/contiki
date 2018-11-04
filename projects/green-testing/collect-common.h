@@ -28,57 +28,29 @@
  *
  */
 
-#ifndef PROJECT_ROUTER_CONF_H_
-#define PROJECT_ROUTER_CONF_H_
+/**
+ * \file
+ *         Common code between collect client and server
+ * \author
+ *         Niclas Finne <nfi@sics.se>
+ */
 
-#ifndef WITH_NON_STORING
-#define WITH_NON_STORING 1 /* Set this to run with non-storing mode */
-#endif /* WITH_NON_STORING */
+#ifndef COLLECT_COMMON_H_
+#define COLLECT_COMMON_H_
 
-#if WITH_NON_STORING
-#undef RPL_NS_CONF_LINK_NUM
-#define RPL_NS_CONF_LINK_NUM 40 /* Number of links maintained at the root */
-#undef UIP_CONF_MAX_ROUTES
-#define UIP_CONF_MAX_ROUTES 0 /* No need for routes */
-#undef RPL_CONF_MOP
-#define RPL_CONF_MOP RPL_MOP_NON_STORING /* Mode of operation*/
-#endif /* WITH_NON_STORING */
+#include "contiki.h"
+#include "net/linkaddr.h"
 
-#ifndef UIP_FALLBACK_INTERFACE
-#define UIP_FALLBACK_INTERFACE rpl_interface
-#endif
+void collect_common_net_init(void);
+void collect_common_net_print(void);
+void collect_common_set_sink(void);
+void collect_common_send(void);
+void collect_common_recv(const linkaddr_t *originator, uint8_t seqno,
+                         uint8_t hops,
+                         uint8_t *payload,
+                         uint16_t payload_len);
+void collect_common_set_send_active(int active);
 
-#ifndef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM          4
-#endif
+PROCESS_NAME(collect_common_process);
 
-#ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE           0
-#endif
-
-// #ifndef MAX_LOG_LENGTH
-// #define MAX_LOG_LENGTH 2048  //Log Length
-// #endif
-
-#ifndef UIP_CONF_BUFFER_SIZE
-#define UIP_CONF_BUFFER_SIZE    1280
-#endif
-
-#ifndef UIP_CONF_RECEIVE_WINDOW
-#define UIP_CONF_RECEIVE_WINDOW  60
-#endif
-
-#ifndef WEBSERVER_CONF_CFS_CONNS
-#define WEBSERVER_CONF_CFS_CONNS 2
-#endif
-
-#undef SLIP_ARCH_CONF_ENABLE
-#define SLIP_ARCH_CONF_ENABLE 1
-
-#include "../00-common/tsch-project-conf.h"
-
-/* Do not start TSCH at init, wait for NETSTACK_MAC.on() */
-#undef TSCH_CONF_AUTOSTART
-#define TSCH_CONF_AUTOSTART 0
-
-#endif /* PROJECT_ROUTER_CONF_H_ */
+#endif /* COLLECT_COMMON_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, SICS Swedish ICT.
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,15 +26,18 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
  */
 
 /**
- * \author Simon Duquennoy <simonduq@sics.se>
+ * \file
+ *      Erbium (Er) example project configuration.
+ * \author
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef __PROJECT_CONF_H__
-#define __PROJECT_CONF_H__
-
+#ifndef __PROJECT_ERBIUM_CONF_H__
+#define __PROJECT_ERBIUM_CONF_H__
 
 /* Custom channel and PAN ID configuration for your project. */
 /*
@@ -45,22 +48,8 @@
    #define IEEE802154_CONF_PANID          0xABCD
  */
 
-#define RPL_WITH_NON_STORING        1
-#define WITH_NON_STORING            1
-
-
-/* QoS function optional*/
-#ifndef ENABLE_QOS_WHITE
-#define ENABLE_QOS_WHITE            1
-#endif
-
-// #ifndef QUEUEBUF_CONF_NUM
-// #define QUEUEBUF_CONF_NUM   16
-// #endif
-
-// #ifndef MAX_LOG_LENGTH
-// #define MAX_LOG_LENGTH 2048  //Log Length
-// #endif
+#define RPL_WITH_NON_STORING 1
+#define WITH_NON_STORING 1
 
 /* IP buffer size must match all other hops, in particular the border router. */
 #undef UIP_CONF_BUFFER_SIZE
@@ -96,7 +85,7 @@
 /* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
 
    #undef COAP_MAX_OBSERVERS
-   #define COAP_MAX_OBSERVERS             1
+   #define COAP_MAX_OBSERVERS             2
  
 
 /* Filtering .well-known/core per query can be disabled to save space. */
@@ -117,4 +106,4 @@
 
 #include "../00-common/tsch-project-conf.h"
 
-#endif /* __PROJECT_CONF_H__ */
+#endif /* __PROJECT_ERBIUM_CONF_H__ */

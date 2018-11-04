@@ -29,7 +29,7 @@ static void res_get_handler(void *request, void *response, uint8_t *buffer, uint
 static void res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_periodic_handler(void);
 
-PERIODIC_RESOURCE(res_bcollect2,
+PERIODIC_RESOURCE(res_bcollect,
                   "title=\"Binary collect\";obs",
                   res_get_handler,
                   res_post_handler,
@@ -52,26 +52,12 @@ static uint32_t event_threshold_last_change = 0;
 /* Record the packet have been generated. (Server perspective) */
 static uint32_t packet_counter = 0;
 
-static uint8_t packet_priority = 0;
-
-// #if CONTIKI_TARGET_COOJA
-// #include "node-id.h"
-// void set_bcollect2() {
-//   if(node_id == 2 || node_id == 8 || node_id == 9 || node_id == 10) {
-//     packet_priority = 1;
-//   }
-// }
-// #endif /* CONTIKI_TARGET_COOJA */
-
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
-
-
 
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  
   /*
    * For minimal complexity, request query and options should be ignored for GET on observable resources.
    * Otherwise the requests must be stored with the observer list and passed by REST.notify_subscribers().
@@ -79,11 +65,11 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
    */
 
 
-    struct 
+  struct 
   {
     uint8_t flag[2];
+    // padding 2
     uint32_t start_asn;
-    // padding 2 uint16_t
     uint32_t end_asn;
     uint32_t event_counter;
     uint8_t event_threshold;
@@ -111,6 +97,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 
   message.start_asn = tsch_current_asn.ls4b;
 
+
+
   uint8_t packet_length = 0;
   rpl_dag_t *dag;
   rpl_parent_t *preferred_parent;
@@ -119,9 +107,9 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   struct link_stats *parent_link_stats;
 
 
-  PRINTF("I am B_collect2 res_get hanlder!\n");
+  PRINTF("I am collect res_get hanlder!\n");
   REST.set_header_content_type(response, REST.type.APPLICATION_OCTET_STREAM);
-  REST.set_header_max_age(response, res_bcollect2.periodic->period / CLOCK_SECOND);
+  REST.set_header_max_age(response, res_bcollect.periodic->period / CLOCK_SECOND);
 
   
 
@@ -162,12 +150,9 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   // memcpy(buffer, rpl_parent_address, sizeof(rpl_parent_address));
   // packet_counter += sizeof(rpl_parent_address);
 
-  /* just for testing debug */
-  //packet_priority=(packet_priority+1)%3;
-  //PRINTF("%d \n",packet_priority);
-  /* end of testing */
 
-  coap_set_uip_traffic_class(packet_priority);
+  
+
   REST.set_response_payload(response, buffer, sizeof(message));
 
   // REST.set_response_payload(response, buffer, snprintf((char *)buffer, preferred_size, "[Collect] ec: %lu, et: %lu, lc, %lu, pc: %lu", event_counter, event_threshold, event_threshold_last_change,packet_counter));
@@ -181,33 +166,19 @@ static void
 res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   const char *threshold_c = NULL;
-  const char *priority_c = NULL;
   int threshold = -1;
-  int priority = -1;
-
-  if(REST.get_query_variable(request, "thd", &threshold_c)) {
+  if(REST.get_query_variable(request, "threshold", &threshold_c)) {
     threshold = (uint8_t)atoi(threshold_c);
   }
 
-  if(REST.get_query_variable(request, "pp", &priority_c)) {
-    priority = (uint8_t)atoi(priority_c);
-  }
-
-  if(threshold < 1 && (priority<0||priority>2)) {
+  if(threshold < 1) {
     /* Threashold is too smaill ignore it! */
     REST.set_response_status(response, REST.status.BAD_REQUEST);
   } else {
-    if(threshold>=1){
-      /* Update to new threshold */
-      event_threshold = threshold;
-      event_threshold_last_change = event_counter;
-    }
-    if(priority>=0 && priority<= 2)
-    {
-      packet_priority = priority;
-    }
+    /* Update to new threshold */
+    event_threshold = threshold;
+    event_threshold_last_change = event_counter;
   }
-  
 }
 
 /*
@@ -223,9 +194,9 @@ res_periodic_handler()
   /* Will notify subscribers when inter-packet time is match */
   if(event_counter % event_threshold == 0) {
     ++packet_counter;
-    PRINTF("Generate a new packet! , %08x. \n",tsch_current_asn.ls4b);
+    PRINTF("Generate a new packet!\n");
         
     /* Notify the registered observers which will trigger the res_get_handler to create the response. */
-    REST.notify_subscribers(&res_bcollect2);
+    REST.notify_subscribers(&res_bcollect);
   }
 }

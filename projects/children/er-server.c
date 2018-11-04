@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, SICS Swedish ICT.
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,14 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
  */
+
 /**
  * \file
- *         A RPL+TSCH node able to act as either a simple node (6ln),
- *         DAG Root (6dr) or DAG Root with security (6dr-sec)
- *         Press use button at startup to configure.
- *
- * \author Simon Duquennoy <simonduq@sics.se>
+ *      Erbium (Er) REST Engine example.
+ * \author
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
 #include <stdio.h>
@@ -57,7 +57,7 @@
 #include "orchestra.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -71,9 +71,46 @@
 
 #include "dev/leds.h"
 
-extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect, res_bcollect2;
-
-/*---------------------------------------------------------------------------*/
+/*
+ * Resources to be activated need to be imported through the extern keyword.
+ * The build system automatically compiles the resources in the corresponding sub-directory.
+ */
+extern resource_t
+  res_hello;
+//   res_mirror,
+//   res_chunks,
+//   res_separate,
+extern resource_t res_push;
+//   res_event,
+//   res_sub,
+//   res_b1_sep_b2;
+extern resource_t res_toggle;
+extern resource_t res_collect;
+extern resource_t res_bcollect;
+// #if PLATFORM_HAS_LIGHT
+// #include "dev/light-sensor.h"
+// extern resource_t res_light;
+// #endif
+// #if PLATFORM_HAS_BATTERY
+// #include "dev/battery-sensor.h"
+// extern resource_t res_battery;
+// #endif
+// #if PLATFORM_HAS_TEMPERATURE
+// #include "dev/temperature-sensor.h"
+// extern resource_t res_temperature;
+// #endif
+/*
+extern resource_t res_battery;
+#endif
+#if PLATFORM_HAS_RADIO
+#include "dev/radio-sensor.h"
+extern resource_t res_radio;
+#endif
+#if PLATFORM_HAS_SHT11
+#include "dev/sht11/sht11-sensor.h"
+extern resource_t res_sht11;
+#endif
+*/
 
 PROCESS(er_example_server, "Erbium Example Server");
 PROCESS(node_process, "RPL Node");
@@ -108,31 +145,73 @@ PROCESS_THREAD(er_example_server, ev, data)
    * All static variables are the same for each URI path.
    */
   rest_activate_resource(&res_hello, "test/hello");
+/*  rest_activate_resource(&res_mirror, "debug/mirror"); */
+/*  rest_activate_resource(&res_chunks, "test/chunks"); */
+/*  rest_activate_resource(&res_separate, "test/separate"); */
   rest_activate_resource(&res_push, "test/push");
+// /*  rest_activate_resource(&res_event, "sensors/button"); */
+// /*  rest_activate_resource(&res_sub, "test/sub"); */
+// /*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
   rest_activate_resource(&res_toggle, "actuators/toggle");
+
   rest_activate_resource(&res_collect, "g/collect");
+  
   rest_activate_resource(&res_bcollect, "g/bcollect");
-  rest_activate_resource(&res_bcollect2, "g/bcollect2");
 
 #if PLATFORM_HAS_LEDS
- 
+// /*  rest_activate_resource(&res_leds, "actuators/leds"); */
+  
 #endif
-
+// #if PLATFORM_HAS_LIGHT
+//   rest_activate_resource(&res_light, "sensors/light"); 
+//   SENSORS_ACTIVATE(light_sensor);  
+// #endif
+// #if PLATFORM_HAS_BATTERY
+//   rest_activate_resource(&res_battery, "sensors/battery");  
+//   SENSORS_ACTIVATE(battery_sensor);  
+// #endif
+// #if PLATFORM_HAS_TEMPERATURE
+//   rest_activate_resource(&res_temperature, "sensors/temperature");  
+//   SENSORS_ACTIVATE(temperature_sensor);  
+// #endif
+// // /*
+// #if PLATFORM_HAS_RADIO
+//   rest_activate_resource(&res_radio, "sensors/radio");  
+//   SENSORS_ACTIVATE(radio_sensor);  
+// #endif
+// #if PLATFORM_HAS_SHT11
+//   rest_activate_resource(&res_sht11, "sensors/sht11");  
+//   SENSORS_ACTIVATE(sht11_sensor);  
+// #endif
+// */
 #if WITH_ORCHESTRA
   orchestra_init();
 #endif
   /* Define application-specific events here. */
   while(1) {
     PROCESS_WAIT_EVENT();
-  } 
+// #if PLATFORM_HAS_BUTTON
+//     if(ev == sensors_event && data == &button_sensor) {
+//       PRINTF("*******BUTTON*******\n");
+
+//        Call the event_handler for this application-specific event. 
+//       res_event.trigger();
+
+//       /* Also call the separate response example handler. */
+//       res_separate.resume();
+//     }
+// #endif /* PLATFORM_HAS_BUTTON */
+  }                             /* while (1) */
 
   PROCESS_END();
 }
 
-/*---------------------------------------------------------------------------*/
 
+
+/*---------------------------------------------------------------------------*/
 #include "core/net/mac/tsch/tsch-private.h"
 extern struct tsch_asn_t tsch_current_asn;
+
 
 static void
 print_network_status(void)
@@ -148,6 +227,8 @@ print_network_status(void)
 #endif /* RPL_WITH_NON_STORING */
 
   PRINTF("--- Network status ---\n");
+
+  PRINTF("TSCH: {asn-%x.%lx link-NULL} \n", tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 
   /* Our IPv6 addresses */
   PRINTF("- Server IPv6 addresses:\n");
@@ -208,42 +289,21 @@ print_network_status(void)
     link = rpl_ns_node_next(link);
   }
 #endif
-
+  leds_toggle(LEDS_GREEN);
   PRINTF("----------------------\n");
 }
 
-/*---------------------------------------------------------------------------*/
-
 PROCESS_THREAD(node_process, ev, data)
 {
-  //static struct etimer etaa;
+  static struct etimer etaa;
   PROCESS_BEGIN();
 
-//   #if CONTIKI_TARGET_COOJA
-//   extern void set_bcollect();
-//   extern void set_bcollect2();
-//   set_bcollect();
-//   set_bcollect2();
-//   #endif /* CONTIKI_TARGET_COOJA */
-
-// #if CONTIKI_TARGET_COOJA && 0
-// #include "node-id.h"
-//   extern uint8_t event_threshold;
-//   if((node_id == 11) || (node_id) == 3) {
-//     event_threshold = 1;
-//     printf("set event_threshold = %d\n", event_threshold);
-//   }
-// #endif /* CONTIKI_TARGET_COOJA */
-
-
-  // etimer_set(&etaa, CLOCK_SECOND * 60);
-  // while(1) {
-  //   PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
-  //   etimer_reset(&etaa);
-  //   print_network_status();
-  // }
+  etimer_set(&etaa, CLOCK_SECOND * 60);
+  while(1) {
+    PROCESS_YIELD_UNTIL(etimer_expired(&etaa));
+    etimer_reset(&etaa);
+    print_network_status();
+  }
 
   PROCESS_END();
 }
-
-/*---------------------------------------------------------------------------*/

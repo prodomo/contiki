@@ -284,9 +284,6 @@ enum {
   PACKETBUF_ATTR_ERELIABLE,
 #endif /* NETSTACK_CONF_WITH_RIME */
 
-    /* Add traffic class attribute*/
-    PACKETBUF_ATTR_TCFLOW,
-
   /* These must be last */
   PACKETBUF_ADDR_SENDER,
   PACKETBUF_ADDR_RECEIVER,

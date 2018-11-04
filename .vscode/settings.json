@@ -39,13 +39,7 @@
     "system_error": "c",
     "__locale": "c",
     "queue": "cpp",
-    "istream": "c",
-    "serial-line.h": "c",
-    "watchdog.h": "c",
-    "rpl-private.h": "c",
-    "sht21.h": "c",
-    "typeinfo": "cpp",
-    "uip-debug.h": "c"
+    "istream": "c"
   },
   "C_Cpp.errorSquiggles": "Disabled",
   "C_Cpp.intelliSenseEngineFallback": "Enabled",
