@@ -940,6 +940,26 @@ send_packet(mac_callback_t sent, void *ptr)
              tsch_queue_packet_count(addr),
              p->header_len,
              queuebuf_datalen(p->qb));
+
+        /**debug test**/
+#if 0
+        int i;
+        int dataLen=queuebuf_datalen(p->qb);
+        //int headLen=p->header_len;
+        for(i=0;i<dataLen;i++){
+          uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[i];
+          PRINTF("%02x ",data);
+        }
+
+        if( ((uint8_t *)queuebuf_dataptr(p->qb))[65] == 0x54 &&  //find the flags.
+            ((uint8_t *)queuebuf_dataptr(p->qb))[66] == 0x66) { //check coap have created packet, if will, print it.
+
+          uint8_t data=((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow in queuebuf location.
+          PRINTF("\nTraffic classes In TSCH queue : %02x\n", data);
+        }
+        PRINTF("\n");
+#endif
+        
       (void)packet_count_before; /* Discard "variable set but unused" warning in case of TSCH_LOG_LEVEL of 0 */
     }
   }
