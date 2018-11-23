@@ -1,0 +1,30 @@
+CONTIKI = ../../
+APPS = powertrace collect-view
+CONTIKI_PROJECT = udp-sender udp-sink
+PROJECT_SOURCEFILES += collect-common.c
+
+CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" -DLPM_CONF_MAX_PM=1 #-DCC1200_CONF_SUBGHZ_50KBPS_MODE=1 
+# CFLAGS += -DTSCH_CONF_DEFAULT_HOPPING_SEQUENCE=$(TSCH_CHANNEL) #-DTSCH_CONF_DEFAULT_TIMESLOT_LENGTH=65000U
+CFLAGS += -DRS485_CONF_ENABLE=1 -DUART1_CONF_BAUD_RATE=9600
+
+CONTIKI_WITH_IPV6 = 1
+APPS += orchestra
+MODULES += core/net/mac/tsch dev/modbus
+MAKE_WITH_ORCHESTRA ?= 0 # force Orchestra from command line
+CONTIKI_TARGET_SOURCEFILES += adc-sensors.c
+
+ifeq ($(MAKE_WITH_ORCHESTRA),1)
+CFLAGS += -DWITH_ORCHESTRA=1
+endif
+
+ifeq ($(MAKE_WITH_NON_STORING),1)
+CFLAGS += -DWITH_NON_STORING=1
+endif
+
+ifdef PERIOD
+CFLAGS=-DPERIOD=$(PERIOD)
+endif
+
+all: $(CONTIKI_PROJECT)
+
+include $(CONTIKI)/Makefile.include

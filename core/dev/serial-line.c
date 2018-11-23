@@ -65,6 +65,8 @@ serial_line_input_byte(unsigned char c)
     return 0;
   }
 
+  printf("%c", c);
+
   if(!overflow) {
     /* Add character */
     if(ringbuf_put(&rxbuf, c) == 0) {
