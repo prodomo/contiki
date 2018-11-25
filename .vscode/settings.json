@@ -39,7 +39,9 @@
     "system_error": "c",
     "__locale": "c",
     "queue": "cpp",
-    "istream": "c"
+    "istream": "c",
+    "uip-debug.h": "c",
+    "tcpip.h": "c"
   },
   "C_Cpp.errorSquiggles": "Disabled",
   "C_Cpp.intelliSenseEngineFallback": "Enabled",
