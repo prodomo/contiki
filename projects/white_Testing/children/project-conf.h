@@ -107,7 +107,7 @@
 
 /* Turn of DAO ACK to make code smaller */
 #undef RPL_CONF_WITH_DAO_ACK
-#define RPL_CONF_WITH_DAO_ACK          0
+#define RPL_CONF_WITH_DAO_ACK          1
 
 #undef RPL_CONF_OF
 #define RPL_CONF_OF                    rpl_of0
