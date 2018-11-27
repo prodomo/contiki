@@ -191,11 +191,4 @@
 
 #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 12, 13, 14, 18 }
 
-/* Enabble sub-GHz */
-#undef  NETSTACK_CONF_RADIO
-#define NETSTACK_CONF_RADIO         cc1200_driver
-#define CC1200_CONF_USE_GPIO2       0
-#define CC1200_CONF_USE_RX_WATCHDOG 0
-#define ANTENNA_SW_SELECT_DEF_CONF  ANTENNA_SW_SELECT_SUBGHZ
-
 #endif /* __PROJECT_CONF_H__ */
