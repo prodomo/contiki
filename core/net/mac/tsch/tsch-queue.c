@@ -262,9 +262,6 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
   struct tsch_neighbor *n = NULL;
   int16_t put_index = -1;
   struct tsch_packet *p = NULL;
-
-  data_tcflow = -1; //by default.
-
   if (!tsch_is_locked())
   {
     n = tsch_queue_add_nbr(addr);
@@ -304,18 +301,19 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen - 4] == 0xf0 &&
                 ((uint8_t *)queuebuf_dataptr(p->qb))[dataLen - 3] == 0xff )
             {
-              data_tcflow = ((uint8_t *)queuebuf_dataptr(p->qb))[24]; //24 is tcflow location in queuebuf.
-              PRINTF("Traffic classes In TSCH queue : %02x\n", data_tcflow);
+               /*Get tcflow frome attribute*/
+               data_tcflow = (uint8_t)queuebuf_attr(p->qb,PACKETBUF_ATTR_TCFLOW); 
+               PRINTF("Traffic classes In TSCH queue frome attr : %02x\n" ,data_tcflow);
             }
 
-#if ENABLE_QOS_WHITE
+#if ENABLE_QOS
             tsch_queue_resorting_ringbuf_priority(n, p);
 #else
             /* Add to ringbuf (actual add committed through atomic operation) */
             n->tx_array[put_index] = p;       //
             ringbufindex_put(&n->tx_ringbuf); //input ringbuf.
             PRINTF("TSCH-queue: packet is added put_index=%u, packet=%p\n", put_index, p);
-#endif /* ENABLE_QOS_WHITE */
+#endif /* ENABLE_QOS */
             return p;
           }
           else
