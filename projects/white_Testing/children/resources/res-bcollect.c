@@ -12,7 +12,7 @@
 #include "core/net/rpl/rpl.h"
 #include "core/net/link-stats.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
