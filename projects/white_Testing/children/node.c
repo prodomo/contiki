@@ -71,7 +71,7 @@
 
 #include "dev/leds.h"
 
-extern resource_t res_hello, res_push, res_toggle, res_collect, res_bcollect, res_bcollect2;
+extern resource_t res_bcollect, res_bcollect2;
 
 /*---------------------------------------------------------------------------*/
 
@@ -107,10 +107,6 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  rest_activate_resource(&res_hello, "test/hello");
-  rest_activate_resource(&res_push, "test/push");
-  rest_activate_resource(&res_toggle, "actuators/toggle");
-  rest_activate_resource(&res_collect, "g/collect");
   rest_activate_resource(&res_bcollect, "g/bcollect");
   rest_activate_resource(&res_bcollect2, "g/bcollect2");
 
