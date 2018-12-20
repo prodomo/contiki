@@ -158,13 +158,13 @@ output(void)
        */
       
       // memcpy(UIP_IP_BUF[coap_packet_start_location + 8], &(tsch_current_asn.ls4b), 4)
-      PRINTF("\nStart_ASN_Numbers:%08x\n",startASN);
-      PRINTF("End_ASN_Numbers:%08x\n",tsch_current_asn.ls4b);
+      PRINTF("\nStart_ASN_Numbers:%08u\n",(unsigned int)startASN);
+      PRINTF("End_ASN_Numbers:%08u\n",(unsigned int)tsch_current_asn.ls4b);
       //PRINTF("Event_Counter:%d\n",eventCounter);
-      PRINTF("The_Packet_Latancy_is:%u",((tsch_current_asn.ls4b - startASN)) * 10 ); //ms time.
+      PRINTF("The_Packet_Latancy_is:%u",(unsigned int)((tsch_current_asn.ls4b - startASN)) * 10 ); //ms time.
       PRINTF(" ms\n");
       //PRINTF("The Packet Latancy is %u ms. \n",((tsch_current_asn.ls4b - startASN) - 4294967296) * 10 ); //ms time.                                       
-      PRINTF("Traffic_Classes:%02x. \n",UIP_IP_BUF->tcflow);
+      PRINTF("Traffic_Classes:%02u. \n",UIP_IP_BUF->tcflow);
       //PRINTF("Flow Table : %04x. \n",UIP_IP_BUF->flow);
 
       //rebuilding UDP checksum.

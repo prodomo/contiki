@@ -6,6 +6,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include "rest-engine.h"
 #include "er-coap.h"
 
