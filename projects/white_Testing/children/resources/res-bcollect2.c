@@ -115,7 +115,6 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 
   message.packet_priority = packet_priority;
 
-  uint8_t packet_length = 0;
   rpl_dag_t *dag;
   rpl_parent_t *preferred_parent;
   linkaddr_t parent;
