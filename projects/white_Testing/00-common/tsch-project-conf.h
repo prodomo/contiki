@@ -35,9 +35,9 @@
 #ifndef __TSCH_PROJECT_CONF_H__
 #define __TSCH_PROJECT_CONF_H__
 
-// #ifndef MAX_LOG_LENGTH
-// #define MAX_LOG_LENGTH 2048  //Log Length
-// #endif
+#ifndef MAX_LOG_LENGTH
+#define MAX_LOG_LENGTH 2048  //Log Length
+#endif
 
 /*******************************************************/
 /********************* Enable TSCH *********************/

@@ -291,7 +291,8 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
             uint8_t dataLen = queuebuf_datalen(p->qb);
             for (i = 0; i < dataLen; i++)
             {
-              PRINTF("%02x ", ((uint8_t *)queuebuf_dataptr(p->qb))[i]);
+              uint8_t data = ((uint8_t *)queuebuf_dataptr(p->qb))[i];
+              PRINTF("%02x ", data);
             }
             PRINTF("\n");
 
