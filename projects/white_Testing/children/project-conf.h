@@ -48,12 +48,6 @@
 #define RPL_WITH_NON_STORING        1
 #define WITH_NON_STORING            1
 
-<<<<<<< HEAD
-=======
-#ifndef WITH_NON_STORING
-#define WITH_NON_STORING  1 /* Set this to run with non-storing mode */
-#endif /* WITH_NON_STORING */
->>>>>>> e09c434f18c27d625ca559b9a745fcfbcfd4d490
 
 /* QoS function optional*/
 #ifndef ENABLE_QOS
