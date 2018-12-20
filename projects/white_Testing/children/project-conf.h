@@ -44,7 +44,7 @@
    #undef IEEE802154_CONF_PANID
    #define IEEE802154_CONF_PANID          0xABCD
  */
-#ifndef RPL_WITH_NON_STORING
+#undef RPL_WITH_NON_STORING
 #define RPL_WITH_NON_STORING        1
 #endif
 
