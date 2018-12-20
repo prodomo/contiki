@@ -127,86 +127,86 @@ PROCESS_THREAD(er_example_server, ev, data)
 
 /*---------------------------------------------------------------------------*/
 
-#include "core/net/mac/tsch/tsch-private.h"
-extern struct tsch_asn_t tsch_current_asn;
+// #include "core/net/mac/tsch/tsch-private.h"
+// extern struct tsch_asn_t tsch_current_asn;
 
-static void
-print_network_status(void)
-{
-  int i;
-  uint8_t state;
-  uip_ds6_defrt_t *default_route;
-#if RPL_WITH_STORING
-  uip_ds6_route_t *route;
-#endif /* RPL_WITH_STORING */
-#if RPL_WITH_NON_STORING
-  rpl_ns_node_t *link;
-#endif /* RPL_WITH_NON_STORING */
+// static void
+// print_network_status(void)
+// {
+//   int i;
+//   uint8_t state;
+//   uip_ds6_defrt_t *default_route;
+// #if RPL_WITH_STORING
+//   uip_ds6_route_t *route;
+// #endif /* RPL_WITH_STORING */
+// #if RPL_WITH_NON_STORING
+//   rpl_ns_node_t *link;
+// #endif /* RPL_WITH_NON_STORING */
 
-  PRINTF("--- Network status ---\n");
+//   PRINTF("--- Network status ---\n");
 
-  /* Our IPv6 addresses */
-  PRINTF("- Server IPv6 addresses:\n");
-  for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
-    state = uip_ds6_if.addr_list[i].state;
-    if(uip_ds6_if.addr_list[i].isused &&
-       (state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
-      PRINTF("-- ");
-      PRINT6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
-      PRINTF("\n");
-    }
-  }
+//   /* Our IPv6 addresses */
+//   PRINTF("- Server IPv6 addresses:\n");
+//   for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
+//     state = uip_ds6_if.addr_list[i].state;
+//     if(uip_ds6_if.addr_list[i].isused &&
+//        (state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
+//       PRINTF("-- ");
+//       PRINT6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
+//       PRINTF("\n");
+//     }
+//   }
 
-  /* Our default route */
-  PRINTF("- Default route:\n");
-  default_route = uip_ds6_defrt_lookup(uip_ds6_defrt_choose());
-  if(default_route != NULL) {
-    PRINTF("-- ");
-    PRINT6ADDR(&default_route->ipaddr);
-    PRINTF(" (lifetime: %lu seconds)\n", (unsigned long)default_route->lifetime.interval);
-  } else {
-    PRINTF("-- None\n");
-  }
+//   /* Our default route */
+//   PRINTF("- Default route:\n");
+//   default_route = uip_ds6_defrt_lookup(uip_ds6_defrt_choose());
+//   if(default_route != NULL) {
+//     PRINTF("-- ");
+//     PRINT6ADDR(&default_route->ipaddr);
+//     PRINTF(" (lifetime: %lu seconds)\n", (unsigned long)default_route->lifetime.interval);
+//   } else {
+//     PRINTF("-- None\n");
+//   }
 
-#if RPL_WITH_STORING
-  /* Our routing entries */
-  PRINTF("- Routing entries (%u in total):\n", uip_ds6_route_num_routes());
-  route = uip_ds6_route_head();
-  while(route != NULL) {
-    PRINTF("-- ");
-    PRINT6ADDR(&route->ipaddr);
-    PRINTF(" via ");
-    PRINT6ADDR(uip_ds6_route_nexthop(route));
-    PRINTF(" (lifetime: %lu seconds)\n", (unsigned long)route->state.lifetime);
-    route = uip_ds6_route_next(route);
-  }
-#endif
+// #if RPL_WITH_STORING
+//   /* Our routing entries */
+//   PRINTF("- Routing entries (%u in total):\n", uip_ds6_route_num_routes());
+//   route = uip_ds6_route_head();
+//   while(route != NULL) {
+//     PRINTF("-- ");
+//     PRINT6ADDR(&route->ipaddr);
+//     PRINTF(" via ");
+//     PRINT6ADDR(uip_ds6_route_nexthop(route));
+//     PRINTF(" (lifetime: %lu seconds)\n", (unsigned long)route->state.lifetime);
+//     route = uip_ds6_route_next(route);
+//   }
+// #endif
 
-#if RPL_WITH_NON_STORING
-  /* Our routing links */
-  PRINTF("- Routing links (%u in total):\n", rpl_ns_num_nodes());
-  link = rpl_ns_node_head();
-  while(link != NULL) {
-    uip_ipaddr_t child_ipaddr;
-    uip_ipaddr_t parent_ipaddr;
-    rpl_ns_get_node_global_addr(&child_ipaddr, link);
-    rpl_ns_get_node_global_addr(&parent_ipaddr, link->parent);
-    PRINTF("-- ");
-    PRINT6ADDR(&child_ipaddr);
-    if(link->parent == NULL) {
-      memset(&parent_ipaddr, 0, sizeof(parent_ipaddr));
-      PRINTF(" --- DODAG root ");
-    } else {
-      PRINTF(" to ");
-      PRINT6ADDR(&parent_ipaddr);
-    }
-    PRINTF(" (lifetime: %lu seconds)\n", (unsigned long)link->lifetime);
-    link = rpl_ns_node_next(link);
-  }
-#endif
+// #if RPL_WITH_NON_STORING
+//   /* Our routing links */
+//   PRINTF("- Routing links (%u in total):\n", rpl_ns_num_nodes());
+//   link = rpl_ns_node_head();
+//   while(link != NULL) {
+//     uip_ipaddr_t child_ipaddr;
+//     uip_ipaddr_t parent_ipaddr;
+//     rpl_ns_get_node_global_addr(&child_ipaddr, link);
+//     rpl_ns_get_node_global_addr(&parent_ipaddr, link->parent);
+//     PRINTF("-- ");
+//     PRINT6ADDR(&child_ipaddr);
+//     if(link->parent == NULL) {
+//       memset(&parent_ipaddr, 0, sizeof(parent_ipaddr));
+//       PRINTF(" --- DODAG root ");
+//     } else {
+//       PRINTF(" to ");
+//       PRINT6ADDR(&parent_ipaddr);
+//     }
+//     PRINTF(" (lifetime: %lu seconds)\n", (unsigned long)link->lifetime);
+//     link = rpl_ns_node_next(link);
+//   }
+// #endif
 
-  PRINTF("----------------------\n");
-}
+//   PRINTF("----------------------\n");
+// }
 
 /*---------------------------------------------------------------------------*/
 
