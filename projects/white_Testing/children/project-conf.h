@@ -48,7 +48,7 @@
 #define RPL_WITH_NON_STORING        1
 #endif
 
-#ifndef WITH_NON_STORING
+#ifdef WITH_NON_STORING
 #define WITH_NON_STORING 1 /* Set this to run with non-storing mode */
 #endif /* WITH_NON_STORING */
 
