@@ -442,18 +442,22 @@ tsch_schedule_create_minimal(void)
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       10, 0);
+
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       12, 0);
+
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       14, 0);
+
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       16, 0);
+
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
@@ -488,18 +492,22 @@ tsch_schedule_create_minimal(void)
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       30, 0);
+
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       32, 0);
+
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       34, 0);
+
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       36, 0);
+      
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
       LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
