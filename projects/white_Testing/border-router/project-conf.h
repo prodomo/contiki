@@ -56,10 +56,6 @@
 #define ENABLE_QOS           0
 #endif
 
-// #ifndef MAX_LOG_LENGTH
-// #define MAX_LOG_LENGTH 2048  //Log Length
-// #endif
-
 #ifndef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE    1280
 #endif

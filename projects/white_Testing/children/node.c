@@ -45,9 +45,9 @@
 
 #include "net/rpl/rpl.h"
 #include "net/rpl/rpl-private.h"
-#if RPL_WITH_NON_STORING
+#if RPL_CONF_WITH_NON_STORING
 #include "net/rpl/rpl-ns.h"
-#endif /* RPL_WITH_NON_STORING */
+#endif /* RPL_CONF_WITH_NON_STORING */
 
 #if PLATFORM_HAS_BUTTON
 #include "dev/button-sensor.h"
