@@ -139,9 +139,9 @@ PROCESS_THREAD(er_example_server, ev, data)
 // #if RPL_WITH_STORING
 //   uip_ds6_route_t *route;
 // #endif /* RPL_WITH_STORING */
-// #if RPL_WITH_NON_STORING
+// #if RPL_CONF_WITH_NON_STORING
 //   rpl_ns_node_t *link;
-// #endif /* RPL_WITH_NON_STORING */
+// #endif /* RPL_CONF_WITH_NON_STORING */
 
 //   PRINTF("--- Network status ---\n");
 
@@ -182,7 +182,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 //   }
 // #endif
 
-// #if RPL_WITH_NON_STORING
+// #if RPL_CONF_WITH_NON_STORING
 //   /* Our routing links */
 //   PRINTF("- Routing links (%u in total):\n", rpl_ns_num_nodes());
 //   link = rpl_ns_node_head();

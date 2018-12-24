@@ -39,6 +39,9 @@
 /********************* Enable TSCH *********************/
 /*******************************************************/
 
+#define RPL_CONF_WITH_NON_STORING        1
+#define WITH_NON_STORING        1
+
 /* Netstack layers */
 #undef NETSTACK_CONF_MAC
 #define NETSTACK_CONF_MAC     tschmac_driver
