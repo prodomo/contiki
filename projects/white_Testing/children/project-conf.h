@@ -45,7 +45,6 @@
    #define IEEE802154_CONF_PANID          0xABCD
  */
 
-
 #define RPL_CONF_WITH_NON_STORING        1
 #define WITH_NON_STORING        1
 
@@ -53,11 +52,6 @@
 #ifndef ENABLE_QOS
 #define ENABLE_QOS      1
 #endif
-
-// #ifndef QUEUEBUF_CONF_NUM
-// #define QUEUEBUF_CONF_NUM   16
-// #endif
-
 
 /* IP buffer size must match all other hops, in particular the border router. */
 #undef UIP_CONF_BUFFER_SIZE

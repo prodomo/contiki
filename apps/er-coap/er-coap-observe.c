@@ -40,7 +40,7 @@
 #include <string.h>
 #include "er-coap-observe.h"
 
-#include "lib/random.h"
+//#include "lib/random.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -197,8 +197,8 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
   int url_len, obs_url_len;
   char url[COAP_OBSERVER_URL_LEN];
 
-  random_init(0);
-  int r = (random_rand() % 10) +1;
+  // random_init(0);
+  // int r = (random_rand() % 10) +1;
 
   url_len = strlen(resource->url);
   strncpy(url, resource->url, COAP_OBSERVER_URL_LEN - 1);
@@ -234,7 +234,7 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
       
       if((transaction = coap_new_transaction(coap_get_mid(), &obs->addr, obs->port))) {
 
-        if(obs->obs_counter % (COAP_OBSERVE_REFRESH_INTERVAL+r) == 0) {
+        if(obs->obs_counter % (COAP_OBSERVE_REFRESH_INTERVAL) == 0) {
           PRINTF("           Force Confirmable for\n");
           notification->type = COAP_TYPE_CON;
         }

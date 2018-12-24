@@ -42,9 +42,9 @@
 #include "net/ipv6/uip-ds6.h"
 #include "net/rpl/rpl.h"
 #include "net/rpl/rpl-private.h"
-#if RPL_CONF_WITH_NON_STORING
+#if RPL_WITH_NON_STORING
 #include "net/rpl/rpl-ns.h"
-#endif /* RPL_CONF_WITH_NON_STORING */
+#endif /* RPL_WITH_NON_STORING */
 #include "net/netstack.h"
 #include "dev/button-sensor.h"
 #include "dev/slip.h"
@@ -155,9 +155,9 @@ static
 PT_THREAD(generate_routes(struct httpd_state *s))
 {
   static uip_ds6_route_t *r;
-#if RPL_CONF_WITH_NON_STORING
+#if RPL_WITH_NON_STORING
   static rpl_ns_node_t *link;
-#endif /* RPL_CONF_WITH_NON_STORING */
+#endif /* RPL_WITH_NON_STORING */
   static uip_ds6_nbr_t *nbr;
 #if BUF_USES_STACK
   char buf[256];
@@ -273,7 +273,7 @@ PT_THREAD(generate_routes(struct httpd_state *s))
   }
   ADD("</pre>");
 
-#if RPL_CONF_WITH_NON_STORING
+#if RPL_WITH_NON_STORING
   ADD("Links<pre>\n");
   SEND_STRING(&s->sout, buf);
 #if BUF_USES_STACK
@@ -330,7 +330,7 @@ PT_THREAD(generate_routes(struct httpd_state *s))
     }
   }
   ADD("</pre>");
-#endif /* RPL_CONF_WITH_NON_STORING */
+#endif /* RPL_WITH_NON_STORING */
 
 #if WEBSERVER_CONF_FILESTATS
   static uint16_t numtimes;
