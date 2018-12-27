@@ -107,8 +107,8 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  rest_activate_resource(&res_bcollect, "bcollect");
-  rest_activate_resource(&res_bcollect2, "bcollect2");
+  rest_activate_resource(&res_bcollect, "g/bcollect");
+  rest_activate_resource(&res_bcollect2, "g/bcollect2");
 
 #if PLATFORM_HAS_LEDS
  
