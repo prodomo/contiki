@@ -229,7 +229,7 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
       
       if((transaction = coap_new_transaction(coap_get_mid(), &obs->addr, obs->port))) {
 
-        if(obs->obs_counter % COAP_OBSERVE_REFRESH_INTERVAL == 0) {
+        if((obs->obs_counter % COAP_OBSERVE_REFRESH_INTERVAL) == 0 && 0) {
           PRINTF("           Force Confirmable for\n");
           notification->type = COAP_TYPE_CON;
         }
