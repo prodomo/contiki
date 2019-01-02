@@ -36,7 +36,7 @@
  */
 
 //#include <jni.h>
-#include "/usr/lib/jvm/java-7-openjdk-amd64/include/jni.h"
+#include "/usr/lib/jvm/java-8-openjdk-amd64/include/jni.h"
 #include <stdio.h>
 #include <string.h>
 
