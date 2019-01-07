@@ -201,8 +201,10 @@ update_ticks(void)
 
   update_counter++;
 
-  now = RTIMER_NOW();
+  INTERRUPTS_DISABLE();
   prev_rt_ticks_startup = rt_ticks_startup;
+  now = RTIMER_NOW();
+  INTERRUPTS_ENABLE();
 
   cur_rt_ticks_startup_hi = prev_rt_ticks_startup >> 32;
   if(now < (rtimer_clock_t)prev_rt_ticks_startup) {
