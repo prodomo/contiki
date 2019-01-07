@@ -35,8 +35,8 @@
  *         Fredrik Osterlind <fros@sics.se>
  */
 
-//#include <jni.h>
-#include "/usr/lib/jvm/java-8-openjdk-amd64/include/jni.h"
+#include <jni.h>
+//#include "/usr/lib/jvm/java-8-openjdk-amd64/include/jni.h"
 #include <stdio.h>
 #include <string.h>
 
