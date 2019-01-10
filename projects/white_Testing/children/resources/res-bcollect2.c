@@ -83,9 +83,9 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   struct 
   {
     uint8_t flag[2];
-    uint32_t start_asn;
     uint8_t packet_priority;
     // padding 1 uint8_t
+    uint32_t start_asn;
     uint32_t end_asn;
     uint32_t event_counter;
     uint8_t event_threshold;
