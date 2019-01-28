@@ -181,7 +181,7 @@ The COOJA Simulator
   </target>
 
   <target name="run_bigmem" depends="init, compile, jar, copy configs">
-    <java fork="yes" dir="${build}" classname="org.contikios.cooja.Cooja" maxmemory="8192m">
+    <java fork="yes" dir="${build}" classname="org.contikios.cooja.Cooja" maxmemory="12288m">
       <arg line="${args}"/>
       <env key="LD_LIBRARY_PATH" value="."/>
       <classpath>
