@@ -51,6 +51,17 @@
 #undef FRAME802154_CONF_VERSION
 #define FRAME802154_CONF_VERSION FRAME802154_IEEE802154E_2012
 
+/*******************************************************/
+/********* More RPL talbe size *****************/
+/*******************************************************/
+
+#undef NBR_TABLE_CONF_MAX_NEIGHBORS
+#define NBR_TABLE_CONF_MAX_NEIGHBORS     300
+/* NBR_TABLE_CONF_MAX_NEIGHBORS */
+#undef RPL_NS_CONF_LINK_NUM
+#define RPL_NS_CONF_LINK_NUM 300
+/* RPL_NS_CONF_LINK_NUM */
+
 
 /*******************************************************/
 /********* Enable RPL non-storing mode *****************/

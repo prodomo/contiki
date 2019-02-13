@@ -428,12 +428,23 @@ typedef uint32_t rtimer_clock_t;
 #define UIP_CONF_ND6_REACHABLE_TIME     600000
 #define UIP_CONF_ND6_RETRANS_TIMER       10000
 
+// #ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
+// #define NBR_TABLE_CONF_MAX_NEIGHBORS       20
+// #endif
+// #ifndef UIP_CONF_MAX_ROUTES
+// #define UIP_CONF_MAX_ROUTES                20
+// #endif
+
+/* configure number of neighbors and routes */
 #ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS       100
-#endif
+#define NBR_TABLE_CONF_MAX_NEIGHBORS     300
+#endif /* NBR_TABLE_CONF_MAX_NEIGHBORS */
 #ifndef UIP_CONF_MAX_ROUTES
-#define UIP_CONF_MAX_ROUTES                100
-#endif
+#define UIP_CONF_MAX_ROUTES   300 // testing...
+#endif /* UIP_CONF_MAX_ROUTES */
+#ifndef RPL_NS_CONF_LINK_NUM
+#define RPL_NS_CONF_LINK_NUM 300
+#endif /* RPL_NS_CONF_LINK_NUM */
 
 /* uIP */
 #ifndef UIP_CONF_BUFFER_SIZE
