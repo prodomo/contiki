@@ -131,13 +131,13 @@
 
 /* configure number of neighbors and routes */
 #ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS     20
+#define NBR_TABLE_CONF_MAX_NEIGHBORS     300
 #endif /* NBR_TABLE_CONF_MAX_NEIGHBORS */
 #ifndef UIP_CONF_MAX_ROUTES
-#define UIP_CONF_MAX_ROUTES   20 // testing...
+#define UIP_CONF_MAX_ROUTES   300 // testing...
 #endif /* UIP_CONF_MAX_ROUTES */
 #ifndef RPL_NS_CONF_LINK_NUM
-#define RPL_NS_CONF_LINK_NUM 40
+#define RPL_NS_CONF_LINK_NUM 300
 #endif /* RPL_NS_CONF_LINK_NUM */
 
 #define TCPIP_CONF_ANNOTATE_TRANSMISSIONS 1
