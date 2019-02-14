@@ -56,10 +56,10 @@
 /*******************************************************/
 
 #undef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS     300
+#define NBR_TABLE_CONF_MAX_NEIGHBORS     100
 /* NBR_TABLE_CONF_MAX_NEIGHBORS */
 #undef RPL_NS_CONF_LINK_NUM
-#define RPL_NS_CONF_LINK_NUM 300
+#define RPL_NS_CONF_LINK_NUM  100
 /* RPL_NS_CONF_LINK_NUM */
 
 

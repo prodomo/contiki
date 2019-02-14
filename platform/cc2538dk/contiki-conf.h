@@ -437,13 +437,13 @@ typedef uint32_t rtimer_clock_t;
 
 /* configure number of neighbors and routes */
 #ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS     300
+#define NBR_TABLE_CONF_MAX_NEIGHBORS     100
 #endif /* NBR_TABLE_CONF_MAX_NEIGHBORS */
 #ifndef UIP_CONF_MAX_ROUTES
-#define UIP_CONF_MAX_ROUTES   300 // testing...
+#define UIP_CONF_MAX_ROUTES   100 // testing...
 #endif /* UIP_CONF_MAX_ROUTES */
 #ifndef RPL_NS_CONF_LINK_NUM
-#define RPL_NS_CONF_LINK_NUM 300
+#define RPL_NS_CONF_LINK_NUM 100
 #endif /* RPL_NS_CONF_LINK_NUM */
 
 /* uIP */
